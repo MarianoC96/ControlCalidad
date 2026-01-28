@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 export const metadata: Metadata = {
   title: "Control de Calidad",
   description: "Sistema de Control de Calidad para Registro de Productos",
@@ -22,6 +24,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body>
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
