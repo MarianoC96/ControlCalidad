@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import AutocompleteSelect from '@/components/AutocompleteSelect';
 import { createClient } from '@/lib/supabase/client';
 import { getCurrentDate, formatRange, validateRange, validateText } from '@/lib/utils';
 import type { Producto, Parametro } from '@/lib/supabase/types';
@@ -419,20 +420,14 @@ export default function RegistroProductosClient() {
 
                         <div className="form-group">
                             <label htmlFor="producto" className="form-label">Producto *</label>
-                            <select
+                            <AutocompleteSelect
                                 id="producto"
-                                className="form-select"
+                                options={productos}
                                 value={formData.productoId}
-                                onChange={(e) => setFormData({ ...formData, productoId: e.target.value })}
+                                onChange={(value) => setFormData({ ...formData, productoId: value })}
+                                placeholder="Buscar producto..."
                                 required
-                            >
-                                <option value="">Seleccione un producto</option>
-                                {productos.map((producto) => (
-                                    <option key={producto.id} value={producto.id}>
-                                        {producto.nombre}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         </div>
                     </div>
 
