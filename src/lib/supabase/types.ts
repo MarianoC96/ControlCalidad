@@ -22,6 +22,7 @@ export type Database = {
                     updated_at: string;
                     roles: 'administrador' | 'trabajador';
                     two_factor_secret: string | null;
+                    is_deleted: boolean;
                 };
                 Insert: {
                     id?: number;
@@ -35,6 +36,7 @@ export type Database = {
                     updated_at?: string;
                     roles?: 'administrador' | 'trabajador';
                     two_factor_secret?: string | null;
+                    is_deleted?: boolean;
                 };
                 Update: {
                     id?: number;
@@ -48,6 +50,7 @@ export type Database = {
                     updated_at?: string;
                     roles?: 'administrador' | 'trabajador';
                     two_factor_secret?: string | null;
+                    is_deleted?: boolean;
                 };
             };
             productos: {
@@ -102,6 +105,9 @@ export type Database = {
                     rango_max: number | null;
                     unidad: string | null;
                     created_at: string;
+                    valor_texto: string | null;
+                    es_rango: boolean | null;
+                    rango_completo: string | null;
                 };
                 Insert: {
                     id?: number;

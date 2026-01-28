@@ -101,7 +101,10 @@ export function validateText(
     isValid: boolean;
     message: string;
 } {
-    const isValid = value.toLowerCase().trim() === expected.toLowerCase().trim();
+    const normalize = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+    const isValid = normalize(value) === normalize(expected);
     return {
         isValid,
         message: isValid

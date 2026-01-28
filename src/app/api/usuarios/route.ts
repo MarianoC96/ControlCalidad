@@ -57,6 +57,7 @@ export async function GET() {
         const { data, error } = await supabase
             .from('usuarios')
             .select('*')
+            .eq('is_deleted', false)
             .order('nombre_completo');
 
         if (error) throw error;
@@ -157,7 +158,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { id, nombre_completo, usuario, email, password, roles, activo } = body;
+        const { id, nombre_completo, usuario, email, password, roles, activo, is_deleted } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
@@ -169,6 +170,7 @@ export async function PUT(request: NextRequest) {
             email,
             roles,
             activo,
+            is_deleted,
         };
 
         if (password) {

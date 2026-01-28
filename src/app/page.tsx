@@ -59,7 +59,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="usuario" className="form-label">
-              Usuario
+              Usuario o Correo
             </label>
             <input
               type="text"
@@ -71,7 +71,7 @@ export default function LoginPage() {
               }
               required
               autoComplete="username"
-              placeholder="Ingrese su usuario"
+              placeholder="Ingrese su usuario o correo"
             />
           </div>
 

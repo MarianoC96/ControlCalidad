@@ -54,7 +54,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       adminOnly: false
     },
     {
-      href: '/registros',
+      href: '/historial',
       label: 'Historial',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
@@ -357,7 +357,6 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                     padding: 0 1.25rem; /* Más margen lateral */
                     display: flex;
                     flex-direction: column;
-                    gap: 0.75rem; /* Separación entre items */
                 }
 
                 .sidebar.collapsed .nav-list {
@@ -366,13 +365,15 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
 
                 .nav-item {
                     width: 100%;
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                    padding-bottom: 0.75rem;
+                    margin-bottom: 0.75rem;
                 }
 
-                /* Separador visual opcional entre grupos si se desea lógica futura */
-                .nav-item:nth-child(2) {
-                    margin-bottom: 1.5rem; /* Separar Historial de Productos */
-                    border-bottom: 1px solid rgba(255,255,255,0.05);
-                    padding-bottom: 1.5rem;
+                .nav-item:last-child {
+                    border-bottom: none;
+                    padding-bottom: 0;
+                    margin-bottom: 0;
                 }
 
                 .nav-link {

@@ -150,45 +150,53 @@ export default function UsuariosClient() {
 
     const toggleActive = async (user: Usuario) => {
         try {
-            // Usar el endpoint PUT existente para actualizar
             const response = await fetch('/api/usuarios', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id: user.id,
-                    activo: !user.activo
-                    // No enviamos password ni otros datos para no sobreescribir/borrar nada accidentalmente
-                    // La API debe manejar partial updates o tendrás que enviar todo el objeto user actualizado.
-                    // Revisando la API: PUT espera todos los campos o destructura del body. 
-                    // Si la API hace update parcial con lo que recibe, bien. Si reemplaza, cuidado.
-                    // La API actual hace: const { id, nombre_completo... } = body.
-                    // Y luego updateData = { nombre_completo... }.
-                    // Si envío undefined en nombre_completo, Supabase podría guardarlo como null o la API fallar si no hay validación.
-                    // Mejor enviamos todos los datos actuales del user + el cambio.
-
-                    // REVISIÓN RÁPIDA DE LA API:
-                    // La API extrae campos específicos: nombre_completo, usuario, email, roles, activo.
-                    // Si no los envío, serán undefined.
-                    // updateData = { nombre_completo: undefined... } -> Supabase update ignorará undefined?
-                    // Generalmente JS client ignora undefined, pero mejor ser explícito para seguridad.
-
-                    /* Envío full data del usuario + cambio */
-                    , nombre_completo: user.nombre_completo
-                    , usuario: user.usuario
-                    , email: user.email
-                    , roles: user.roles
-                    /* Password no se envía, la API solo lo actualiza si viene con valor */
+                    activo: !user.activo,
+                    nombre_completo: user.nombre_completo,
+                    usuario: user.usuario,
+                    email: user.email,
+                    roles: user.roles
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error('Error al actualizar estado');
-            }
-
+            if (!response.ok) throw new Error('Error al actualizar estado');
             loadUsuarios();
         } catch (err) {
             console.error('Error toggling active:', err);
             alert('No se pudo cambiar el estado del usuario');
+        }
+    };
+
+    const handleDelete = async (user: Usuario) => {
+        if (!confirm('¿Estás seguro de que deseas eliminar este usuario?')) return;
+
+        try {
+            const response = await fetch('/api/usuarios', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: user.id,
+                    is_deleted: true,
+                    // Send other required fields just in case validation needs them, 
+                    // though usually partial updates should be fine if logic allows.
+                    // Based on my previous PUT logic, it updates distinct fields.
+                    nombre_completo: user.nombre_completo,
+                    usuario: user.usuario,
+                    email: user.email,
+                    roles: user.roles,
+                    activo: user.activo
+                }),
+            });
+
+            if (!response.ok) throw new Error('Error al eliminar usuario');
+            loadUsuarios();
+        } catch (err) {
+            console.error('Error deleting user:', err);
+            alert('No se pudo eliminar el usuario');
         }
     };
 
@@ -228,13 +236,13 @@ export default function UsuariosClient() {
                     <table className="table">
                         <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Usuario</th>
-                                <th>Email</th>
-                                <th>Rol</th>
-                                <th>Estado</th>
-                                <th>2FA</th>
-                                <th>Acciones</th>
+                                <th style={{ width: '20%' }}>Nombre</th>
+                                <th style={{ width: '15%' }}>Usuario</th>
+                                <th style={{ width: '25%' }}>Email</th>
+                                <th style={{ width: '10%' }}>Rol</th>
+                                <th style={{ width: '10%' }}>Estado</th>
+                                <th style={{ width: '5%' }}>2FA</th>
+                                <th style={{ width: '1%', whiteSpace: 'nowrap' }}>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -262,18 +270,30 @@ export default function UsuariosClient() {
                                     </td>
                                     <td>
                                         <div className="btn-group">
-                                            <button
-                                                className="btn btn-primary btn-sm"
-                                                onClick={() => openEditModal(user)}
-                                            >
-                                                Editar
-                                            </button>
-                                            <button
-                                                className={`btn btn-sm ${user.activo ? 'btn-warning' : 'btn-success'}`}
-                                                onClick={() => toggleActive(user)}
-                                            >
-                                                {user.activo ? 'Desactivar' : 'Activar'}
-                                            </button>
+                                            {user.usuario === 'admin' ? (
+                                                <span className="badge badge-secondary" style={{ padding: '0.5rem' }}>Sistema</span>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        className="btn btn-primary btn-sm"
+                                                        onClick={() => openEditModal(user)}
+                                                    >
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        className={`btn btn-sm ${user.activo ? 'btn-warning' : 'btn-success'}`}
+                                                        onClick={() => toggleActive(user)}
+                                                    >
+                                                        {user.activo ? 'Desactivar' : 'Activar'}
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-danger btn-sm"
+                                                        onClick={() => handleDelete(user)}
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

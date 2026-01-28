@@ -25,6 +25,8 @@ export async function GET() {
             .from('usuarios')
             .select('id, nombre_completo, usuario, email, roles, activo')
             .eq('id', parseInt(userId))
+            .eq('activo', true)
+            .eq('is_deleted', false)
             .single();
 
         if (error || !user) {

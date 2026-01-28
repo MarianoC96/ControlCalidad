@@ -78,6 +78,7 @@ export async function POST(request: Request) {
                 producto_nombre,
                 observaciones_generales,
                 verificado_por,
+                usuario_nombre: verificado_por, // Required by DB
                 usuario_id: parseInt(userId) // Asociar con el usuario logueado
             })
             .select()

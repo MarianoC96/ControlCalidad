@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
             // Search by username OR email
             .or(`usuario.eq.${usuario},email.eq.${usuario}`)
             .eq('activo', true)
+            .eq('is_deleted', false)
             .single();
 
         if (error || !user) {

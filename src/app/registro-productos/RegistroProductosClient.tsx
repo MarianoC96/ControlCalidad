@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase/client';
 import { getCurrentDate, formatRange, validateRange, validateText } from '@/lib/utils';
@@ -18,6 +19,7 @@ interface ControlValue {
 }
 
 export default function RegistroProductosClient() {
+    const router = useRouter();
     const supabase = createClient();
 
     const [formData, setFormData] = useState({
@@ -45,6 +47,7 @@ export default function RegistroProductosClient() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [userName, setUserName] = useState('');
+    const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
 
     const [loadingParametros, setLoadingParametros] = useState(false);
 
@@ -60,6 +63,7 @@ export default function RegistroProductosClient() {
         if (response.ok) {
             const data = await response.json();
             setUserName(data.nombre_completo || data.usuario);
+            setUserRole(data.roles);
         }
     };
 
@@ -101,9 +105,11 @@ export default function RegistroProductosClient() {
             // Initialize control values
             const initialControles: ControlValue[] = data.map((param: Parametro) => ({
                 parametroNombre: param.nombre,
-                rangoCompleto: param.tipo === 'rango'
-                    ? formatRange(param.rango_min, param.rango_max, param.unidad)
-                    : param.valor || '',
+                rangoCompleto: param.rango_completo
+                    ? param.rango_completo
+                    : (param.tipo === 'rango'
+                        ? formatRange(param.rango_min, param.rango_max, param.unidad)
+                        : param.valor_texto || param.valor || ''),
                 valorControl: null,
                 textoControl: null,
                 parametroTipo: param.tipo,
@@ -136,7 +142,8 @@ export default function RegistroProductosClient() {
                 control.valorControl = isNaN(numValue) ? null : numValue;
 
                 // Validate range
-                if (parametro.tipo === 'rango' && parametro.rango_min !== null && parametro.rango_max !== null) {
+                const isRango = parametro.tipo === 'rango' || parametro.es_rango;
+                if (isRango && parametro.rango_min !== null && parametro.rango_max !== null) {
                     const validation = validateRange(numValue, parametro.rango_min, parametro.rango_max);
                     control.fueraDeRango = !validation.isValid;
                     control.mensajeAlerta = validation.message;
@@ -145,8 +152,11 @@ export default function RegistroProductosClient() {
                 control.textoControl = value;
 
                 // Validate text match
-                if (parametro.tipo === 'texto' && parametro.valor) {
-                    const validation = validateText(value, parametro.valor);
+                const isRango = parametro.tipo === 'rango' || parametro.es_rango;
+                const targetText = parametro.valor_texto || parametro.valor;
+
+                if (!isRango && parametro.tipo === 'texto' && targetText) {
+                    const validation = validateText(value, targetText);
                     control.fueraDeRango = !validation.isValid;
                     control.mensajeAlerta = validation.message;
                 }
@@ -336,6 +346,10 @@ export default function RegistroProductosClient() {
             setControles([]);
             setFotos([]);
 
+            setTimeout(() => {
+                router.push('/');
+            }, 2000);
+
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al guardar');
         } finally {
@@ -346,7 +360,7 @@ export default function RegistroProductosClient() {
     if (loading) {
         return (
             <>
-                <Navbar userName={userName} userRole="trabajador" />
+                <Navbar userName={userName} userRole={userRole} />
                 <div className="container mt-4">
                     <div className="text-center">
                         <div className="spinner"></div>
@@ -359,7 +373,7 @@ export default function RegistroProductosClient() {
 
     return (
         <>
-            <Navbar userName={userName} userRole="trabajador" />
+            <Navbar userName={userName} userRole={userRole} />
 
             <div className="container mt-4">
                 <h2 className="text-center mb-4">Registro de Producto</h2>
@@ -457,29 +471,31 @@ export default function RegistroProductosClient() {
                                                 <tr key={param.id}>
                                                     <td>
                                                         <span className="fw-bold d-block">{param.nombre}</span>
-                                                        <small className="text-muted">{param.tipo.toUpperCase()}</small>
                                                     </td>
                                                     <td>
-                                                        <span className="badge bg-light text-dark border">
-                                                            {param.tipo === 'rango'
-                                                                ? formatRange(param.rango_min, param.rango_max, param.unidad)
-                                                                : param.valor}
+                                                        <span className="badge bg-primary text-white">
+                                                            {param.rango_completo
+                                                                ? param.rango_completo
+                                                                : (param.tipo === 'rango'
+                                                                    ? formatRange(param.rango_min, param.rango_max, param.unidad)
+                                                                    : param.valor_texto || param.valor)}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        {param.tipo === 'rango' || param.tipo === 'numero' ? (
+                                                        {param.tipo === 'rango' || param.tipo === 'numero' || param.es_rango ? (
                                                             <input
                                                                 type="number"
                                                                 step="0.01"
-                                                                className={`form-control control-input ${controles[index]?.fueraDeRango ? 'is-invalid' : 'is-valid-custom'}`}
+                                                                className={`form-control control-input ${controles[index]?.fueraDeRango ? 'is-invalid is-invalid-custom' : 'is-valid-custom'}`}
                                                                 value={controles[index]?.valorControl ?? ''}
                                                                 onChange={(e) => handleControlChange(index, 'valor', e.target.value)}
+                                                                onWheel={(e) => e.currentTarget.blur()}
                                                                 placeholder="Ingrese valor..."
                                                             />
                                                         ) : (
                                                             <input
                                                                 type="text"
-                                                                className={`form-control control-input ${controles[index]?.fueraDeRango ? 'is-invalid' : ''}`}
+                                                                className={`form-control control-input ${controles[index]?.fueraDeRango ? 'is-invalid is-invalid-custom' : ''}`}
                                                                 value={controles[index]?.textoControl ?? ''}
                                                                 onChange={(e) => handleControlChange(index, 'texto', e.target.value)}
                                                                 placeholder="Ingrese resultado..."
@@ -584,16 +600,17 @@ export default function RegistroProductosClient() {
                                 </div>
                             ))}
 
-                            {/* Hidden Input for Native Mobile Camera */}
-                            <input
-                                ref={nativeCameraInputRef}
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                className="d-none"
-                                onChange={handleNativeCameraCapture}
-                            />
                         </div>
+
+                        {/* Hidden Input for Native Mobile Camera */}
+                        <input
+                            ref={nativeCameraInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            style={{ display: 'none' }}
+                            onChange={handleNativeCameraCapture}
+                        />
                     </div>
 
                     {error && <div className="alert alert-danger mt-3">{error}</div>}
@@ -861,7 +878,11 @@ export default function RegistroProductosClient() {
         /* Validations */
         .is-valid-custom {
             border-color: #198754;
-            background-image: url("data:image/svg+xml,..."); /* Optional: add checkmark icon */
+        }
+        
+        .is-invalid-custom {
+            background-color: #fee2e2 !important; /* Red background */
+            color: #b91c1c !important; /* Dark red text for contrast */
         }
       `}</style>
         </>
