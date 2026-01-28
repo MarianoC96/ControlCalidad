@@ -23,25 +23,10 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
   // Ajustar el margen del contenido principal según el estado del sidebar
   useEffect(() => {
     const root = document.documentElement;
-    const sidebarWidth = isCollapsed ? '72px' : '260px'; // Variables CSS
-
-    // En móvil no empujamos el contenido, el sidebar es un overlay
+    // Solo actualizamos la variable si estamos en desktop para controlar el colapso
     if (window.innerWidth > 992) {
-      root.style.setProperty('--sidebar-width', sidebarWidth);
-    } else {
-      root.style.setProperty('--sidebar-width', '0px');
+      root.style.setProperty('--sidebar-width', isCollapsed ? '72px' : '260px');
     }
-
-    const handleResize = () => {
-      if (window.innerWidth > 992) {
-        root.style.setProperty('--sidebar-width', isCollapsed ? '72px' : '260px');
-      } else {
-        root.style.setProperty('--sidebar-width', '0px');
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, [isCollapsed]);
 
   const navLinks = [
@@ -113,7 +98,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       {/* Mobile Header Toggle */}
       <div className="mobile-header">
         <Link href="/registro-productos" className="mobile-brand">Control Calidad</Link>
-        <button className="mobile-toggle" onClick={toggleMobile}>
+        <button className="mobile-toggle" onClick={toggleMobile} aria-label="Abrir menú">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
       </div>
@@ -137,7 +122,8 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
         </div>
 
         {/* Collapser (Desktop Only) */}
-        <button className="collapse-btn" onClick={toggleSidebar} title={isCollapsed ? "Expandir" : "Colapsar"}>
+        {/* Collapser (Desktop Only) */}
+        <button className="collapse-btn" onClick={toggleSidebar} title={isCollapsed ? "Expandir" : "Colapsar"} aria-label={isCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {isCollapsed ? (
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -186,7 +172,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                 )}
               </Link>
 
-              <button className="logout-btn" onClick={handleDefaultLogout} title="Cerrar Sesión">
+              <button className="logout-btn" onClick={handleDefaultLogout} title="Cerrar Sesión" aria-label="Cerrar sesión">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
               </button>
             </div>
@@ -204,10 +190,12 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                 }
 
                 @media (min-width: 993px) {
+                    :root {
+                        --sidebar-width: 260px; /* Default Desktop Width */
+                    }
                     body {
                         padding-left: var(--sidebar-width);
-                        transition: padding-left 0.3s ease;
-                        padding-top: 0 !important; /* Override previous navbar padding */
+                        padding-top: 0 !important;
                     }
                 }
             `}</style>

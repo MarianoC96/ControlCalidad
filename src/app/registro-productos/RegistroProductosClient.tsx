@@ -375,7 +375,7 @@ export default function RegistroProductosClient() {
         <>
             <Navbar userName={userName} userRole={userRole} />
 
-            <div className="container mt-4">
+            <main className="container mt-4">
                 <h2 className="text-center mb-4">Registro de Producto</h2>
                 <p className="fecha text-center">{getCurrentDate()}</p>
 
@@ -437,8 +437,9 @@ export default function RegistroProductosClient() {
                     </div>
 
                     <div className="form-group mt-3">
-                        <label className="form-label">Verificado por *</label>
+                        <label htmlFor="verificado_por" className="form-label">Verificado por *</label>
                         <input
+                            id="verificado_por"
                             type="text"
                             className="form-control"
                             value={userName}
@@ -491,6 +492,7 @@ export default function RegistroProductosClient() {
                                                                 onChange={(e) => handleControlChange(index, 'valor', e.target.value)}
                                                                 onWheel={(e) => e.currentTarget.blur()}
                                                                 placeholder="Ingrese valor..."
+                                                                aria-label={`Valor para ${param.nombre}`}
                                                             />
                                                         ) : (
                                                             <input
@@ -499,6 +501,7 @@ export default function RegistroProductosClient() {
                                                                 value={controles[index]?.textoControl ?? ''}
                                                                 onChange={(e) => handleControlChange(index, 'texto', e.target.value)}
                                                                 placeholder="Ingrese resultado..."
+                                                                aria-label={`Resultado para ${param.nombre}`}
                                                             />
                                                         )}
                                                         {controles[index]?.fueraDeRango && (
@@ -514,6 +517,7 @@ export default function RegistroProductosClient() {
                                                             value={controles[index]?.observacion ?? ''}
                                                             onChange={(e) => handleControlChange(index, 'observacion', e.target.value)}
                                                             placeholder="Opcional"
+                                                            aria-label={`Observación para ${param.nombre}`}
                                                         />
                                                     </td>
                                                 </tr>
@@ -533,8 +537,9 @@ export default function RegistroProductosClient() {
                     )}
 
                     <div className="form-group mt-3">
-                        <label className="form-label">Observaciones Generales</label>
+                        <label htmlFor="observaciones" className="form-label">Observaciones Generales</label>
                         <textarea
+                            id="observaciones"
                             className="form-control"
                             rows={3}
                             value={formData.observacionesGenerales}
@@ -591,9 +596,9 @@ export default function RegistroProductosClient() {
                                                 <span>Galería</span>
                                             </label>
 
-                                            <button type="button" onClick={() => handleCameraRequest(index)} className="action-btn camera-btn">
+                                            <button type="button" onClick={() => handleCameraRequest(index)} className="action-btn camera-btn" aria-label="Tomar foto con cámara">
                                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                <span>Cámara</span>
+                                                <span className="text-dark">Cámara</span>
                                             </button>
                                         </div>
                                     )}
@@ -621,12 +626,13 @@ export default function RegistroProductosClient() {
                             type="submit"
                             className="btn btn-success btn-lg"
                             disabled={saving}
+                            aria-label="Guardar Registro"
                         >
                             {saving ? 'Guardando...' : 'Guardar Registro'}
                         </button>
                     </div>
                 </form>
-            </div>
+            </main>
 
             {/* Camera Modal */}
             {showCamera && (
@@ -655,7 +661,7 @@ export default function RegistroProductosClient() {
             <style jsx>{`
         .fecha {
           font-weight: bold;
-          color: #607d8b;
+          color: #455a64; /* Darkened from #607d8b for better contrast */
         }
 
         .form-grid {
@@ -797,13 +803,13 @@ export default function RegistroProductosClient() {
         }
 
         .camera-btn {
-            color: #0d9488;
-            border-color: #ccfbf1;
+            color: #0f766e; /* Darker teal */
+            border-color: #0d9488;
             background: #f0fdfa;
         }
         .camera-btn:hover {
             background: #e6fffa;
-            border-color: #99f6e4;
+            border-color: #0d9488;
         }
 
         /* Camera Modal Styles */

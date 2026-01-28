@@ -223,7 +223,7 @@ export default function UsuariosClient() {
         <>
             <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
 
-            <div className="container mt-4">
+            <main className="container mt-4">
                 <h2 className="text-center mb-4">Gestión de Usuarios</h2>
 
                 <div className="actions-bar">
@@ -301,86 +301,88 @@ export default function UsuariosClient() {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </main>
 
             {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
-                            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-                        </div>
-
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label">Nombre Completo *</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={formData.nombre_completo}
-                                    onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
-                                />
+            {
+                showModal && (
+                    <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
+                                <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
                             </div>
 
-                            <div className="form-group mt-3">
-                                <label className="form-label">Usuario *</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={formData.usuario}
-                                    onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
-                                />
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label className="form-label">Nombre Completo *</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={formData.nombre_completo}
+                                        onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="form-group mt-3">
+                                    <label className="form-label">Usuario *</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={formData.usuario}
+                                        onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="form-group mt-3">
+                                    <label className="form-label">Email</label>
+                                    <input
+                                        type="email"
+                                        className="form-control"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="form-group mt-3">
+                                    <label className="form-label">
+                                        Contraseña {editingUser ? '(dejar vacío para mantener)' : '*'}
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className="form-control"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="form-group mt-3">
+                                    <label className="form-label">Rol *</label>
+                                    <select
+                                        className="form-select"
+                                        value={formData.roles}
+                                        onChange={(e) => setFormData({ ...formData, roles: e.target.value as 'administrador' | 'trabajador' })}
+                                    >
+                                        <option value="trabajador">Trabajador</option>
+                                        <option value="administrador">Administrador</option>
+                                    </select>
+                                </div>
+
+                                {error && <div className="alert alert-danger mt-3">{error}</div>}
                             </div>
 
-                            <div className="form-group mt-3">
-                                <label className="form-label">Email</label>
-                                <input
-                                    type="email"
-                                    className="form-control"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                />
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                                    Cancelar
+                                </button>
+                                <button className="btn btn-success" onClick={handleSave} disabled={saving}>
+                                    {saving ? 'Guardando...' : 'Guardar'}
+                                </button>
                             </div>
-
-                            <div className="form-group mt-3">
-                                <label className="form-label">
-                                    Contraseña {editingUser ? '(dejar vacío para mantener)' : '*'}
-                                </label>
-                                <input
-                                    type="password"
-                                    className="form-control"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-group mt-3">
-                                <label className="form-label">Rol *</label>
-                                <select
-                                    className="form-select"
-                                    value={formData.roles}
-                                    onChange={(e) => setFormData({ ...formData, roles: e.target.value as 'administrador' | 'trabajador' })}
-                                >
-                                    <option value="trabajador">Trabajador</option>
-                                    <option value="administrador">Administrador</option>
-                                </select>
-                            </div>
-
-                            {error && <div className="alert alert-danger mt-3">{error}</div>}
-                        </div>
-
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                                Cancelar
-                            </button>
-                            <button className="btn btn-success" onClick={handleSave} disabled={saving}>
-                                {saving ? 'Guardando...' : 'Guardar'}
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <style jsx>{`
         .actions-bar {

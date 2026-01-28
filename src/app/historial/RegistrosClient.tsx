@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils';
 import type { Registro, Control, Foto } from '@/lib/supabase/types';
 
-import { generateRegistroPDF } from '@/lib/pdf-generator';
+
 
 interface RegistroWithDetails extends Registro {
     controles?: Control[];
@@ -114,6 +114,7 @@ export default function RegistrosClient() {
                 fotos
             };
 
+            const { generateRegistroPDF } = await import('@/lib/pdf-generator');
             generateRegistroPDF(registroCompleto);
         } catch (error) {
             console.error('Error generating PDF:', error);
@@ -249,7 +250,7 @@ export default function RegistrosClient() {
         <>
             <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
 
-            <div className="container mt-4">
+            <main className="container mt-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h2 className="mb-0 fw-bold text-dark">Historial de Registros</h2>
                 </div>
@@ -401,7 +402,7 @@ export default function RegistrosClient() {
 
                     </div>
                 </div>
-            </div>
+            </main>
 
             {/* Detail Modal */}
             {
