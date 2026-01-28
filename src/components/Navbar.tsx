@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface NavbarProps {
   userName?: string;
@@ -12,6 +13,7 @@ interface NavbarProps {
 
 export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -91,6 +93,21 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
 
+  const handleDefaultLogout = async () => {
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
   return (
     <>
       {/* Mobile Header Toggle */}
@@ -169,11 +186,9 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                 )}
               </Link>
 
-              {!isCollapsed && (
-                <button className="logout-btn" onClick={onLogout} title="Cerrar Sesión">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                </button>
-              )}
+              <button className="logout-btn" onClick={handleDefaultLogout} title="Cerrar Sesión">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              </button>
             </div>
           </div>
         )}
@@ -471,8 +486,10 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
 
                 .sidebar.collapsed .user-profile-container {
                     background: transparent;
-                    padding: 0;
+                    padding: 0.5rem 0;
                     justify-content: center;
+                    flex-direction: column;
+                    gap: 0.75rem;
                 }
 
                 .avatar {

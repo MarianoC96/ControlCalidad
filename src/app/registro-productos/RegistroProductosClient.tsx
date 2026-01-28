@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase/client';
 import { getCurrentDate, formatRange, validateRange, validateText } from '@/lib/utils';
@@ -32,6 +32,14 @@ export default function RegistroProductosClient() {
     const [parametros, setParametros] = useState<Parametro[]>([]);
     const [controles, setControles] = useState<ControlValue[]>([]);
     const [fotos, setFotos] = useState<File[]>([]);
+
+    // Camera State
+    const [showCamera, setShowCamera] = useState(false);
+    const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [cameraError, setCameraError] = useState('');
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -158,6 +166,78 @@ export default function RegistroProductosClient() {
                 updated[index] = file;
                 return updated;
             });
+        }
+    };
+
+    // Camera Functions
+    const startCamera = async (index: number) => {
+        setCameraError('');
+        setActivePhotoIndex(index);
+        setShowCamera(true);
+    };
+
+    useEffect(() => {
+        let stream: MediaStream | null = null;
+
+        const initCamera = async () => {
+            if (showCamera && videoRef.current) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' } // Prefer back camera on mobile
+                    });
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                    }
+                } catch (err) {
+                    console.error("Camera access error:", err);
+                    setCameraError('No se pudo acceder a la cámara. Verifique los permisos.');
+                }
+            }
+        };
+
+        if (showCamera) {
+            initCamera();
+        }
+
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [showCamera]);
+
+    const stopCamera = () => {
+        setShowCamera(false);
+        setActivePhotoIndex(null);
+    };
+
+    const capturePhoto = () => {
+        if (videoRef.current && canvasRef.current && activePhotoIndex !== null) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            const context = canvas.getContext('2d');
+
+            if (context) {
+                // Set canvas dimensions to match video
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Draw
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert to file
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const file = new File([blob], `captura-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                        setFotos((prev) => {
+                            const updated = [...prev];
+                            updated[activePhotoIndex] = file;
+                            return updated;
+                        });
+                        stopCamera();
+                    }
+                }, 'image/jpeg', 0.8);
+            }
         }
     };
 
@@ -434,7 +514,6 @@ export default function RegistroProductosClient() {
                                         accept="image/*"
                                         className="d-none"
                                         onChange={(e) => handleFileChange(e, index)}
-                                        capture="environment" // Sugiere cámara trasera en móviles, pero permite galería
                                     />
 
                                     {fotos[index] ? (
@@ -449,38 +528,29 @@ export default function RegistroProductosClient() {
                                                 className="btn-remove-photo"
                                                 onClick={() => {
                                                     setFotos(prev => {
-                                                        const newFotos = [...prev];
-                                                        newFotos[index] = undefined as any; // Trick to clear
-                                                        return newFotos.filter(f => f); // Compact array or keep logic consistent?
-                                                        // Better to keep index positions or just remove?
-                                                        // Current logic uses simple array push. Let's filter out to remove.
-                                                        // Actually, handleFileChange uses index. We need to reset specific index.
-                                                    });
-                                                    // Reset input value to allow re-selecting same file
-                                                    const input = document.getElementById(`foto-${index}`) as HTMLInputElement;
-                                                    if (input) input.value = '';
-
-                                                    // Fix state update correctly
-                                                    setFotos(prev => {
                                                         const updated = [...prev];
-                                                        // We can't easily turn array [file, file] into [file, empty].
-                                                        // But simplistic approach: remove from array.
-                                                        updated.splice(index, 1);
+                                                        updated[index] = undefined as any;
                                                         return updated;
                                                     });
+                                                    const input = document.getElementById(`foto-${index}`) as HTMLInputElement;
+                                                    if (input) input.value = '';
                                                 }}
                                             >
                                                 ×
                                             </button>
                                         </div>
                                     ) : (
-                                        <label htmlFor={`foto-${index}`} className="photo-upload-btn">
-                                            <div className="icon-circle">
-                                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
-                                            </div>
-                                            <span className="mt-2">Foto {index + 1}</span>
-                                            <span className="small text-muted">Cámara o Galería</span>
-                                        </label>
+                                        <div className="photo-actions">
+                                            <label htmlFor={`foto-${index}`} className="action-btn gallery-btn">
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                <span>Galería</span>
+                                            </label>
+
+                                            <button type="button" onClick={() => startCamera(index)} className="action-btn camera-btn">
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                                <span>Cámara</span>
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             ))}
@@ -501,6 +571,30 @@ export default function RegistroProductosClient() {
                     </div>
                 </form>
             </div>
+
+            {/* Camera Modal */}
+            {showCamera && (
+                <div className="camera-modal">
+                    <div className="camera-content">
+                        <div className="camera-header">
+                            <h5>Tomar Foto</h5>
+                            <button type="button" className="btn-close-camera" onClick={stopCamera}>×</button>
+                        </div>
+                        <div className="video-container">
+                            {!cameraError ? (
+                                <video ref={videoRef} autoPlay playsInline muted className="camera-video"></video>
+                            ) : (
+                                <div className="camera-error-msg">{cameraError}</div>
+                            )}
+                            <canvas ref={canvasRef} className="d-none"></canvas>
+                        </div>
+                        <div className="camera-footer">
+                            <button type="button" className="btn btn-secondary me-2" onClick={stopCamera}>Cancelar</button>
+                            <button type="button" className="btn btn-primary" onClick={capturePhoto} disabled={!!cameraError}>Capturar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
         .fecha {
@@ -611,6 +705,118 @@ export default function RegistroProductosClient() {
           line-height: 1;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           z-index: 10;
+        }
+
+        /* New Styles for Action Buttons */
+        .photo-actions {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            padding: 0.5rem;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .action-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .action-btn:hover {
+            border-color: #94a3b8;
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .camera-btn {
+            color: #0d9488;
+            border-color: #ccfbf1;
+            background: #f0fdfa;
+        }
+        .camera-btn:hover {
+            background: #e6fffa;
+            border-color: #99f6e4;
+        }
+
+        /* Camera Modal Styles */
+        .camera-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .camera-content {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .camera-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .camera-header h5 { margin: 0; }
+
+        .btn-close-camera {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .video-container {
+            position: relative;
+            background: black;
+            aspect-ratio: 4/3;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .camera-error-msg {
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .camera-footer {
+            padding: 1rem;
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px solid #e2e8f0;
         }
 
         /* Validations */
