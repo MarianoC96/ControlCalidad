@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { getPdfConfig } from '@/lib/config-helper';
 
 // Helper Service Role Client
 const createAdminClient = () => {
@@ -67,6 +68,15 @@ export async function POST(request: Request) {
 
         const supabase = createAdminClient();
 
+        // Obtener configuración PDF actual para snapshot
+        let pdfConfig;
+        try {
+            pdfConfig = await getPdfConfig();
+        } catch (e) {
+            console.error('Error fetching PDF config for snapshot', e);
+            pdfConfig = { titulo: null, codigo: null, edicion: null, aprobado_por: null };
+        }
+
         // 1. Crear el Registro
         const { data: registro, error: regError } = await supabase
             .from('registros')
@@ -79,7 +89,12 @@ export async function POST(request: Request) {
                 observaciones_generales,
                 verificado_por,
                 usuario_nombre: verificado_por, // Required by DB
-                usuario_id: parseInt(userId) // Asociar con el usuario logueado
+                usuario_id: parseInt(userId), // Asociar con el usuario logueado
+                // Snapshot PDF Config
+                pdf_titulo: pdfConfig.titulo,
+                pdf_codigo: pdfConfig.codigo,
+                pdf_edicion: pdfConfig.edicion,
+                pdf_aprobado_por: pdfConfig.aprobado_por
             })
             .select()
             .single();

@@ -330,3 +330,23 @@ body {
     transform: rotate(360deg);
   }
 }
+
+/* Sidebar Global Layout (Moved from Navbar to prevent CLS) */
+:root {
+  --sidebar-width: 0px; 
+  --sidebar-bg: #1e293b;
+  --sidebar-text: #e2e8f0;
+  --primary-color: #10b981;
+}
+
+@media (min-width: 993px) {
+  :root {
+      --sidebar-width: 260px; /* Default Desktop Width */
+  }
+  
+  /* Apply padding only when sidebar is present */
+  body:has(.sidebar) {
+      padding-left: var(--sidebar-width);
+      padding-top: 0 !important;
+  }
+}

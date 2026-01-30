@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase/client';
+import { normalizeString } from '@/lib/utils';
 import type { Producto, ParametroMaestro, Parametro } from '@/lib/supabase/types';
 
 interface ParametroForm {
@@ -239,7 +240,7 @@ export default function ProductosClient() {
     };
 
     const filteredProducts = productos.filter((p) =>
-        p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+        normalizeString(p.nombre).includes(normalizeString(searchTerm))
     );
 
     if (loading) {

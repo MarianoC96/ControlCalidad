@@ -92,6 +92,13 @@ export function validateRange(
 }
 
 /**
+ * Normalize string (remove accents, lowercase)
+ */
+export function normalizeString(str: string): string {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+/**
  * Validate if text matches expected value (case insensitive)
  */
 export function validateText(
@@ -101,8 +108,7 @@ export function validateText(
     isValid: boolean;
     message: string;
 } {
-    const normalize = (str: string) =>
-        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const normalize = normalizeString;
 
     const isValid = normalize(value) === normalize(expected);
     return {

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase/client';
-import { formatDate } from '@/lib/utils';
+import { formatDate, normalizeString } from '@/lib/utils';
 import type { Registro, Control, Foto } from '@/lib/supabase/types';
 
 
@@ -20,6 +20,7 @@ export default function RegistrosClient() {
 
     const [registros, setRegistros] = useState<RegistroWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
+    const [globalPdfConfig, setGlobalPdfConfig] = useState<any>(null);
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
     const [selectedRegistro, setSelectedRegistro] = useState<RegistroWithDetails | null>(null);
@@ -47,6 +48,7 @@ export default function RegistrosClient() {
     useEffect(() => {
         checkAuth();
         loadRegistros();
+        loadGlobalPdfConfig();
     }, []);
 
     const checkAuth = async () => {
@@ -58,6 +60,18 @@ export default function RegistrosClient() {
         const user = await response.json();
         setUserName(user.nombre_completo);
         setUserRole(user.roles);
+    };
+
+    const loadGlobalPdfConfig = async () => {
+        try {
+            const res = await fetch('/api/config/pdf');
+            if (res.ok) {
+                const data = await res.json();
+                setGlobalPdfConfig(data);
+            }
+        } catch (err) {
+            console.error('Error loading pdf config', err);
+        }
     };
 
     const loadRegistros = async () => {
@@ -115,7 +129,7 @@ export default function RegistrosClient() {
             };
 
             const { generateRegistroPDF } = await import('@/lib/pdf-generator');
-            generateRegistroPDF(registroCompleto);
+            await generateRegistroPDF(registroCompleto);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Error al generar el PDF. Por favor intente nuevamente.');
@@ -198,11 +212,11 @@ export default function RegistrosClient() {
 
         // Apply Search (Debounced)
         if (debouncedSearch) {
-            const lowerSearch = debouncedSearch.toLowerCase();
+            const normalizedSearch = normalizeString(debouncedSearch);
             filtered = filtered.filter(r =>
-                r.lote_interno.toLowerCase().includes(lowerSearch) ||
-                r.producto_nombre.toLowerCase().includes(lowerSearch) ||
-                (r.verificado_por || r.usuario_nombre || '').toLowerCase().includes(lowerSearch)
+                normalizeString(r.lote_interno).includes(normalizedSearch) ||
+                normalizeString(r.producto_nombre).includes(normalizedSearch) ||
+                normalizeString(r.verificado_por || r.usuario_nombre || '').includes(normalizedSearch)
             );
         }
 
@@ -415,6 +429,124 @@ export default function RegistrosClient() {
                             </div>
 
                             <div className="modal-body">
+                                {/* Header PDF Snapshot/Preview */}
+                                {(() => {
+                                    const CUTOFF_DATE = new Date('2025-01-29T00:00:00');
+                                    const isNewFormat = selectedRegistro.pdf_codigo || new Date(selectedRegistro.fecha_registro) >= CUTOFF_DATE;
+
+                                    if (!isNewFormat) return null;
+
+                                    const headerToShow = {
+                                        titulo: selectedRegistro.pdf_titulo || globalPdfConfig?.titulo || 'REPORTE DE CONTROL DE CALIDAD',
+                                        codigo: selectedRegistro.pdf_codigo || globalPdfConfig?.codigo || 'PE C - CC001',
+                                        edicion: selectedRegistro.pdf_edicion || globalPdfConfig?.edicion || 'ED. 01',
+                                        aprobado_por: selectedRegistro.pdf_aprobado_por || globalPdfConfig?.aprobado_por || 'Aprob. J. Calidad'
+                                    };
+
+                                    return (
+                                        <div className="pdf-header-preview mb-4">
+                                            {/* Container with exact proportions 25/55/20 */}
+                                            <div style={{
+                                                border: '2px solid black',
+                                                height: '100px',
+                                                backgroundColor: 'white',
+                                                display: 'flex',
+                                                width: '100%',
+                                                overflow: 'hidden'
+                                            }}>
+                                                {/* Cell 1: LOGO (25%) */}
+                                                <div style={{
+                                                    width: '25%',
+                                                    borderRight: '1px solid black',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    padding: '5px'
+                                                }}>
+                                                    <img
+                                                        src="/logo.png"
+                                                        alt="Logo"
+                                                        style={{ maxHeight: '90%', maxWidth: '90%', objectFit: 'contain' }}
+                                                        onError={(e) => {
+                                                            (e.target as any).style.display = 'none';
+                                                            (e.target as any).nextElementSibling.style.display = 'block';
+                                                        }}
+                                                    />
+                                                    <span style={{ display: 'none', fontSize: '12px', color: '#999', fontWeight: 'bold' }}>LOGO</span>
+                                                </div>
+
+                                                {/* Cell 2: TITLE (55%) */}
+                                                <div style={{
+                                                    width: '55%',
+                                                    borderRight: '1px solid black',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    padding: '10px'
+                                                }}>
+                                                    <h5 className="mb-0 fw-bold text-center text-uppercase" style={{
+                                                        fontSize: '1.1rem',
+                                                        fontFamily: 'Helvetica, Arial, sans-serif',
+                                                        lineHeight: '1.2'
+                                                    }}>
+                                                        {headerToShow.titulo}
+                                                    </h5>
+                                                </div>
+
+                                                {/* Cell 3: DATA (20%) */}
+                                                <div style={{
+                                                    width: '20%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column'
+                                                }}>
+                                                    <div style={{
+                                                        flex: 1,
+                                                        borderBottom: '1px solid black',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 'bold',
+                                                        fontFamily: 'Helvetica, Arial, sans-serif'
+                                                    }}>
+                                                        {headerToShow.codigo}
+                                                    </div>
+                                                    <div style={{
+                                                        flex: 1,
+                                                        borderBottom: '1px solid black',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 'bold',
+                                                        fontFamily: 'Helvetica, Arial, sans-serif'
+                                                    }}>
+                                                        {headerToShow.edicion}
+                                                    </div>
+                                                    <div style={{
+                                                        flex: 1,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 'bold',
+                                                        fontFamily: 'Helvetica, Arial, sans-serif',
+                                                        textAlign: 'center',
+                                                        padding: '2px'
+                                                    }}>
+                                                        {headerToShow.aprobado_por}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-end mt-1">
+                                                <small className="text-muted" style={{ fontSize: '10px', fontStyle: 'italic' }}>
+                                                    {selectedRegistro.pdf_codigo ? '● Encabezado histórico de este registro' : '○ Encabezado actual (Vista previa)'}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
                                 <div className="detail-grid">
                                     <div className="detail-item">
                                         <strong>Lote Interno:</strong>
@@ -492,13 +624,19 @@ export default function RegistrosClient() {
                                         <h4>Fotos</h4>
                                         <div className="photos-grid">
                                             {selectedRegistro.fotos.map((foto) => (
-                                                <div key={foto.id} className="photo-item">
-                                                    <img
-                                                        src={foto.datos_base64}
-                                                        alt={foto.descripcion || `Foto ${foto.id}`}
-                                                        className="photo-preview"
-                                                    />
-                                                    {foto.descripcion && <span>{foto.descripcion}</span>}
+                                                <div key={foto.id} className="photo-card">
+                                                    <div className="photo-frame">
+                                                        <img
+                                                            src={foto.datos_base64}
+                                                            alt={foto.descripcion || `Evidencia ${foto.id}`}
+                                                            className="photo-img"
+                                                        />
+                                                    </div>
+                                                    {foto.descripcion && (
+                                                        <div className="photo-caption">
+                                                            {foto.descripcion}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -683,16 +821,46 @@ export default function RegistrosClient() {
         }
 
         .photos-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
         }
 
-        .photo-item {
-          background: #e9ecef;
-          padding: 0.5rem 1rem;
-          border-radius: 0.25rem;
-          font-size: 0.875rem;
+        .photo-card {
+          border: 1px solid #dee2e6;
+          border-radius: 0.5rem;
+          overflow: hidden;
+          background: white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          transition: transform 0.2s;
+        }
+        
+        .photo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .photo-frame {
+            height: 140px;
+            width: 100%;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .photo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-caption {
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            color: #495057;
+            background: white;
+            line-height: 1.4;
         }
 
         @media (max-width: 768px) {

@@ -16,33 +16,186 @@ interface RegistroForPDF {
     fecha_registro: string;
     controles?: Control[];
     fotos?: Foto[];
+    pdf_titulo?: string | null;
+    pdf_codigo?: string | null;
+    pdf_edicion?: string | null;
+    pdf_aprobado_por?: string | null;
+}
+
+// Default config if fetch fails (fallback)
+const DEFAULT_HEADER_CONFIG = {
+    titulo: "REPORTE DE CONTROL DE CALIDAD",
+    codigo: "PE C - CC001",
+    edicion: "ED. 01",
+    aprobado_por: "Aprob. J. Calidad"
+};
+
+/**
+ * Carga una imagen desde una URL y la devuelve como Base64
+ */
+async function loadImageToBase64(url: string): Promise<string | null> {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.error("Error loading logo:", e);
+        return null;
+    }
 }
 
 /**
  * Generates a PDF report for a quality control registro
- * Matches the original PHP PDF format
  */
-export function generateRegistroPDF(registro: RegistroForPDF): void {
+export async function generateRegistroPDF(registro: RegistroForPDF): Promise<void> {
+    // 1. Fetch Global Config (Current State)
+    let headerConfig = DEFAULT_HEADER_CONFIG;
+    try {
+        const res = await fetch('/api/config/pdf');
+        if (res.ok) {
+            headerConfig = await res.json();
+        }
+    } catch (err) {
+        console.error("Error fetching PDF Config, using default", err);
+    }
+
+    // 2. Determine Config to Use (Snapshot vs Global vs Legacy)
+    const CUTOFF_DATE = new Date('2025-01-29T00:00:00'); // Start of new design usage
+    let isNewFormat = false;
+
+    // A. Check for Snapshot (Highest Priority) - If record has saved historical config
+    if (registro.pdf_codigo) {
+        isNewFormat = true;
+        // Use the saved snapshot, fallback to current/default if some field missing (unlikely)
+        headerConfig = {
+            titulo: registro.pdf_titulo || headerConfig.titulo,
+            codigo: registro.pdf_codigo || headerConfig.codigo,
+            edicion: registro.pdf_edicion || headerConfig.edicion,
+            aprobado_por: registro.pdf_aprobado_por || headerConfig.aprobado_por
+        };
+    }
+    // B. Check Date Cutoff (Fallback for recent records without snapshot)
+    else if (new Date(registro.fecha_registro) >= CUTOFF_DATE) {
+        isNewFormat = true;
+        // Uses currently fetched global headerConfig
+    }
+    // C. Legacy
+    else {
+        isNewFormat = false;
+    }
+
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    let yPosition = 20;
 
-    // Header
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Reporte de Control de Calidad', pageWidth / 2, 20, { align: 'center' });
+    if (isNewFormat) {
+        // --- NUEVO DISEÑO (HEADER TIPO EXCEL) ---
+        const logoBase64 = await loadImageToBase64('/logo.png');
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-PE')}`, pageWidth / 2, 28, { align: 'center' });
+        // Dimensiones del Header
+        const hMargen = 14;
+        const hTop = 10;
+        const hHeight = 30;
+        const hWidth = pageWidth - (hMargen * 2);
 
-    // Horizontal line
-    doc.setLineWidth(0.5);
-    doc.line(14, 32, pageWidth - 14, 32);
+        // Coordenadas x de divisiones
+        // Ancho total ~182. 
+        // Col 1 (Logo): 25% (~45mm)
+        // Col 2 (Título): 55% (~100mm)
+        // Col 3 (Info): 20% (~37mm)
+        const col1W = 45;
+        const col3W = 40;
+        const col2W = hWidth - col1W - col3W;
+
+        const xCol1 = hMargen;
+        const xCol2 = hMargen + col1W;
+        const xCol3 = hMargen + col1W + col2W;
+
+        // Dibujar Estructura (Rectángulos y Líneas)
+        doc.setLineWidth(0.3);
+        doc.setDrawColor(0);
+
+        // Marco Exterior
+        doc.rect(xCol1, hTop, hWidth, hHeight);
+
+        // Líneas Verticales
+        doc.line(xCol2, hTop, xCol2, hTop + hHeight);
+        doc.line(xCol3, hTop, xCol3, hTop + hHeight);
+
+        // -- COLUMNA 1: LOGO --
+        if (logoBase64) {
+            // Ajustar imagen centrada
+            const imgMargin = 2;
+            doc.addImage(logoBase64, 'PNG', xCol1 + imgMargin, hTop + imgMargin, col1W - (imgMargin * 2), hHeight - (imgMargin * 2), undefined, 'FAST');
+        } else {
+            // Placeholder text if no logo found
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'italic');
+            doc.text("[Logo Aquí]", xCol1 + col1W / 2, hTop + hHeight / 2, { align: 'center' });
+            doc.setFontSize(8);
+            doc.text("/public/logo.png", xCol1 + col1W / 2, hTop + hHeight / 2 + 5, { align: 'center' });
+        }
+
+        // -- COLUMNA 2: TÍTULO --
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        // Centrado vertical y horizontal en su celda
+        const titleRef = headerConfig.titulo;
+        // Split text if too long
+        const titleLines = doc.splitTextToSize(titleRef, col2W - 4);
+        doc.text(titleLines, xCol2 + col2W / 2, hTop + hHeight / 2, { align: 'center', baseline: 'middle' });
+
+        // -- COLUMNA 3: DATOS --
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        const paddingText = 3;
+
+        // Dividir altura en 3 partes
+        const rowH = hHeight / 3;
+
+        // Fila 1: Código
+        const yRow1 = hTop + (rowH / 2) + 2;
+        doc.text(headerConfig.codigo, xCol3 + col3W / 2, yRow1, { align: 'center' });
+        doc.line(xCol3, hTop + rowH, xCol3 + col3W, hTop + rowH); // Línea horizontal separadora
+
+        // Fila 2: Edición
+        const yRow2 = hTop + rowH + (rowH / 2) + 2;
+        doc.text(headerConfig.edicion, xCol3 + col3W / 2, yRow2, { align: 'center' });
+        doc.line(xCol3, hTop + (rowH * 2), xCol3 + col3W, hTop + (rowH * 2)); // Línea horizontal separadora
+
+        // Fila 3: Aprobación
+        const yRow3 = hTop + (rowH * 2) + (rowH / 2) + 2;
+        doc.text(headerConfig.aprobado_por, xCol3 + col3W / 2, yRow3, { align: 'center' });
+
+        yPosition = hTop + hHeight + 10; // Update Y for next section
+
+    } else {
+        // --- DISEÑO ANTIGUO (Original) ---
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Reporte de Control de Calidad', pageWidth / 2, 20, { align: 'center' });
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-PE')}`, pageWidth / 2, 28, { align: 'center' });
+
+        doc.setLineWidth(0.5);
+        doc.line(14, 32, pageWidth - 14, 32);
+
+        yPosition = 42;
+    }
+
+    // --- CONTINUACIÓN DEL REPORTE (Común) ---
 
     // Registro details section
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Información del Registro', 14, 42);
+    doc.text('Información del Registro', 14, yPosition);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -53,10 +206,10 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
         ['Producto:', registro.producto_nombre],
         ['Cantidad:', registro.cantidad?.toString() || 'N/A'],
         ['Verificado por:', registro.verificado_por || 'N/A'],
-        ['Fecha:', new Date(registro.fecha_registro).toLocaleDateString('es-PE')],
+        ['Fecha Registro:', new Date(registro.fecha_registro).toLocaleDateString('es-PE')],
     ];
 
-    let yPosition = 50;
+    yPosition += 8;
     details.forEach(([label, value]) => {
         doc.setFont('helvetica', 'bold');
         doc.text(label, 14, yPosition);
@@ -69,7 +222,7 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
     if (registro.observaciones_generales) {
         yPosition += 5;
         doc.setFont('helvetica', 'bold');
-        doc.text('Observaciones:', 14, yPosition);
+        doc.text('Evaluación / Conclusión:', 14, yPosition);
         doc.setFont('helvetica', 'normal');
         yPosition += 7;
 
@@ -80,10 +233,10 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
 
     // Controls table
     if (registro.controles && registro.controles.length > 0) {
-        yPosition += 10;
+        yPosition += 5;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
-        doc.text('Controles de Calidad', 14, yPosition);
+        doc.text('Resultados del Control', 14, yPosition);
 
         const tableData = registro.controles.map((control) => [
             control.parametro_nombre,
@@ -103,9 +256,7 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
                 textColor: 255,
                 fontStyle: 'bold',
             },
-            alternateRowStyles: {
-                fillColor: [245, 247, 250],
-            },
+            alternateRowStyles: { fillColor: [245, 247, 250] },
             columnStyles: {
                 0: { cellWidth: 40 },
                 1: { cellWidth: 35 },
@@ -113,12 +264,8 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
                 3: { cellWidth: 20 },
                 4: { cellWidth: 'auto' },
             },
-            styles: {
-                fontSize: 9,
-                cellPadding: 3,
-            },
+            styles: { fontSize: 9, cellPadding: 3 },
             didParseCell: (data) => {
-                // Highlight out-of-range values
                 if (data.column.index === 3 && data.cell.text[0] === 'FUERA') {
                     data.cell.styles.textColor = [220, 53, 69];
                     data.cell.styles.fontStyle = 'bold';
@@ -127,9 +274,8 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
         });
     }
 
-    // Photos section (if any)
+    // Photos section
     if (registro.fotos && registro.fotos.length > 0) {
-        // Get final Y position from autoTable
         const autoTableResult = doc as jsPDF & { lastAutoTable?: { finalY: number } };
         const finalY = autoTableResult.lastAutoTable?.finalY || yPosition;
 
@@ -142,7 +288,8 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
-        doc.text('Fotos', 14, yPosition);
+        doc.setTextColor(0);
+        doc.text('Evidencia Fotográfica', 14, yPosition);
         yPosition += 10;
 
         let xPosition = 14;
@@ -152,20 +299,25 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
         registro.fotos.forEach((foto, index) => {
             if (foto.datos_base64) {
                 try {
-                    // Check if we need a new row
+                    // Start new row if current row full
                     if (xPosition + imageWidth > pageWidth - 14) {
                         xPosition = 14;
                         yPosition += imageHeight + 15;
                     }
 
-                    // Check if we need a new page
+                    // Start new page if current page full
                     if (yPosition + imageHeight > doc.internal.pageSize.getHeight() - 20) {
                         doc.addPage();
                         yPosition = 20;
                         xPosition = 14;
                     }
 
-                    doc.addImage(foto.datos_base64, 'JPEG', xPosition, yPosition, imageWidth, imageHeight);
+                    // Format detection
+                    let format = 'JPEG';
+                    if (foto.datos_base64.startsWith('data:image/png')) format = 'PNG';
+                    else if (foto.datos_base64.startsWith('data:image/webp')) format = 'WEBP';
+
+                    doc.addImage(foto.datos_base64, format, xPosition, yPosition, imageWidth, imageHeight);
 
                     if (foto.descripcion) {
                         doc.setFontSize(8);
@@ -176,26 +328,33 @@ export function generateRegistroPDF(registro: RegistroForPDF): void {
                     xPosition += imageWidth + 10;
                 } catch (err) {
                     console.error(`Error adding photo ${index + 1}:`, err);
+                    doc.setDrawColor(200);
+                    doc.setFillColor(245, 245, 245);
+                    doc.rect(xPosition, yPosition, imageWidth, imageHeight, 'FD');
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.text('Error al cargar imagen', xPosition + 5, yPosition + imageHeight / 2);
+                    doc.setTextColor(0);
+                    xPosition += imageWidth + 10;
                 }
             }
         });
     }
 
     // Footer with page numbers
-    const totalPages = doc.internal.pages.length - 1; // pages array has empty first element
+    const totalPages = doc.internal.pages.length - 1;
     for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.text(
-            `Página ${i} de ${totalPages}`,
+            `Página ${i} de ${totalPages} - Generado el ${new Date().toLocaleDateString('es-PE')}`,
             pageWidth / 2,
             doc.internal.pageSize.getHeight() - 10,
             { align: 'center' }
         );
     }
 
-    // Save the PDF
-    const fileName = `registro_${registro.lote_interno}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `QC_${registro.lote_interno}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
 }

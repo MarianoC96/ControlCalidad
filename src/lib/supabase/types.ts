@@ -147,6 +147,10 @@ export type Database = {
                     observaciones_generales: string | null;
                     verificado_por: string | null;
                     fecha_registro: string;
+                    pdf_titulo: string | null;
+                    pdf_codigo: string | null;
+                    pdf_edicion: string | null;
+                    pdf_aprobado_por: string | null;
                 };
                 Insert: {
                     id?: number;
@@ -160,6 +164,10 @@ export type Database = {
                     observaciones_generales?: string | null;
                     verificado_por?: string | null;
                     fecha_registro?: string;
+                    pdf_titulo?: string | null;
+                    pdf_codigo?: string | null;
+                    pdf_edicion?: string | null;
+                    pdf_aprobado_por?: string | null;
                 };
                 Update: {
                     id?: number;
@@ -173,6 +181,10 @@ export type Database = {
                     observaciones_generales?: string | null;
                     verificado_por?: string | null;
                     fecha_registro?: string;
+                    pdf_titulo?: string | null;
+                    pdf_codigo?: string | null;
+                    pdf_edicion?: string | null;
+                    pdf_aprobado_por?: string | null;
                 };
             };
             controles: {

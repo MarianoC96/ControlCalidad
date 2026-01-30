@@ -34,7 +34,8 @@ export default function RegistroProductosClient() {
     const [productos, setProductos] = useState<Producto[]>([]);
     const [parametros, setParametros] = useState<Parametro[]>([]);
     const [controles, setControles] = useState<ControlValue[]>([]);
-    const [fotos, setFotos] = useState<File[]>([]);
+    // Stores both file and its base64 preview for immediate feedback and upload
+    const [fotos, setFotos] = useState<({ file: File; preview: string } | null)[]>([null, null]);
 
     // Camera State
     const [showCamera, setShowCamera] = useState(false);
@@ -177,25 +178,71 @@ export default function RegistroProductosClient() {
         setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
     }, []);
 
+    // Helper to compress image
+    const compressImage = async (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress to JPEG 70%
+                };
+                img.onerror = (error) => reject(error);
+            };
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
+    const processFile = async (file: File, index: number) => {
+        try {
+            const preview = await compressImage(file);
+            setFotos((prev) => {
+                const updated = [...prev];
+                updated[index] = { file, preview };
+                return updated;
+            });
+        } catch (e) {
+            console.error("Error processing file:", e);
+            alert("Error al procesar la imagen. Intente con otra.");
+        }
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
         const file = e.target.files?.[0];
         if (file) {
-            setFotos((prev) => {
-                const updated = [...prev];
-                updated[index] = file;
-                return updated;
-            });
+            processFile(file, index);
         }
     };
 
     const handleNativeCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && activePhotoIndex !== null) {
-            setFotos((prev) => {
-                const updated = [...prev];
-                updated[activePhotoIndex] = file;
-                return updated;
-            });
+            processFile(file, activePhotoIndex);
+
             // Reset logic
             setActivePhotoIndex(null);
             if (nativeCameraInputRef.current) nativeCameraInputRef.current.value = '';
@@ -218,6 +265,7 @@ export default function RegistroProductosClient() {
 
     useEffect(() => {
         let stream: MediaStream | null = null;
+        let track: MediaStreamTrack | null = null;
 
         const initCamera = async () => {
             if (showCamera && videoRef.current) {
@@ -225,6 +273,7 @@ export default function RegistroProductosClient() {
                     stream = await navigator.mediaDevices.getUserMedia({
                         video: { facingMode: 'environment' } // Prefer back camera on mobile
                     });
+                    track = stream.getVideoTracks()[0];
                     if (videoRef.current) {
                         videoRef.current.srcObject = stream;
                     }
@@ -240,9 +289,8 @@ export default function RegistroProductosClient() {
         }
 
         return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+            if (track) track.stop();
+            if (stream) stream.getTracks().forEach(t => t.stop());
         };
     }, [showCamera]);
 
@@ -269,11 +317,7 @@ export default function RegistroProductosClient() {
                 canvas.toBlob((blob) => {
                     if (blob) {
                         const file = new File([blob], `captura-${Date.now()}.jpg`, { type: 'image/jpeg' });
-                        setFotos((prev) => {
-                            const updated = [...prev];
-                            updated[activePhotoIndex] = file;
-                            return updated;
-                        });
+                        processFile(file, activePhotoIndex);
                         stopCamera();
                     }
                 }, 'image/jpeg', 0.8);
@@ -321,16 +365,25 @@ export default function RegistroProductosClient() {
 
             // Upload photos if any
             for (let i = 0; i < fotos.length; i++) {
-                const foto = fotos[i];
-                if (foto) {
-                    const formDataUpload = new FormData();
-                    formDataUpload.append('file', foto);
-                    formDataUpload.append('registro_id', registro_id.toString());
+                const fotoObj = fotos[i];
+                if (fotoObj && fotoObj.preview) {
+                    try {
+                        const photoRes = await fetch('/api/fotos', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                registro_id: registro_id,
+                                datos_base64: fotoObj.preview,
+                                descripcion: `Foto ${i + 1}`
+                            }),
+                        });
 
-                    await fetch('/api/fotos', {
-                        method: 'POST',
-                        body: formDataUpload,
-                    });
+                        if (!photoRes.ok) {
+                            console.error(`Failed to upload photo ${i + 1}:`, await photoRes.text());
+                        }
+                    } catch (photoErr) {
+                        console.error(`Error uploading photo ${i + 1}:`, photoErr);
+                    }
                 }
             }
 
@@ -345,11 +398,12 @@ export default function RegistroProductosClient() {
                 observacionesGenerales: '',
             });
             setControles([]);
-            setFotos([]);
+            setFotos([null, null]);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            setTimeout(() => {
-                router.push('/');
-            }, 2000);
+            // Removing redirect to '/' to prevent "closing session" feeling. 
+            // User stays on page ready for next record.
+
 
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al guardar');
@@ -532,14 +586,14 @@ export default function RegistroProductosClient() {
                     )}
 
                     <div className="form-group mt-3">
-                        <label htmlFor="observaciones" className="form-label">Observaciones Generales</label>
+                        <label htmlFor="observaciones" className="form-label">Conclusión</label>
                         <textarea
                             id="observaciones"
                             className="form-control"
                             rows={3}
                             value={formData.observacionesGenerales}
                             onChange={(e) => setFormData({ ...formData, observacionesGenerales: e.target.value })}
-                            placeholder="Observaciones generales del registro..."
+                            placeholder="Conclusión general del registro..."
                         />
                     </div>
 
@@ -557,14 +611,14 @@ export default function RegistroProductosClient() {
                                         type="file"
                                         id={`foto-${index}`}
                                         accept="image/*"
-                                        className="d-none"
+                                        style={{ display: 'none' }}
                                         onChange={(e) => handleFileChange(e, index)}
                                     />
 
                                     {fotos[index] ? (
                                         <div className="photo-preview-container">
                                             <img
-                                                src={URL.createObjectURL(fotos[index])}
+                                                src={fotos[index]?.preview}
                                                 alt={`Evidencia ${index + 1}`}
                                                 className="photo-preview-img"
                                             />
@@ -574,7 +628,7 @@ export default function RegistroProductosClient() {
                                                 onClick={() => {
                                                     setFotos(prev => {
                                                         const updated = [...prev];
-                                                        updated[index] = undefined as any;
+                                                        updated[index] = null;
                                                         return updated;
                                                     });
                                                     const input = document.getElementById(`foto-${index}`) as HTMLInputElement;

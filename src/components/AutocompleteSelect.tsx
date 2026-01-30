@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { normalizeString } from '@/lib/utils';
 
 interface Option {
     id: number | string;
@@ -36,9 +37,9 @@ export default function AutocompleteSelect({
     // Find the selected option's name to display
     const selectedOption = options.find(opt => opt.id.toString() === value);
 
-    // Filter options based on search term
+    // Filter options based on search term (insensitive to case and accents)
     const filteredOptions = options.filter(opt =>
-        opt.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+        normalizeString(opt.nombre).includes(normalizeString(searchTerm))
     );
 
     // Handle click outside to close dropdown
