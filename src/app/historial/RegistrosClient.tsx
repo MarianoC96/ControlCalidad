@@ -25,6 +25,7 @@ export default function RegistrosClient() {
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
     const [selectedRegistro, setSelectedRegistro] = useState<RegistroWithDetails | null>(null);
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
+    const [zoomImage, setZoomImage] = useState<{ url: string, description?: string } | null>(null);
 
     // Filters
     // Filters
@@ -624,7 +625,12 @@ export default function RegistrosClient() {
                                         <h4>Fotos</h4>
                                         <div className="photos-grid">
                                             {selectedRegistro.fotos.map((foto) => (
-                                                <div key={foto.id} className="photo-card">
+                                                <div
+                                                    key={foto.id}
+                                                    className="photo-card"
+                                                    style={{ cursor: 'zoom-in' }}
+                                                    onClick={() => setZoomImage({ url: foto.datos_base64, description: foto.descripcion || '' })}
+                                                >
                                                     <div className="photo-frame">
                                                         <img
                                                             src={foto.datos_base64}
@@ -868,7 +874,87 @@ export default function RegistrosClient() {
             grid-template-columns: 1fr;
           }
         }
+
+        /* Lightbox CSS */
+        .zoom-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            cursor: zoom-out;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .zoom-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .zoom-img {
+            max-width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .zoom-caption {
+            color: white;
+            margin-top: 1.5rem;
+            background: rgba(0,0,0,0.5);
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .zoom-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            line-height: 1;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
       `}</style>
+
+            {/* Lightbox / Zoom Modal */}
+            {zoomImage && (
+                <div className="zoom-overlay" onClick={() => setZoomImage(null)}>
+                    <div className="zoom-content" onClick={e => e.stopPropagation()}>
+                        <button className="zoom-close" onClick={() => setZoomImage(null)}>&times;</button>
+                        <img src={zoomImage.url} alt="Zoom" className="zoom-img" />
+                        {zoomImage.description && (
+                            <div className="zoom-caption">{zoomImage.description}</div>
+                        )}
+                    </div>
+                </div>
+            )}
         </>
     );
 }

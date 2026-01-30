@@ -292,24 +292,17 @@ export async function generateRegistroPDF(registro: RegistroForPDF): Promise<voi
         doc.text('Evidencia Fotográfica', 14, yPosition);
         yPosition += 10;
 
-        let xPosition = 14;
-        const imageWidth = 80;
-        const imageHeight = 60;
+        const imageWidth = 150;
+        const imageHeight = 112;
+        let xPosition = (pageWidth - imageWidth) / 2; // Center horizontally
 
         registro.fotos.forEach((foto, index) => {
             if (foto.datos_base64) {
                 try {
-                    // Start new row if current row full
-                    if (xPosition + imageWidth > pageWidth - 14) {
-                        xPosition = 14;
-                        yPosition += imageHeight + 15;
-                    }
-
                     // Start new page if current page full
-                    if (yPosition + imageHeight > doc.internal.pageSize.getHeight() - 20) {
+                    if (yPosition + imageHeight > doc.internal.pageSize.getHeight() - 30) {
                         doc.addPage();
                         yPosition = 20;
-                        xPosition = 14;
                     }
 
                     // Format detection
@@ -320,22 +313,16 @@ export async function generateRegistroPDF(registro: RegistroForPDF): Promise<voi
                     doc.addImage(foto.datos_base64, format, xPosition, yPosition, imageWidth, imageHeight);
 
                     if (foto.descripcion) {
-                        doc.setFontSize(8);
-                        doc.setFont('helvetica', 'normal');
-                        doc.text(foto.descripcion, xPosition, yPosition + imageHeight + 5, { maxWidth: imageWidth });
+                        doc.setFontSize(9); // Slightly larger for better readability
+                        doc.setFont('helvetica', 'italic');
+                        doc.text(foto.descripcion, pageWidth / 2, yPosition + imageHeight + 6, { align: 'center', maxWidth: imageWidth });
+                        yPosition += imageHeight + 18;
+                    } else {
+                        yPosition += imageHeight + 12;
                     }
-
-                    xPosition += imageWidth + 10;
                 } catch (err) {
                     console.error(`Error adding photo ${index + 1}:`, err);
-                    doc.setDrawColor(200);
-                    doc.setFillColor(245, 245, 245);
-                    doc.rect(xPosition, yPosition, imageWidth, imageHeight, 'FD');
-                    doc.setFontSize(8);
-                    doc.setTextColor(150);
-                    doc.text('Error al cargar imagen', xPosition + 5, yPosition + imageHeight / 2);
-                    doc.setTextColor(0);
-                    xPosition += imageWidth + 10;
+                    yPosition += 10;
                 }
             }
         });
