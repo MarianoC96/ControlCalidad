@@ -1,7 +1,4 @@
-import fs from 'fs/promises';
-import path from 'path';
-
-const CONFIG_PATH = path.join(process.cwd(), 'src', 'config', 'pdfConfig.json');
+import { createClient } from '@supabase/supabase-js';
 
 export interface PdfConfig {
     titulo: string;
@@ -17,21 +14,74 @@ export const DEFAULT_CONFIG: PdfConfig = {
     aprobado_por: "Aprob. J. Calidad"
 };
 
+// Initialize Supabase client
+const getSupabase = () => {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+};
+
 export async function getPdfConfig(): Promise<PdfConfig> {
     try {
-        const data = await fs.readFile(CONFIG_PATH, 'utf-8');
-        return JSON.parse(data);
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from('configuracion_pdf')
+            .select('*')
+            .limit(1)
+            .single();
+
+        if (error || !data) {
+            console.warn("Could not fetch config from DB (or table empty), using default.", error);
+            return DEFAULT_CONFIG;
+        }
+
+        return {
+            titulo: data.titulo,
+            codigo: data.codigo,
+            edicion: data.edicion,
+            aprobado_por: data.aprobado_por
+        };
     } catch (error) {
-        console.error("Error reading PDF config, returning default:", error);
+        console.error("Error reading PDF config:", error);
         return DEFAULT_CONFIG;
     }
 }
 
 export async function updatePdfConfig(config: PdfConfig): Promise<void> {
     try {
-        const dir = path.dirname(CONFIG_PATH);
-        await fs.mkdir(dir, { recursive: true });
-        await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+        const supabase = getSupabase();
+
+        // Check if a record exists
+        const { data: existing } = await supabase
+            .from('configuracion_pdf')
+            .select('id')
+            .limit(1)
+            .maybeSingle();
+
+        if (existing) {
+            const { error } = await supabase
+                .from('configuracion_pdf')
+                .update({
+                    titulo: config.titulo,
+                    codigo: config.codigo,
+                    edicion: config.edicion,
+                    aprobado_por: config.aprobado_por,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', existing.id);
+
+            if (error) throw error;
+        } else {
+            const { error } = await supabase
+                .from('configuracion_pdf')
+                .insert([{
+                    ...config
+                }]);
+
+            if (error) throw error;
+        }
     } catch (error) {
         console.error("Error writing PDF config:", error);
         throw error;

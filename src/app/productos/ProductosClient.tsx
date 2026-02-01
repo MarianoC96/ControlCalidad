@@ -102,8 +102,8 @@ export default function ProductosClient() {
                     setParametrosForm(params.map((p: Parametro) => ({
                         parametro_maestro_id: p.parametro_maestro_id,
                         nombre: p.nombre,
-                        tipo: p.tipo,
-                        valor: p.valor || '',
+                        tipo: p.tipo || (p.es_rango ? 'rango' : 'texto'),
+                        valor: p.valor || p.valor_texto || '',
                         rango_min: p.rango_min?.toString() || '',
                         rango_max: p.rango_max?.toString() || '',
                         unidad: p.unidad || '',
