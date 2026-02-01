@@ -535,7 +535,15 @@ export default function RegistrosClient() {
                                                         textAlign: 'center',
                                                         padding: '2px'
                                                     }}>
-                                                        {headerToShow.aprobado_por}
+                                                        {(() => {
+                                                            const original = headerToShow.aprobado_por || '';
+                                                            // If YYYY-MM-DD, convert to DD-MM-YYYY
+                                                            if (/^\d{4}-\d{2}-\d{2}$/.test(original)) {
+                                                                const [y, m, d] = original.split('-');
+                                                                return `${d}-${m}-${y}`;
+                                                            }
+                                                            return original;
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>

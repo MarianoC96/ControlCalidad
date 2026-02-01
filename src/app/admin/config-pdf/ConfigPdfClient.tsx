@@ -157,9 +157,9 @@ export default function ConfigPdfClient() {
                                         />
                                     </div>
                                     <div className="col-md-4">
-                                        <label className="form-label text-uppercase small ls-1">Aprobado Por</label>
+                                        <label className="form-label text-uppercase small ls-1">Fecha de Vigencia</label>
                                         <input
-                                            type="text"
+                                            type="date"
                                             className="form-control"
                                             value={config.aprobado_por}
                                             onChange={e => setConfig({ ...config, aprobado_por: e.target.value })}
@@ -223,7 +223,19 @@ export default function ConfigPdfClient() {
                                     <div className="header-cell info-cell">
                                         <div className="info-row">{config.codigo || 'CÓDIGO'}</div>
                                         <div className="info-row">{config.edicion || 'EDICIÓN'}</div>
-                                        <div className="info-row last">{config.aprobado_por || 'APROBACIÓN'}</div>
+                                        <div className="info-row last">
+                                            {config.aprobado_por
+                                                ? (() => {
+                                                    const dateVal = config.aprobado_por;
+                                                    // Check if YYYY-MM-DD
+                                                    if (/^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+                                                        const [y, m, d] = dateVal.split('-');
+                                                        return `${d}-${m}-${y}`;
+                                                    }
+                                                    return dateVal;
+                                                })()
+                                                : 'VIGENCIA'}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="mt-4 opacity-50">

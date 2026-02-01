@@ -168,9 +168,17 @@ export async function generateRegistroPDF(registro: RegistroForPDF): Promise<voi
         doc.text(headerConfig.edicion, xCol3 + col3W / 2, yRow2, { align: 'center' });
         doc.line(xCol3, hTop + (rowH * 2), xCol3 + col3W, hTop + (rowH * 2)); // Línea horizontal separadora
 
-        // Fila 3: Aprobación
+        // Fila 3: Aprobación / Vigencia
         const yRow3 = hTop + (rowH * 2) + (rowH / 2) + 2;
-        doc.text(headerConfig.aprobado_por, xCol3 + col3W / 2, yRow3, { align: 'center' });
+        let approvalText = headerConfig.aprobado_por;
+
+        // Try to format date YYYY-MM-DD to DD-MM-YYYY
+        const dateMatch = approvalText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (dateMatch) {
+            approvalText = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+        }
+
+        doc.text(approvalText, xCol3 + col3W / 2, yRow3, { align: 'center' });
 
         yPosition = hTop + hHeight + 10; // Update Y for next section
 
