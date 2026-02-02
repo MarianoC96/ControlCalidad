@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase/client';
@@ -36,10 +36,17 @@ export default function RegistrosClient() {
     const [editLockInfo, setEditLockInfo] = useState<{ expiresAt: string, startedAt: string } | null>(null);
     const [editPassword, setEditPassword] = useState('');
     const [editHistory, setEditHistory] = useState<any[]>([]);
-    const [editPhotos, setEditPhotos] = useState<{ data: string, description: string }[]>([]);
+    const [editPhotos, setEditPhotos] = useState<{ data: string, description: string, filename: string }[]>([]);
+    const [photosToDelete, setPhotosToDelete] = useState<number[]>([]);
     const [editError, setEditError] = useState('');
     const [editSuccess, setEditSuccess] = useState('');
     const [timeLeft, setTimeLeft] = useState('');
+
+    // Request Edit Permission State
+    const [requestModalOpen, setRequestModalOpen] = useState(false);
+    const [requestRegistroId, setRequestRegistroId] = useState<number | null>(null);
+    const [requestMotivo, setRequestMotivo] = useState('');
+    const [isRequesting, setIsRequesting] = useState(false);
 
     // Filters
     // Filters
@@ -173,14 +180,17 @@ export default function RegistrosClient() {
             const data = await res.json();
 
             if (!res.ok) {
-                if (data.requirePassword) { // Should not happen if flow is correct, but safe fallback
+                if (data.canRequest) {
+                    setRequestRegistroId(registro.id);
+                    setRequestMotivo('');
+                    setRequestModalOpen(true);
+                } else if (data.requirePassword) {
                     alert(data.error);
                 } else {
-                    throw new Error(data.error || 'Error al iniciar edición');
+                    alert(data.error || 'Error al iniciar edición');
                 }
                 return;
             }
-
             setEditLockInfo({ expiresAt: data.expiresAt, startedAt: data.startedAt });
             if (password) setEditPassword(password);
 
@@ -194,10 +204,38 @@ export default function RegistrosClient() {
             const details = await fetchDetails(registro.id);
             setEditingRegistro({ ...registro, ...details });
             setEditPhotos([]);
+            setPhotosToDelete([]);
             setEditModalOpen(true);
 
         } catch (err: any) {
             alert(err.message);
+        }
+    };
+
+    const handleRequestSubmit = async () => {
+        if (!requestRegistroId) return;
+
+        setIsRequesting(true);
+        try {
+            const reqRes = await fetch('/api/registros/request-edit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    registro_id: requestRegistroId,
+                    motivo: requestMotivo
+                })
+            });
+            const reqData = await reqRes.json();
+            if (reqRes.ok) {
+                alert('Solicitud enviada correctamente. Espera a que un administrador la apruebe.');
+                setRequestModalOpen(false);
+            } else {
+                alert(reqData.error || 'Error al enviar solicitud');
+            }
+        } catch (error) {
+            alert('Error de conexión al enviar la solicitud');
+        } finally {
+            setIsRequesting(false);
         }
     };
 
@@ -216,6 +254,8 @@ export default function RegistrosClient() {
         setEditingRegistro(null);
         setEditLockInfo(null);
         setEditPassword('');
+        setPhotosToDelete([]);
+        setEditPhotos([]);
     };
 
     const handleSaveEdit = async () => {
@@ -229,6 +269,7 @@ export default function RegistrosClient() {
                 body: JSON.stringify({
                     registro_id: editingRegistro.id,
                     photos: editPhotos,
+                    photosToDelete: photosToDelete,
                     password: editPassword
                 })
             });
@@ -263,7 +304,8 @@ export default function RegistrosClient() {
             reader.onloadend = () => {
                 setEditPhotos(prev => [...prev, {
                     data: reader.result as string,
-                    description: ''
+                    description: '',
+                    filename: file.name
                 }]);
             };
             reader.readAsDataURL(file);
@@ -887,35 +929,85 @@ export default function RegistrosClient() {
                 )
             }
 
-            {/* Password Re-auth Modal */}
+            {/* Password Verification Modal */}
             {passwordModalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '400px' }}>
-                        <div className="modal-header bg-dark text-white">
-                            <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-shield-lock-fill text-warning" viewBox="0 0 16 16">
-                                    <path fillRule="evenodd" d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.777 11.777 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7.159 7.159 0 0 0 1.048-.625 11.775 11.775 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.541 1.541 0 0 0-1.044-1.263 6.267 6.267 0 0 0-2.887-.87C9.843.266 8.69 0 8 0zm0 5a1.5 1.5 0 0 1 .5 2.915l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 0 1 8 5z" />
-                                </svg>
-                                Identidad Requerida
-                            </h5>
-                            <button className="close-btn text-white-50 fs-6" onClick={() => setPasswordModalOpen(false)}>×</button>
+                <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content border-0 shadow-lg">
+                            <div className="modal-header bg-dark text-white">
+                                <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-shield-lock-fill text-warning" viewBox="0 0 16 16">
+                                        <path fillRule="evenodd" d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.777 11.777 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7.159 7.159 0 0 0 1.048-.625 11.775 11.775 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.541 1.541 0 0 0-1.044-1.263 6.267 6.267 0 0 0-2.887-.87C9.843.266 8.69 0 8 0zm0 5a1.5 1.5 0 0 1 .5 2.915l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 0 1 8 5z" />
+                                    </svg>
+                                    Identidad Requerida
+                                </h5>
+                                <button className="btn-close btn-close-white" onClick={() => setPasswordModalOpen(false)} aria-label="Cerrar"></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                <p className="text-secondary small mb-3">Para editar este registro como administrador, por favor confirme su identidad.</p>
+                                <label className="form-label fw-bold small">Contraseña de Administrador</label>
+                                <input
+                                    type="password"
+                                    className="form-control"
+                                    value={passwordInput}
+                                    onChange={(e) => setPasswordInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                                    autoFocus
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <div className="modal-footer border-0 pt-0">
+                                <button className="btn btn-sm btn-light text-secondary" onClick={() => setPasswordModalOpen(false)}>Cancelar</button>
+                                <button className="btn btn-sm btn-dark px-3" onClick={handlePasswordSubmit} disabled={!passwordInput}>Confirmar</button>
+                            </div>
                         </div>
-                        <div className="modal-body">
-                            <p className="text-secondary small mb-3">Para editar este registro como administrador, por favor confirme su identidad.</p>
-                            <label className="form-label fw-bold small">Contraseña de Administrador</label>
-                            <input
-                                type="password"
-                                className="form-control"
-                                value={passwordInput}
-                                onChange={(e) => setPasswordInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                                autoFocus
-                                placeholder="••••••••"
-                            />
-                        </div>
-                        <div className="modal-footer border-0 pt-0">
-                            <button className="btn btn-sm btn-light text-secondary" onClick={() => setPasswordModalOpen(false)}>Cancelar</button>
-                            <button className="btn btn-sm btn-dark px-3" onClick={handlePasswordSubmit} disabled={!passwordInput}>Confirmar</button>
+                    </div>
+                </div>
+            )}
+
+            {/* Request Edit Permission Modal */}
+            {requestModalOpen && (
+                <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content border-0 shadow-lg">
+                            <div className="modal-header bg-primary text-white">
+                                <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-person-plus-fill" viewBox="0 0 16 16">
+                                        <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                                        <path fillRule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z" />
+                                    </svg>
+                                    Solicitar Permiso de Edición
+                                </h5>
+                                <button className="btn-close btn-close-white" onClick={() => setRequestModalOpen(false)} aria-label="Cerrar"></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                <div className="alert alert-warning small mb-3">
+                                    Este registro ya fue editado por un trabajador o el tiempo expiró.
+                                    Puedes enviar una solicitud a los administradores para que te habiliten un intento extra.
+                                </div>
+
+                                <label className="form-label fw-bold small">Motivo de la solicitud (Opcional)</label>
+                                <textarea
+                                    className="form-control"
+                                    rows={3}
+                                    placeholder="Explica brevemente por qué necesitas realizar cambios adicionales..."
+                                    value={requestMotivo}
+                                    onChange={(e) => setRequestMotivo(e.target.value)}
+                                ></textarea>
+                                <p className="text-muted small mt-2">
+                                    Los administradores revisarán tu solicitud para decidir si la aprueban.
+                                </p>
+                            </div>
+                            <div className="modal-footer border-0 pt-0">
+                                <button className="btn btn-sm btn-light text-secondary" onClick={() => setRequestModalOpen(false)}>Cancelar</button>
+                                <button
+                                    className="btn btn-sm btn-primary px-3 shadow-sm"
+                                    onClick={handleRequestSubmit}
+                                    disabled={isRequesting}
+                                >
+                                    {isRequesting ? 'Enviando...' : 'Enviar Solicitud'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -923,160 +1015,329 @@ export default function RegistrosClient() {
 
             {/* Edit Modal */}
             {editModalOpen && editingRegistro && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <div className="modal-header" style={{ background: '#fff3cd' }}>
-                            <h3 className="text-dark mb-0">Edición Controlada</h3>
-                            <button className="close-btn" onClick={handleCancelEdit}>×</button>
-                        </div>
-
-                        <div className="modal-body">
-                            {/* Header Info */}
-                            <div className="alert alert-info d-flex justify-content-between align-items-center mb-4">
-                                <div>
-                                    <strong>Tiempo restante:</strong> <span className={`fw-bold ms-2 ${timeLeft === 'Expirado' ? 'text-danger' : 'text-primary'}`} style={{ fontSize: '1.2rem' }}>{timeLeft}</span>
-                                </div>
-                                <div className="small text-end">
-                                    <div>Iniciado por: {userName}</div>
-                                    <div>Inicio: {editLockInfo?.startedAt ? new Date(editLockInfo.startedAt).toLocaleTimeString() : '-'}</div>
-                                </div>
+                <div className="modal show" tabIndex={-1}>
+                    <div className="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div className="modal-content">
+                            <div className="modal-header border-0" style={{ background: '#fff3cd' }}>
+                                <h4 className="text-dark mb-0 fw-bold">Edición Controlada</h4>
+                                <button className="btn-close" onClick={handleCancelEdit} aria-label="Cerrar"></button>
                             </div>
 
-                            {editError && <div className="alert alert-danger">{editError}</div>}
-
-                            <div className="mb-4">
-                                <h5 className="border-bottom pb-2 text-secondary">Reglas de Edición</h5>
-                                <ul className="small text-muted">
-                                    <li>Solo puede agregar fotos (Máximo 2 por registro).</li>
-                                    <li>No puede modificar la fecha de origen ni otros datos.</li>
-                                    <li>Tiene 1 hora para completar la edición desde el inicio.</li>
-                                    <li>Al guardar, se registrará una auditoría permanente.</li>
-                                </ul>
-                            </div>
-
-                            {/* Photo Upload */}
-                            <div className="mb-4 p-3 bg-light rounded border">
-                                <label className="form-label fw-bold d-flex justify-content-between mb-3">
-                                    <span>Gestión de Fotos</span>
-                                    <span className={`badge ${((editingRegistro.fotos?.length || 0) + editPhotos.length) > 2 ? 'bg-danger' : 'bg-secondary'}`}>
-                                        Total: {(editingRegistro.fotos?.length || 0) + editPhotos.length} / 2
-                                    </span>
-                                </label>
-
-                                {/* Existing Photos */}
-                                {editingRegistro.fotos && editingRegistro.fotos.length > 0 && (
-                                    <div className="mb-3">
-                                        <h6 className="small text-muted mb-2">Fotos Actuales (Guardadas):</h6>
-                                        <div className="d-flex flex-wrap gap-3">
-                                            {editingRegistro.fotos.map((photo, idx) => (
-                                                <div key={photo.id || idx} className="position-relative photo-card border rounded shadow-sm bg-light" style={{ width: '100px', height: '100px' }}>
-                                                    <img
-                                                        src={photo.datos_base64}
-                                                        className="w-100 h-100 object-fit-cover rounded"
-                                                        alt="Foto existente"
-                                                        style={{ cursor: 'zoom-in', opacity: 0.8 }}
-                                                        onClick={() => setZoomImage({ url: photo.datos_base64, description: photo.descripcion || 'Foto guardada previamente' })}
-                                                        title="Foto ya guardada"
-                                                    />
-                                                    <div className="position-absolute bottom-0 w-100 text-center bg-white bg-opacity-75 small text-muted" style={{ fontSize: '10px' }}>
-                                                        Guardada
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                            <div className="modal-body p-4">
+                                {/* Header Info */}
+                                <div className="alert alert-info d-flex justify-content-between align-items-center mb-4">
+                                    <div>
+                                        <strong>Tiempo restante:</strong> <span className={`fw-bold ms-2 ${timeLeft === 'Expirado' ? 'text-danger' : 'text-primary'}`} style={{ fontSize: '1.2rem' }}>{timeLeft}</span>
                                     </div>
-                                )}
+                                    <div className="small text-end">
+                                        <div>Iniciado por: {userName}</div>
+                                        <div>Inicio: {editLockInfo?.startedAt ? new Date(editLockInfo.startedAt).toLocaleTimeString() : '-'}</div>
+                                    </div>
+                                </div>
 
-                                <h6 className="small text-muted mb-2 mt-3">Agregar Nuevas:</h6>
-                                <input
-                                    type="file"
-                                    className="form-control mb-3"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={handleEditPhotoUpload}
-                                    disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
-                                />
+                                {editError && <div className="alert alert-danger">{editError}</div>}
 
-                                {editPhotos.length > 0 && (
-                                    <div className="d-flex flex-wrap gap-3 mt-3">
-                                        {editPhotos.map((photo, idx) => (
-                                            <div key={idx} className="position-relative photo-card border rounded shadow-sm bg-white" style={{ width: '150px', height: '150px', overflow: 'visible' }}>
-                                                <div className="w-100 h-100 position-relative" style={{ overflow: 'hidden', borderRadius: 'inherit' }}>
-                                                    <img
-                                                        src={photo.data}
-                                                        className="w-100 h-100"
-                                                        style={{ objectFit: 'cover', cursor: 'zoom-in' }}
-                                                        alt="Vista previa"
-                                                        onClick={() => setZoomImage({ url: photo.data, description: 'Vista previa de edición' })}
-                                                        title="Clic para ampliar"
-                                                    />
+                                <div className="mb-4">
+                                    <h5 className="border-bottom pb-2 text-secondary">Reglas de Edición</h5>
+                                    <ul className="small text-muted">
+                                        <li>Solo puede agregar fotos (Máximo 2 por registro).</li>
+                                        <li>No puede modificar la fecha de origen ni otros datos.</li>
+                                        <li>Tiene 1 hora para completar la edición desde el inicio.</li>
+                                        <li>Al guardar, se registrará una auditoría permanente.</li>
+                                    </ul>
+                                </div>
+
+                                {/* Photo Upload */}
+                                <div className="mb-4 p-3 bg-light rounded border">
+                                    <label className="form-label fw-bold d-flex justify-content-between mb-3">
+                                        <span>Gestión de Fotos</span>
+                                        <span className={`badge ${((editingRegistro.fotos?.filter(f => !photosToDelete.includes(f.id)).length || 0) + editPhotos.length) > 2 ? 'bg-danger' : 'bg-secondary'}`}>
+                                            Total: {(editingRegistro.fotos?.filter(f => !photosToDelete.includes(f.id)).length || 0) + editPhotos.length} / 2
+                                        </span>
+                                    </label>
+
+                                    {/* Scrollable container for all photos */}
+                                    <div style={{
+                                        maxHeight: '350px',
+                                        overflowY: 'auto',
+                                        overflowX: 'hidden',
+                                        padding: '10px',
+                                        backgroundColor: '#fff',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e0e0e0'
+                                    }}>
+                                        {/* Existing Photos */}
+                                        {editingRegistro.fotos && editingRegistro.fotos.length > 0 && (
+                                            <div className="mb-3">
+                                                <h6 className="small text-muted mb-2 sticky-top bg-white py-1">Fotos Actuales (Guardadas):</h6>
+                                                <div className="d-flex flex-column gap-3">
+                                                    {editingRegistro.fotos.map((photo, idx) => {
+                                                        const isMarkedForDelete = photosToDelete.includes(photo.id);
+                                                        return (
+                                                            <div
+                                                                key={photo.id || idx}
+                                                                className={`position-relative border rounded shadow-sm ${isMarkedForDelete ? 'opacity-50' : ''}`}
+                                                                style={{
+                                                                    backgroundColor: isMarkedForDelete ? '#ffebee' : '#f8f9fa',
+                                                                    overflow: 'hidden'
+                                                                }}
+                                                            >
+                                                                {/* Image container with horizontal scroll for full-size view */}
+                                                                <div style={{
+                                                                    maxHeight: '200px',
+                                                                    overflowY: 'auto',
+                                                                    overflowX: 'auto',
+                                                                    padding: '8px',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'center'
+                                                                }}>
+                                                                    <img
+                                                                        src={photo.datos_base64}
+                                                                        alt="Foto existente"
+                                                                        style={{
+                                                                            maxWidth: '100%',
+                                                                            height: 'auto',
+                                                                            cursor: 'zoom-in',
+                                                                            borderRadius: '4px'
+                                                                        }}
+                                                                        onClick={() => setZoomImage({ url: photo.datos_base64, description: photo.descripcion || 'Foto guardada previamente' })}
+                                                                        title="Clic para ampliar"
+                                                                    />
+                                                                </div>
+
+                                                                {/* Delete/Restore button */}
+                                                                <button
+                                                                    className={`btn ${isMarkedForDelete ? 'btn-success' : 'btn-danger'} position-absolute d-flex align-items-center justify-content-center p-0 shadow-sm`}
+                                                                    style={{
+                                                                        width: '28px',
+                                                                        height: '28px',
+                                                                        top: '8px',
+                                                                        right: '8px',
+                                                                        zIndex: 10,
+                                                                        borderRadius: '50%',
+                                                                        border: '2px solid white'
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (isMarkedForDelete) {
+                                                                            setPhotosToDelete(prev => prev.filter(id => id !== photo.id));
+                                                                        } else {
+                                                                            setPhotosToDelete(prev => [...prev, photo.id]);
+                                                                        }
+                                                                    }}
+                                                                    title={isMarkedForDelete ? 'Restaurar foto' : 'Eliminar foto'}
+                                                                >
+                                                                    <span style={{ fontSize: '14px', lineHeight: 1, fontWeight: 'bold' }}>
+                                                                        {isMarkedForDelete ? '↺' : '✕'}
+                                                                    </span>
+                                                                </button>
+
+                                                                {/* Status label */}
+                                                                <div className={`text-center small py-1 ${isMarkedForDelete ? 'bg-danger text-white' : 'bg-secondary bg-opacity-10 text-muted'}`} style={{ fontSize: '11px' }}>
+                                                                    {isMarkedForDelete ? '⚠ Se eliminará al guardar' : '✓ Guardada'}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                                <button
-                                                    className="btn btn-danger position-absolute d-flex align-items-center justify-content-center p-0 shadow-sm"
-                                                    style={{
-                                                        width: '24px',
-                                                        height: '24px',
-                                                        top: '-8px',
-                                                        right: '-8px',
-                                                        zIndex: 100,
-                                                        borderRadius: '50%',
-                                                        border: '2px solid white'
-                                                    }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setEditPhotos(prev => prev.filter((_, i) => i !== idx));
-                                                    }}
-                                                    title="Eliminar foto"
-                                                >
-                                                    <span style={{ fontSize: '14px', lineHeight: 1, fontWeight: 'bold' }}>✕</span>
-                                                </button>
                                             </div>
-                                        ))}
+                                        )}
+
+                                        {/* New Photos Section */}
+                                        {editPhotos.length > 0 && (
+                                            <div className="mb-3">
+                                                <h6 className="small text-muted mb-2 sticky-top bg-white py-1 border-top pt-2">Fotos Nuevas (Por guardar):</h6>
+                                                <div className="d-flex flex-column gap-3">
+                                                    {editPhotos.map((photo, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="position-relative border rounded shadow-sm"
+                                                            style={{
+                                                                backgroundColor: '#e8f5e9',
+                                                                overflow: 'hidden'
+                                                            }}
+                                                        >
+                                                            {/* Image container with scroll for full-size view */}
+                                                            <div style={{
+                                                                maxHeight: '200px',
+                                                                overflowY: 'auto',
+                                                                overflowX: 'auto',
+                                                                padding: '8px',
+                                                                display: 'flex',
+                                                                justifyContent: 'center'
+                                                            }}>
+                                                                <img
+                                                                    src={photo.data}
+                                                                    alt="Vista previa"
+                                                                    style={{
+                                                                        maxWidth: '100%',
+                                                                        height: 'auto',
+                                                                        cursor: 'zoom-in',
+                                                                        borderRadius: '4px'
+                                                                    }}
+                                                                    onClick={() => setZoomImage({ url: photo.data, description: 'Vista previa - Nueva foto' })}
+                                                                    title="Clic para ampliar"
+                                                                />
+                                                            </div>
+
+                                                            {/* Delete button */}
+                                                            <button
+                                                                className="btn btn-danger position-absolute d-flex align-items-center justify-content-center p-0 shadow-sm"
+                                                                style={{
+                                                                    width: '28px',
+                                                                    height: '28px',
+                                                                    top: '8px',
+                                                                    right: '8px',
+                                                                    zIndex: 10,
+                                                                    borderRadius: '50%',
+                                                                    border: '2px solid white'
+                                                                }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setEditPhotos(prev => prev.filter((_, i) => i !== idx));
+                                                                }}
+                                                                title="Eliminar foto"
+                                                            >
+                                                                <span style={{ fontSize: '14px', lineHeight: 1, fontWeight: 'bold' }}>✕</span>
+                                                            </button>
+
+                                                            {/* Status label */}
+                                                            <div className="text-center small py-1 bg-success bg-opacity-25 text-success" style={{ fontSize: '11px' }}>
+                                                                ★ Nueva - Se guardará
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Empty state */}
+                                        {(!editingRegistro.fotos || editingRegistro.fotos.length === 0) && editPhotos.length === 0 && (
+                                            <div className="text-center py-4 text-muted">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" className="mb-2 opacity-50" viewBox="0 0 16 16">
+                                                    <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                                                    <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
+                                                </svg>
+                                                <p className="small mb-0">No hay fotos aún</p>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
 
-                            {/* History Timeline */}
-                            <div className="mb-4">
-                                <h5 className="border-bottom pb-2 text-secondary">Historial de Cambios</h5>
-                                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                    {editHistory.length === 0 ? (
-                                        <p className="text-muted small fst-italic py-2">No hay ediciones previas registradas.</p>
-                                    ) : (
-                                        <ul className="list-group list-group-flush">
-                                            {editHistory.map(hist => (
-                                                <li key={hist.id} className="list-group-item px-0 py-2">
-                                                    <div className="d-flex justify-content-between align-items-center mb-1">
-                                                        <strong className="text-dark" style={{ fontSize: '0.9rem' }}>{hist.usuarios?.nombre_completo}</strong>
-                                                        <span className="badge bg-light text-secondary border">{new Date(hist.created_at).toLocaleString()}</span>
-                                                    </div>
-                                                    <div className="small text-secondary d-flex align-items-center gap-2">
-                                                        <span className={`badge ${hist.role === 'administrador' ? 'bg-primary' : 'bg-info'}`}>{hist.role}</span>
-                                                        <span>{hist.action === 'add_photo' ? 'Agregó fotos' : hist.action}</span>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
+                                    {/* Upload input - outside the scroll container */}
+                                    <div className="mt-3 pt-3 border-top">
+                                        <h6 className="small text-muted mb-2">Agregar Nuevas Fotos:</h6>
+                                        <input
+                                            type="file"
+                                            className="form-control"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleEditPhotoUpload}
+                                            disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                        />
+                                        <small className="text-muted d-block mt-1">Formatos aceptados: JPG, PNG, WebP</small>
+                                    </div>
                                 </div>
+
+                                {/* History Timeline */}
+                                <div className="mb-4 p-3 bg-light rounded border">
+                                    <h5 className="border-bottom pb-2 text-secondary mb-0">Historial de Cambios</h5>
+                                    <div style={{
+                                        maxHeight: '250px',
+                                        overflowY: 'auto',
+                                        backgroundColor: '#fff',
+                                        borderRadius: '0 0 8px 8px',
+                                        padding: '10px'
+                                    }}>
+                                        {editHistory.length === 0 ? (
+                                            <p className="text-muted small fst-italic py-3 text-center mb-0">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="opacity-50 d-block mx-auto mb-2" viewBox="0 0 16 16">
+                                                    <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.02 8.02 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z" />
+                                                    <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z" />
+                                                    <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z" />
+                                                </svg>
+                                                No hay ediciones previas registradas.
+                                            </p>
+                                        ) : (
+                                            <div className="d-flex flex-column gap-2">
+                                                {editHistory.map(hist => {
+                                                    const actionStr = hist.action || '';
+                                                    const addMatch = actionStr.match(/add_photo:(\d+)/);
+                                                    const delMatch = actionStr.match(/delete_photo:(\d+)/);
+                                                    // Handle both "add_photo:1" and "add_photo" formats
+                                                    const addCount = addMatch ? parseInt(addMatch[1]) : (actionStr.includes('add_photo') ? 1 : 0);
+                                                    const delCount = delMatch ? parseInt(delMatch[1]) : (actionStr.includes('delete_photo') && !delMatch ? 1 : 0);
+
+                                                    return (
+                                                        <div key={hist.id} className="border rounded p-2 bg-white shadow-sm">
+                                                            <div className="d-flex justify-content-between align-items-start mb-1">
+                                                                <div>
+                                                                    <span className="badge me-2 d-inline-flex align-items-center gap-1" style={{ backgroundColor: hist.role === 'administrador' ? '#607d8b' : '#6c757d', color: 'white' }}>
+                                                                        {hist.role === 'administrador' ? (
+                                                                            <>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                                                                    <path d="M14 6.551V11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6.551l7-1.75 7 1.75zM15 11V5l-7 1.75L1 5v6a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3z" />
+                                                                                    <path d="M14.5 3a.5.5 0 0 1 .5.5v1.101l-7 1.75-7-1.75V3.5a.5.5 0 0 1 .5-.5h13z" />
+                                                                                </svg>
+                                                                                Admin
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                                                                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                                                                                </svg>
+                                                                                Trabajador
+                                                                            </>
+                                                                        )}
+                                                                    </span>
+                                                                    <strong style={{ fontSize: '0.85rem' }}>
+                                                                        {hist.usuarios?.nombre_completo || 'Usuario'}
+                                                                    </strong>
+                                                                </div>
+                                                                <small className="text-muted">
+                                                                    {new Date(hist.created_at).toLocaleString()}
+                                                                </small>
+                                                            </div>
+                                                            <div className="mt-2 d-flex flex-wrap gap-2">
+                                                                {addCount > 0 && (
+                                                                    <span className="badge" style={{ backgroundColor: '#198754', color: 'white', fontSize: '12px' }}>
+                                                                        + Agregó {addCount} foto{addCount > 1 ? 's' : ''}
+                                                                    </span>
+                                                                )}
+                                                                {delCount > 0 && (
+                                                                    <span className="badge" style={{ backgroundColor: '#dc3545', color: 'white', fontSize: '12px' }}>
+                                                                        − Eliminó {delCount} foto{delCount > 1 ? 's' : ''}
+                                                                    </span>
+                                                                )}
+                                                                {addCount === 0 && delCount === 0 && (
+                                                                    <span className="badge" style={{ backgroundColor: '#6c757d', color: 'white', fontSize: '12px' }}>
+                                                                        ✎ Editó registro
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                             </div>
 
-                        </div>
-
-                        <div className="modal-footer bg-light">
-                            <button className="btn btn-secondary" onClick={handleCancelEdit}>Cancelar Edición</button>
-                            <button
-                                className="btn btn-warning fw-bold"
-                                onClick={handleSaveEdit}
-                                disabled={editPhotos.length === 0 || !!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
-                            >
-                                Guardar Cambios
-                            </button>
+                            <div className="modal-footer sticky-bottom bg-white border-top p-3" style={{ margin: '0 -1.5rem -1.5rem -1.5rem', zIndex: 100 }}>
+                                <button className="btn btn-secondary px-4" onClick={handleCancelEdit}>Cancelar Edición</button>
+                                <button
+                                    className="btn btn-warning fw-bold px-4"
+                                    onClick={handleSaveEdit}
+                                    disabled={(editPhotos.length === 0 && photosToDelete.length === 0) || !!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                >
+                                    Guardar Cambios
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div >
-            )
-            }
+                </div>
+            )}
 
             <style jsx>{`
                 .group-section {
@@ -1351,7 +1612,6 @@ export default function RegistrosClient() {
         }
       `}</style>
 
-            {/* Lightbox / Zoom Modal */}
             {
                 zoomImage && (
                     <div className="zoom-overlay" onClick={() => setZoomImage(null)}>

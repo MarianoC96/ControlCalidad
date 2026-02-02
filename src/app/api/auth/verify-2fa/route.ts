@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiClient } from '@/lib/supabase/api-client';
+import { createAdminClient } from '@/lib/supabase/admin-client';
 import { cookies } from 'next/headers';
 import * as OTPAuth from 'otpauth';
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const supabase = await createApiClient();
+        const supabase = createAdminClient();
 
         // Get user with 2FA secret
         const { data: user, error } = await supabase
@@ -37,6 +37,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Decrypt the secret
+        const { decryptSecret } = await import('@/lib/utils');
+        const decryptedSecret = decryptSecret(user.two_factor_secret);
+
         // Verify TOTP code
         const totp = new OTPAuth.TOTP({
             issuer: 'Control de Calidad',
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
             algorithm: 'SHA1',
             digits: 6,
             period: 30,
-            secret: OTPAuth.Secret.fromBase32(user.two_factor_secret),
+            secret: OTPAuth.Secret.fromBase32(decryptedSecret),
         });
 
         const isValid = totp.validate({ token: code, window: 1 }) !== null;

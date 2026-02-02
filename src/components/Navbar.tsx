@@ -54,7 +54,14 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       ),
       adminOnly: false
     },
-    // Admin Group
+    {
+      href: '/solicitudes',
+      label: 'Solicitudes',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      ),
+      adminOnly: true
+    },
     {
       href: '/productos',
       label: 'Productos',

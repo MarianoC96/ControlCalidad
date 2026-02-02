@@ -158,13 +158,13 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { id, nombre_completo, usuario, email, password, roles, activo, is_deleted } = body;
+        const { id, nombre_completo, usuario, email, password, roles, activo, is_deleted, two_factor_secret } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
         }
 
-        const updateData: Record<string, unknown> = {
+        const updateData: Record<string, any> = {
             nombre_completo,
             usuario,
             email,
@@ -172,6 +172,11 @@ export async function PUT(request: NextRequest) {
             activo,
             is_deleted,
         };
+
+        // Permite resetear el 2FA si se envía explícitamente como null o se omite
+        if (two_factor_secret === null) {
+            updateData.two_factor_secret = null;
+        }
 
         if (password) {
             updateData.password = await bcrypt.hash(password, 10);
