@@ -57,7 +57,9 @@ export async function POST(request: Request) {
         const body = await request.json();
         const {
             lote_interno,
+            lote_producto,
             guia,
+            marca,
             cantidad,
             producto_id,
             producto_nombre,
@@ -82,7 +84,9 @@ export async function POST(request: Request) {
             .from('registros')
             .insert({
                 lote_interno,
+                lote_producto,
                 guia,
+                marca,
                 cantidad,
                 producto_id,
                 producto_nombre,

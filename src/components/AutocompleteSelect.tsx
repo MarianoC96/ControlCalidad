@@ -16,6 +16,7 @@ interface AutocompleteSelectProps {
     placeholder?: string;
     required?: boolean;
     disabled?: boolean;
+    className?: string;
 }
 
 export default function AutocompleteSelect({
@@ -26,6 +27,7 @@ export default function AutocompleteSelect({
     placeholder = 'Buscar...',
     required = false,
     disabled = false,
+    className = '',
 }: AutocompleteSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -135,7 +137,7 @@ export default function AutocompleteSelect({
                 ref={inputRef}
                 id={id}
                 type="text"
-                className="form-control autocomplete-input"
+                className={`form-control autocomplete-input ${className}`}
                 value={searchTerm}
                 onChange={handleInputChange}
                 onFocus={handleInputFocus}

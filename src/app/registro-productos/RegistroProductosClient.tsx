@@ -25,7 +25,9 @@ export default function RegistroProductosClient() {
 
     const [formData, setFormData] = useState({
         loteInterno: '',
+        loteProducto: '',
         guia: '',
+        marca: '',
         cantidad: '',
         productoId: '',
         observacionesGenerales: '',
@@ -52,6 +54,7 @@ export default function RegistroProductosClient() {
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
 
     const [loadingParametros, setLoadingParametros] = useState(false);
+    const [touched, setTouched] = useState(false);
 
     // Load products on mount
     useEffect(() => {
@@ -329,11 +332,38 @@ export default function RegistroProductosClient() {
         e.preventDefault();
         setError('');
         setSuccess('');
+
+        // Trigger validation visual feedback
+        setTouched(true);
+
+        // Required fields validation
+        if (
+            !formData.loteInterno ||
+            !formData.loteProducto ||
+            !formData.guia ||
+            !formData.marca ||
+            !formData.cantidad ||
+            !formData.productoId
+        ) {
+            // Don't save if required fields are missing
+            // The is-invalid class will be applied via state
+            setError('Por favor complete los campos obligatorios marcados en rojo.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         setSaving(true);
 
         try {
-            // Validate required fields
-            if (!formData.loteInterno || !formData.cantidad || !formData.productoId) {
+            // Validate required fields (Redundant safety check)
+            if (
+                !formData.loteInterno ||
+                !formData.loteProducto ||
+                !formData.guia ||
+                !formData.marca ||
+                !formData.cantidad ||
+                !formData.productoId
+            ) {
                 throw new Error('Por favor complete todos los campos requeridos');
             }
 
@@ -346,7 +376,9 @@ export default function RegistroProductosClient() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     lote_interno: formData.loteInterno,
+                    lote_producto: formData.loteProducto,
                     guia: formData.guia,
+                    marca: formData.marca,
                     cantidad: parseInt(formData.cantidad),
                     producto_id: parseInt(formData.productoId),
                     producto_nombre: selectedProduct.nombre,
@@ -392,18 +424,17 @@ export default function RegistroProductosClient() {
             // Reset form
             setFormData({
                 loteInterno: '',
+                loteProducto: '',
                 guia: '',
+                marca: '',
                 cantidad: '',
                 productoId: '',
                 observacionesGenerales: '',
             });
             setControles([]);
             setFotos([null, null]);
+            setTouched(false); // Reset validation state
             window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            // Removing redirect to '/' to prevent "closing session" feeling. 
-            // User stays on page ready for next record.
-
 
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al guardar');
@@ -434,18 +465,32 @@ export default function RegistroProductosClient() {
                 <h2 className="text-center mb-4">Registro de Producto</h2>
                 <p className="fecha text-center">{getCurrentDate()}</p>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} noValidate>
                     <div className="form-grid">
                         <div className="form-group">
-                            <label htmlFor="lote" className="form-label">Lote Interno *</label>
+                            <label htmlFor="lote" className="form-label">Lote Interno</label>
                             <input
                                 type="text"
                                 id="lote"
-                                className="form-control"
+                                className={`form-control ${touched && !formData.loteInterno ? 'is-invalid' : ''}`}
                                 value={formData.loteInterno}
                                 onChange={(e) => setFormData({ ...formData, loteInterno: e.target.value })}
                                 required
                             />
+                            {touched && !formData.loteInterno && <div className="invalid-feedback">Campo requerido</div>}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="loteProducto" className="form-label">Lote de Producto</label>
+                            <input
+                                type="text"
+                                id="loteProducto"
+                                className={`form-control ${touched && !formData.loteProducto ? 'is-invalid' : ''}`}
+                                value={formData.loteProducto}
+                                onChange={(e) => setFormData({ ...formData, loteProducto: e.target.value })}
+                                required
+                            />
+                            {touched && !formData.loteProducto && <div className="invalid-feedback">Campo requerido</div>}
                         </div>
 
                         <div className="form-group">
@@ -453,27 +498,44 @@ export default function RegistroProductosClient() {
                             <input
                                 type="text"
                                 id="guia"
-                                className="form-control"
+                                className={`form-control ${touched && !formData.guia ? 'is-invalid' : ''}`}
                                 value={formData.guia}
                                 onChange={(e) => setFormData({ ...formData, guia: e.target.value })}
+                                required
                             />
+                            {touched && !formData.guia && <div className="invalid-feedback">Campo requerido</div>}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="cantidad" className="form-label">Cantidad *</label>
+                            <label htmlFor="marca" className="form-label">Marca</label>
+                            <input
+                                type="text"
+                                id="marca"
+                                className={`form-control ${touched && !formData.marca ? 'is-invalid' : ''}`}
+                                value={formData.marca}
+                                onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
+                                required
+                            />
+                            {touched && !formData.marca && <div className="invalid-feedback">Campo requerido</div>}
+                        </div>
+
+                        <div className="form-group">
+
+                            <label htmlFor="cantidad" className="form-label">Cantidad</label>
                             <input
                                 type="number"
                                 id="cantidad"
                                 min="1"
-                                className="form-control"
+                                className={`form-control ${touched && !formData.cantidad ? 'is-invalid' : ''}`}
                                 value={formData.cantidad}
                                 onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })}
                                 required
                             />
+                            {touched && !formData.cantidad && <div className="invalid-feedback">Campo requerido</div>}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="producto" className="form-label">Producto *</label>
+                            <label htmlFor="producto" className="form-label">Producto</label>
                             <AutocompleteSelect
                                 id="producto"
                                 options={productos}
@@ -481,7 +543,9 @@ export default function RegistroProductosClient() {
                                 onChange={(value) => setFormData({ ...formData, productoId: value })}
                                 placeholder="Buscar producto..."
                                 required
+                                className={`${touched && !formData.productoId ? 'is-invalid' : ''}`}
                             />
+                            {touched && !formData.productoId && <div className="invalid-feedback d-block">Campo requerido</div>}
                         </div>
                     </div>
 
@@ -930,14 +994,53 @@ export default function RegistroProductosClient() {
             border-top: 1px solid #e2e8f0;
         }
 
-        /* Validations */
+        /* Validations with Enhanced UI/UX */
+        .form-control.is-invalid {
+            border-color: #dc3545 !important;
+            padding-right: calc(1.5em + 0.75rem);
+            /* Layered background: Icon on top, Red Gradient below */
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5zM6 8.2a.5.5 0 000 1h.1a.5.5 0 000-1z'/%3e%3c/svg%3e"), 
+                              linear-gradient(to bottom, #fff5f5, #ffe3e3) !important;
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center, center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem), cover;
+            
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); /* Red Glow */
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.85em;
+            font-weight: 500;
+            color: #dc3545 !important;
+            
+            /* Slide down animation */
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .is-valid-custom {
             border-color: #198754;
+            background-color: #f8fff9;
         }
         
         .is-invalid-custom {
-            background-color: #fee2e2 !important; /* Red background */
-            color: #b91c1c !important; /* Dark red text for contrast */
+            /* Fallback */
+            background-color: #fee2e2 !important;
+            color: #b91c1c !important;
         }
       `}</style>
         </>

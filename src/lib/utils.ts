@@ -153,3 +153,21 @@ export async function verifyPassword(
     const passwordHash = await hashPassword(password);
     return passwordHash === hash;
 }
+
+/**
+ * Formats a Date object to 'YYYY-MM-DD' considering Peru Timezone (UTC-5)
+ * regardless of the machine's local timezone.
+ */
+export function getPeruDateString(date: Date): string {
+    // Peru is UTC-5
+    // 1. Get UTC millis
+    const utcMillis = date.getTime() + (date.getTimezoneOffset() * 60000);
+
+    // 2. Apply Peru Offset (-5 hours = -18000000 ms)
+    const peruMillis = utcMillis - (5 * 60 * 60 * 1000);
+
+    // 3. Create new date with that timestamp
+    const peruDate = new Date(peruMillis);
+
+    return peruDate.toISOString().split('T')[0];
+}
