@@ -42,7 +42,6 @@ export async function POST(request: Request) {
         // Fetch Registro Current State
         const { data: registro, error: regError } = await supabase
             .from('registros')
-            // Join with user to get name of current locker
             .select('*, usuarios!edit_started_by(nombre_completo)')
             .eq('id', registro_id)
             .single();
@@ -56,7 +55,6 @@ export async function POST(request: Request) {
         const expiresAt = registro.edit_expires_at ? new Date(registro.edit_expires_at) : null;
 
         // Active Lock Check
-        // Locked if expiry is in future AND started_by is NOT null
         const isLocked = expiresAt && expiresAt > now && registro.edit_started_by;
         const isLockedByMe = isLocked && registro.edit_started_by === user.id;
         const isLockedByOther = isLocked && registro.edit_started_by !== user.id;
@@ -71,36 +69,49 @@ export async function POST(request: Request) {
 
         // Worker Restrictions
         if (isWorker) {
-            // Check if already edited by ANY worker (including self)
-            const { count } = await supabase
-                .from('history_edits')
-                .select('*', { count: 'exact', head: true })
+            // Check if they have an APPROVED request for this record
+            const { data: approvedRequest } = await supabase
+                .from('edit_requests')
+                .select('*')
                 .eq('registro_id', registro_id)
-                .eq('role', 'trabajador');
+                .eq('usuario_id', user.id)
+                .eq('status', 'aprobado')
+                .maybeSingle();
 
-            if (count !== null && count > 0) {
-                return NextResponse.json(
-                    { error: 'Este registro ya fue editado por un trabajador. Solo un administrador puede realizar más cambios.' },
-                    { status: 403 }
-                );
-            }
+            // If they DON'T have an approved request, apply standard restrictions
+            if (!approvedRequest) {
+                // Check if already edited by ANY worker
+                const { count } = await supabase
+                    .from('history_edits')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('registro_id', registro_id)
+                    .eq('role', 'trabajador');
 
-            // Check if previously locked by me but expired (Time limit exceeded)
-            // If I was the last starter, but time expired, I am blocked.
-            if (registro.edit_started_by === user.id && expiresAt && expiresAt <= now) {
-                return NextResponse.json(
-                    { error: 'El tiempo de edición ha expirado. Solo un administrador puede reactivar la edición.' },
-                    { status: 403 }
-                );
+                if (count !== null && count > 0) {
+                    return NextResponse.json(
+                        {
+                            error: 'Este registro ya fue editado por un trabajador. Solo un administrador puede realizar más cambios.',
+                            canRequest: true
+                        },
+                        { status: 403 }
+                    );
+                }
+
+                // Check if previously locked by me but expired
+                if (registro.edit_started_by === user.id && expiresAt && expiresAt <= now) {
+                    return NextResponse.json(
+                        {
+                            error: 'El tiempo de edición ha expirado. Solo un administrador puede reactivar la edición.',
+                            canRequest: true
+                        },
+                        { status: 403 }
+                    );
+                }
             }
         }
 
         // Admin Re-Auth
         if (isAdmin) {
-            // Admins can override expired locks or their own locks, but need password
-            // If locked by other (active), they are blocked above (Concurrency).
-            // So here we handle: New lock, or Resuming/Overriding own/expired lock.
-
             if (!password) {
                 return NextResponse.json(
                     { error: 'Contraseña requerida para editar como administrador', requirePassword: true },
@@ -118,10 +129,9 @@ export async function POST(request: Request) {
         }
 
         // Apply/Refresh Lock
-        let newExpiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+        let newExpiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour
         let newStartedAt = now.toISOString();
 
-        // If resuming active lock (by me), keep original times to enforce original 1 hour limit
         if (isLockedByMe) {
             newExpiresAt = expiresAt!;
             newStartedAt = registro.edit_started_at;

@@ -32,16 +32,53 @@ const DEFAULT_HEADER_CONFIG = {
 
 /**
  * Carga una imagen desde una URL y la devuelve como Base64
+ * Convierte la imagen a JPEG para evitar problemas de compatibilidad con jsPDF
  */
-async function loadImageToBase64(url: string): Promise<string | null> {
+async function loadImageToBase64(url: string): Promise<{ data: string; format: string } | null> {
     try {
         const response = await fetch(url);
-        if (!response.ok) return null;
+        if (!response.ok) {
+            console.warn(`Failed to fetch image: ${response.status}`);
+            return null;
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.startsWith('image/')) {
+            console.warn(`Invalid content type for image: ${contentType}`);
+            return null;
+        }
+
         const blob = await response.blob();
+
+        // Convertir a JPEG usando canvas para evitar problemas con PNG transparentes
         return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        resolve(null);
+                        return;
+                    }
+                    // Fondo blanco para imágenes con transparencia
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+                    resolve({ data: dataUrl, format: 'JPEG' });
+                } catch (canvasError) {
+                    console.error('Error converting image with canvas:', canvasError);
+                    resolve(null);
+                }
+            };
+            img.onerror = () => {
+                console.error('Error loading image element');
+                resolve(null);
+            };
+            img.src = URL.createObjectURL(blob);
         });
     } catch (e) {
         console.error("Error loading logo:", e);
@@ -131,7 +168,7 @@ export async function generateRegistroPDF(registro: RegistroForPDF): Promise<voi
         if (logoBase64) {
             // Ajustar imagen centrada
             const imgMargin = 2;
-            doc.addImage(logoBase64, 'PNG', xCol1 + imgMargin, hTop + imgMargin, col1W - (imgMargin * 2), hHeight - (imgMargin * 2), undefined, 'FAST');
+            doc.addImage(logoBase64.data, logoBase64.format, xCol1 + imgMargin, hTop + imgMargin, col1W - (imgMargin * 2), hHeight - (imgMargin * 2), undefined, 'FAST');
         } else {
             // Placeholder text if no logo found
             doc.setFontSize(10);
@@ -302,9 +339,40 @@ export async function generateRegistroPDF(registro: RegistroForPDF): Promise<voi
 
         const imageWidth = 150;
         const imageHeight = 112;
-        let xPosition = (pageWidth - imageWidth) / 2; // Center horizontally
+        const xPosition = (pageWidth - imageWidth) / 2; // Center horizontally
 
-        registro.fotos.forEach((foto, index) => {
+        // Función para convertir imagen base64 a JPEG usando canvas
+        const convertToJpeg = (base64Data: string): Promise<string> => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            reject(new Error('Could not get canvas context'));
+                            return;
+                        }
+                        // Fondo blanco para imágenes con transparencia
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        const jpegData = canvas.toDataURL('image/jpeg', 0.92);
+                        resolve(jpegData);
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+                img.onerror = () => reject(new Error('Failed to load image'));
+                img.src = base64Data;
+            });
+        };
+
+        // Procesar fotos secuencialmente
+        for (let index = 0; index < registro.fotos.length; index++) {
+            const foto = registro.fotos[index];
             if (foto.datos_base64) {
                 try {
                     // Start new page if current page full
@@ -313,15 +381,24 @@ export async function generateRegistroPDF(registro: RegistroForPDF): Promise<voi
                         yPosition = 20;
                     }
 
-                    // Format detection
+                    // Convertir a JPEG para evitar problemas con PNG
+                    let imageData = foto.datos_base64;
                     let format = 'JPEG';
-                    if (foto.datos_base64.startsWith('data:image/png')) format = 'PNG';
-                    else if (foto.datos_base64.startsWith('data:image/webp')) format = 'WEBP';
 
-                    doc.addImage(foto.datos_base64, format, xPosition, yPosition, imageWidth, imageHeight);
+                    // Si es PNG o WEBP, convertir a JPEG
+                    if (foto.datos_base64.startsWith('data:image/png') ||
+                        foto.datos_base64.startsWith('data:image/webp')) {
+                        try {
+                            imageData = await convertToJpeg(foto.datos_base64);
+                        } catch (convErr) {
+                            console.warn(`Could not convert photo ${index + 1}, using original:`, convErr);
+                        }
+                    }
+
+                    doc.addImage(imageData, format, xPosition, yPosition, imageWidth, imageHeight);
 
                     if (foto.descripcion) {
-                        doc.setFontSize(9); // Slightly larger for better readability
+                        doc.setFontSize(9);
                         doc.setFont('helvetica', 'italic');
                         doc.text(foto.descripcion, pageWidth / 2, yPosition + imageHeight + 6, { align: 'center', maxWidth: imageWidth });
                         yPosition += imageHeight + 18;
@@ -330,10 +407,16 @@ export async function generateRegistroPDF(registro: RegistroForPDF): Promise<voi
                     }
                 } catch (err) {
                     console.error(`Error adding photo ${index + 1}:`, err);
-                    yPosition += 10;
+                    // Mostrar placeholder si la imagen falla
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'italic');
+                    doc.setTextColor(150);
+                    doc.text(`[Foto ${index + 1} no disponible]`, xPosition + imageWidth / 2, yPosition + 20, { align: 'center' });
+                    doc.setTextColor(0);
+                    yPosition += 40;
                 }
             }
-        });
+        }
     }
 
     // Footer with page numbers

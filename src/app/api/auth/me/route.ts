@@ -23,7 +23,7 @@ export async function GET() {
 
         const { data: user, error } = await supabase
             .from('usuarios')
-            .select('id, nombre_completo, usuario, email, roles, activo')
+            .select('id, nombre_completo, usuario, email, roles, activo, two_factor_secret')
             .eq('id', parseInt(userId))
             .eq('activo', true)
             .eq('is_deleted', false)

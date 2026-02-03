@@ -1,5 +1,9 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import crypto from 'crypto';
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'v-p-n-c-c-secret-key-32-chars-long!!'; // Must be 32 chars
+const IV_LENGTH = 16;
 
 /**
  * Merge Tailwind CSS classes with clsx
@@ -170,4 +174,28 @@ export function getPeruDateString(date: Date): string {
     const peruDate = new Date(peruMillis);
 
     return peruDate.toISOString().split('T')[0];
+}
+
+/**
+ * Encrypt a string (for 2FA secrets)
+ */
+export function encryptSecret(text: string): string {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY.substring(0, 32)), iv);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+/**
+ * Decrypt a string
+ */
+export function decryptSecret(text: string): string {
+    const textParts = text.split(':');
+    const iv = Buffer.from(textParts.shift()!, 'hex');
+    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY.substring(0, 32)), iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
 }

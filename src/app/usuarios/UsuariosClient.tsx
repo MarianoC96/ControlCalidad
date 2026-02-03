@@ -15,6 +15,10 @@ export default function UsuariosClient() {
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
 
+    // States for Search/Filter
+    const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
+
     // Modal states
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState<Usuario | null>(null);
@@ -26,6 +30,16 @@ export default function UsuariosClient() {
         roles: 'trabajador' as 'administrador' | 'trabajador',
         activo: true,
     });
+
+    // Custom Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        show: boolean;
+        title: string;
+        message: string;
+        action: () => void;
+        type: 'danger' | 'warning' | 'info';
+    }>({ show: false, title: '', message: '', action: () => { }, type: 'info' });
+
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -43,195 +57,144 @@ export default function UsuariosClient() {
         const user = await response.json();
         setUserName(user.nombre_completo);
         setUserRole(user.roles);
-
-        if (user.roles !== 'administrador') {
-            router.push('/registro-productos');
-        }
+        if (user.roles !== 'administrador') router.push('/registro-productos');
     };
 
     const loadUsuarios = async () => {
         try {
-            // Usar la API segura en lugar de cliente directo para saltar RLS
             const response = await fetch('/api/usuarios');
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.error || `Error ${response.status}: ${response.statusText}`;
-
                 if (response.status === 403) {
-                    setError(`Acceso denegado: No tienes permisos de administrador. (${errorMessage})`);
+                    setError(`Acceso denegado.`);
                     return;
                 }
-                throw new Error(errorMessage);
+                throw new Error('Error al cargar');
             }
             const data = await response.json();
-            // Verificar si data es un array
             if (Array.isArray(data)) {
-                if (data.length === 0) {
-                    setError('La lista de usuarios está vacía.');
-                }
                 setUsuarios(data);
-            } else {
-                console.error('Data received is not an array:', data);
-                setError('Error: Formato de datos incorrecto recibido del servidor.');
+                setError('');
             }
         } catch (err) {
-            console.error('Error loading usuarios:', err);
-            setError(err instanceof Error ? err.message : 'Error al cargar la lista de usuarios');
+            setError('Error al conectar con el servidor');
         } finally {
             setLoading(false);
         }
     };
 
-    const openNewModal = () => {
-        setEditingUser(null);
-        setFormData({
-            nombre_completo: '',
-            usuario: '',
-            email: '',
-            password: '',
-            roles: 'trabajador',
-            activo: true,
-        });
-        setError('');
-        setShowModal(true);
-    };
-
-    const openEditModal = (user: Usuario) => {
-        setEditingUser(user);
-        setFormData({
-            nombre_completo: user.nombre_completo,
-            usuario: user.usuario,
-            email: user.email || '',
-            password: '',
-            roles: user.roles,
-            activo: user.activo,
-        });
-        setError('');
-        setShowModal(true);
-    };
-
     const handleSave = async () => {
         if (!formData.nombre_completo.trim() || !formData.usuario.trim()) {
-            setError('Nombre y usuario son requeridos');
+            setError('Nombre y usuario son obligatorios');
             return;
         }
-
-        if (!editingUser && !formData.password) {
-            setError('La contraseña es requerida para nuevos usuarios');
-            return;
-        }
-
         setSaving(true);
-        setError('');
-
         try {
             const response = await fetch('/api/usuarios', {
                 method: editingUser ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: editingUser?.id,
-                    ...formData,
-                }),
+                body: JSON.stringify({ id: editingUser?.id, ...formData }),
             });
-
-            if (!response.ok) {
+            if (response.ok) {
+                setShowModal(false);
+                loadUsuarios();
+            } else {
                 const data = await response.json();
-                throw new Error(data.error || 'Error al guardar');
+                setError(data.error || 'Error al guardar');
             }
-
-            setShowModal(false);
-            loadUsuarios();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error al guardar');
+            setError('Error de conexión');
         } finally {
             setSaving(false);
         }
     };
 
-    const toggleActive = async (user: Usuario) => {
+    const executeDelete = async (id: number) => {
         try {
-            const response = await fetch('/api/usuarios', {
+            const user = usuarios.find(u => u.id === id);
+            if (!user) return;
+            await fetch('/api/usuarios', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: user.id,
-                    activo: !user.activo,
-                    nombre_completo: user.nombre_completo,
-                    usuario: user.usuario,
-                    email: user.email,
-                    roles: user.roles
-                }),
+                body: JSON.stringify({ ...user, is_deleted: true }),
             });
-
-            if (!response.ok) throw new Error('Error al actualizar estado');
             loadUsuarios();
+            setConfirmModal({ ...confirmModal, show: false });
         } catch (err) {
-            console.error('Error toggling active:', err);
-            alert('No se pudo cambiar el estado del usuario');
+            alert('Error al deshabilitar');
         }
     };
 
-    const handleDelete = async (user: Usuario) => {
-        if (!confirm('¿Estás seguro de que deseas eliminar este usuario?')) return;
-
+    const executeReset2FA = async (id: number) => {
         try {
-            const response = await fetch('/api/usuarios', {
+            const user = usuarios.find(u => u.id === id);
+            if (!user) return;
+            await fetch('/api/usuarios', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: user.id,
-                    is_deleted: true,
-                    // Send other required fields just in case validation needs them, 
-                    // though usually partial updates should be fine if logic allows.
-                    // Based on my previous PUT logic, it updates distinct fields.
-                    nombre_completo: user.nombre_completo,
-                    usuario: user.usuario,
-                    email: user.email,
-                    roles: user.roles,
-                    activo: user.activo
-                }),
+                body: JSON.stringify({ ...user, two_factor_secret: null }),
             });
-
-            if (!response.ok) throw new Error('Error al eliminar usuario');
             loadUsuarios();
+            setConfirmModal({ ...confirmModal, show: false });
         } catch (err) {
-            console.error('Error deleting user:', err);
-            alert('No se pudo eliminar el usuario');
+            alert('Error al resetear');
         }
     };
 
-    const handleLogout = async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        router.push('/');
+    const openDisableConfirm = (user: Usuario) => {
+        setConfirmModal({
+            show: true,
+            title: '¿Deshabilitar Personal?',
+            message: `Esta acción bloqueará el acceso de ${user.nombre_completo} al sistema de forma inmediata. ¿Deseas continuar?`,
+            type: 'danger',
+            action: () => executeDelete(user.id)
+        });
     };
 
-    if (loading) {
-        return (
-            <>
-                <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
-                <div className="container mt-4">
-                    <div className="text-center">
-                        <div className="spinner"></div>
-                        <p>Cargando...</p>
-                    </div>
-                </div>
-            </>
-        );
-    }
+    const openReset2FAConfirm = (user: Usuario) => {
+        setConfirmModal({
+            show: true,
+            title: '¿Resetear Seguridad 2FA?',
+            message: `Se eliminará la llave de seguridad de ${user.nombre_completo}. Deberá volver a configurarla en su próximo login.`,
+            type: 'warning',
+            action: () => executeReset2FA(user.id)
+        });
+    };
+
+    const filteredUsuarios = usuarios.filter(user => {
+        const matchesSearch =
+            user.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.usuario.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole = roleFilter === 'all' || user.roles === roleFilter;
+        return matchesSearch && matchesRole;
+    });
+
+    if (loading) return <div className="loader-screen">Sincronizando Sistema...</div>;
 
     return (
-        <>
-            <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+        <div className="admin-page-wrapper">
+            <Navbar userName={userName} userRole={userRole} onLogout={() => router.push('/')} />
 
-            <main className="container mt-4">
-                <h2 className="text-center mb-4">Gestión de Usuarios</h2>
-
-                <div className="actions-bar">
-                    <button className="btn btn-success" onClick={openNewModal}>
-                        + Agregar Usuario
-                    </button>
+            <main className="main-content">
+                {/* Header Section */}
+                <div className="header-container shadow-sm border">
+                    <div className="header-info">
+                        <div className="badge-system"><span className="dot-pulse"></span>CONTROL DE ACCESO</div>
+                        <h1 className="title">Personal del Sistema</h1>
+                        <p className="subtitle">Gestione perfiles, roles y estados de cuenta desde un solo lugar.</p>
+                    </div>
+                    <div className="header-stats">
+                        <div className="stat-pill">
+                            <span className="val">{usuarios.length}</span>
+                            <span className="lab">TOTAL</span>
+                        </div>
+                        <button className="btn-add-premium shadow-sm" onClick={() => { setEditingUser(null); setFormData({ nombre_completo: '', usuario: '', email: '', password: '', roles: 'trabajador', activo: true }); setShowModal(true); }}>
+                            <i className="bi bi-person-plus-fill me-2"></i>
+                            <span>Nuevo Personal</span>
+                        </button>
+                    </div>
                 </div>
 
+<<<<<<< HEAD
                 <div className="table-container">
                     <table className="table">
                         <thead>
@@ -294,193 +257,271 @@ export default function UsuariosClient() {
                                                     </button>
                                                 </>
                                             )}
+=======
+                {/* Filters */}
+                <div className="filters-bar shadow-sm border">
+                    <div className="search-group"><i className="bi bi-search"></i><input type="text" placeholder="Buscar personal..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+                    <select className="filter-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                        <option value="all">Todos los roles</option>
+                        <option value="trabajador">Trabajadores</option>
+                        <option value="administrador">Administradores</option>
+                    </select>
+                </div>
+
+                {/* Feed */}
+                <div className="users-feed">
+                    {filteredUsuarios.map((user) => (
+                        <div key={user.id} className={`user-card border shadow-sm ${!user.activo ? 'card-inactive' : ''}`}>
+                            <div className="card-top">
+                                <div className="user-profile">
+                                    <div className={`avatar ${user.roles === 'administrador' ? 'av-admin' : ''}`}>{user.nombre_completo.charAt(0)}</div>
+                                    <div className="u-meta">
+                                        <div className="u-name">
+                                            {user.nombre_completo}
+>>>>>>> 3eeae195966f24f7c36064f67cbddb6c192fce71
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        <div className="u-handle">
+                                            <span>@{user.usuario}</span>
+                                            {user.email && <span className="u-email">• {user.email}</span>}
+                                        </div>
+                                        {user.two_factor_secret && (
+                                            <div className="status-2fa-badge mt-1">
+                                                <i className="bi bi-shield-fill-check"></i> PROTECCIÓN 2FA ACTIVA
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="user-tags">
+                                    <span className={`chip chip-role ${user.roles}`}>{user.roles}</span>
+                                    <span className={`chip chip-status ${user.activo ? 'active' : 'inactive'}`}>{user.activo ? 'Activo' : 'Inactivo'}</span>
+                                </div>
+                            </div>
+                            <div className="card-actions">
+                                {user.usuario !== 'admin' ? (
+                                    <>
+                                        <button className="btn-c" onClick={() => {
+                                            setEditingUser(user);
+                                            setFormData({
+                                                nombre_completo: user.nombre_completo,
+                                                usuario: user.usuario,
+                                                email: user.email || '',
+                                                password: '',
+                                                roles: user.roles,
+                                                activo: user.activo
+                                            });
+                                            setError('');
+                                            setShowModal(true);
+                                        }} title="Editar Perfil"><i className="bi bi-pencil-fill"></i> Editar</button>
+
+                                        {user.two_factor_secret && (
+                                            <button className="btn-c btn-warn" onClick={() => openReset2FAConfirm(user)}><i className="bi bi-shield-slash"></i> 2FA</button>
+                                        )}
+
+                                        <button className="btn-c btn-danger-solid" onClick={() => openDisableConfirm(user)} title="Deshabilitar Acceso">
+                                            <i className="bi bi-person-x-fill me-1"></i> Deshabilitar
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="system-tag"><i className="bi bi-lock-fill"></i> PROTEGIDO POR SISTEMA</div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </main>
 
-            {/* Modal */}
-            {
-                showModal && (
-                    <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h3>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
-                                <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+            {/* MODAL DE EDICIÓN - ÚNICO PARA TODO */}
+            {showModal && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal-content shadow-lg border-0" onClick={e => e.stopPropagation()}>
+                        <div className="modal-top">
+                            <h5>{editingUser ? 'Actualizar Usuario' : 'Nuevo Registro'}</h5>
+                            <button className="close-m" onClick={() => setShowModal(false)}>&times;</button>
+                        </div>
+                        <div className="modal-body p-4">
+                            <div className="form-item mb-3">
+                                <label>NOMBRE COMPLETO</label>
+                                <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })} placeholder="Ej. Juan Pérez" />
+                            </div>
+                            <div className="row g-3 mb-3">
+                                <div className="col-md-6">
+                                    <div className="form-item">
+                                        <label>USUARIO (@)</label>
+                                        <input type="text" value={formData.usuario} onChange={(e) => setFormData({ ...formData, usuario: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="col-md-6">
+                                    <div className="form-item">
+                                        <label>ROL DE ACCESO</label>
+                                        <select value={formData.roles} onChange={(e) => setFormData({ ...formData, roles: e.target.value as any })}>
+                                            <option value="trabajador">Trabajador</option>
+                                            <option value="administrador">Administrador</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="form-item mb-3">
+                                <label>EMAIL INSTITUCIONAL</label>
+                                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                            </div>
+                            <div className="form-item mb-4">
+                                <label>CONTRASEÑA {editingUser ? '(Opcional)' : ''}</label>
+                                <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
                             </div>
 
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label className="form-label">Nombre Completo *</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.nombre_completo}
-                                        onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
-                                    />
+                            {/* ESTADO DE CUENTA - INTERRUPTOR */}
+                            <div className="toggle-box border rounded-4 p-3 d-flex justify-content-between align-items-center">
+                                <div className="toggle-info">
+                                    <div className="fw-bold small">Estado de Cuenta</div>
+                                    <div className={`small ${formData.activo ? 'text-success' : 'text-danger'}`}>{formData.activo ? 'Activa y Habilitada' : 'Inactiva / Bloqueada'}</div>
                                 </div>
-
-                                <div className="form-group mt-3">
-                                    <label className="form-label">Usuario *</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.usuario}
-                                        onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
-                                    />
+                                <div className="form-check form-switch m-0">
+                                    <input className="form-check-input" type="checkbox" checked={formData.activo} onChange={(e) => setFormData({ ...formData, activo: e.target.checked })} style={{ width: '3rem', height: '1.5rem', cursor: 'pointer' }} />
                                 </div>
-
-                                <div className="form-group mt-3">
-                                    <label className="form-label">Email</label>
-                                    <input
-                                        type="email"
-                                        className="form-control"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="form-group mt-3">
-                                    <label className="form-label">
-                                        Contraseña {editingUser ? '(dejar vacío para mantener)' : '*'}
-                                    </label>
-                                    <input
-                                        type="password"
-                                        className="form-control"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="form-group mt-3">
-                                    <label className="form-label">Rol *</label>
-                                    <select
-                                        className="form-select"
-                                        value={formData.roles}
-                                        onChange={(e) => setFormData({ ...formData, roles: e.target.value as 'administrador' | 'trabajador' })}
-                                    >
-                                        <option value="trabajador">Trabajador</option>
-                                        <option value="administrador">Administrador</option>
-                                    </select>
-                                </div>
-
-                                {error && <div className="alert alert-danger mt-3">{error}</div>}
                             </div>
 
-                            <div className="modal-footer">
-                                <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                                    Cancelar
-                                </button>
-                                <button className="btn btn-success" onClick={handleSave} disabled={saving}>
-                                    {saving ? 'Guardando...' : 'Guardar'}
-                                </button>
-                            </div>
+                            {error && <div className="error-msg mt-3"><i className="bi bi-info-circle-fill"></i> {error}</div>}
+                        </div>
+                        <div className="modal-footer p-4 pt-0 border-0">
+                            <button className="btn-cancel" onClick={() => setShowModal(false)}>Atrás</button>
+                            <button className="btn-confirm" onClick={handleSave} disabled={saving}>{saving ? 'Procesando...' : 'Guardar Cambios'}</button>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
+
+            {/* MODAL DE CONFIRMACIÓN CUSTOM (Sustituye a Confirm del navegador) */}
+            {confirmModal.show && (
+                <div className="modal-overlay" style={{ zIndex: 1100 }}>
+                    <div className="confirm-box shadow-xl border-0 p-4 text-center">
+                        <div className={`icon-circle mb-3 mx-auto i-${confirmModal.type}`}>
+                            <i className={`bi ${confirmModal.type === 'danger' ? 'bi-trash3' : 'bi-exclamation-triangle'}`}></i>
+                        </div>
+                        <h5 className="fw-black mb-2">{confirmModal.title}</h5>
+                        <p className="text-muted small mb-4">{confirmModal.message}</p>
+                        <div className="d-flex gap-2 justify-content-center">
+                            <button className="btn-cancel" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>No, Cancelar</button>
+                            <button className={`btn-confirm bg-${confirmModal.type === 'danger' ? 'danger' : 'warning'}`} onClick={confirmModal.action}>Sí, Continuar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
-        .actions-bar {
-          display: flex;
-          justify-content: flex-end;
-          margin-bottom: 1.5rem;
-        }
+                .admin-page-wrapper { min-height: 100vh; background-color: #f0f2f5; font-family: 'Inter', system-ui, sans-serif; }
+                .main-content { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
 
-        .table-container {
-          overflow-x: auto;
-        }
+                /* Header */
+                .header-container { background: white; border-radius: 24px; padding: 25px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+                .badge-system { display: inline-flex; align-items: center; gap: 8px; color: #0369a1; font-weight: 800; font-size: 0.7rem; margin-bottom: 10px; }
+                .dot-pulse { width: 8px; height: 8px; background: #0369a1; border-radius: 50%; animation: p 2s infinite; }
+                @keyframes p { 0% { box-shadow: 0 0 0 0 rgba(3,105,161,0.4); } 70% { box-shadow: 0 0 0 6px rgba(3,105,161,0); } 100% { box-shadow: 0 0 0 0 rgba(3,105,161,0); } }
+                .title { font-size: 1.6rem; font-weight: 900; color: #1e293b; margin: 0; }
+                .subtitle { color: #64748b; font-size: 0.9rem; }
+                
+                .header-stats { display: flex; gap: 15px; align-items: center; }
+                .stat-pill { background: #f8fafc; padding: 8px 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; text-align: center; }
+                .stat-pill .val { font-weight: 900; font-size: 1.2rem; line-height: 1; }
+                .stat-pill .lab { font-size: 0.6rem; font-weight: 800; color: #94a3b8; }
+                .btn-add-premium { 
+                    background: #10b981; 
+                    color: white; 
+                    border: none; 
+                    padding: 10px 20px; 
+                    border-radius: 14px; 
+                    font-weight: 800; 
+                    font-size: 0.85rem; 
+                    display: flex; 
+                    align-items: center; 
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .btn-add-premium:hover { 
+                    transform: translateY(-2px); 
+                    background: #059669; 
+                    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+                }
+                .btn-add-premium i { font-size: 1.1rem; }
 
-        .btn-group {
-          display: flex;
-          gap: 0.5rem;
-        }
+                /* Filters */
+                .filters-bar { background: white; border-radius: 50px; padding: 8px 15px; display: flex; gap: 15px; margin-bottom: 24px; }
+                .search-group { flex: 1; display: flex; align-items: center; gap: 10px; padding-left: 10px; }
+                .search-group i { color: #94a3b8; }
+                .search-group input { border: none; outline: none; width: 100%; font-size: 0.9rem; }
+                .filter-select { border: 1px solid #e2e8f0; border-radius: 50px; padding: 5px 15px; font-size: 0.85rem; outline: none; }
 
-        .btn-sm {
-          padding: 0.25rem 0.75rem;
-          font-size: 0.875rem;
-        }
+                /* Cards */
+                .user-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 12px; transition: 0.2s; }
+                .user-card:hover { transform: translateY(-3px); }
+                .card-inactive { opacity: 0.7; border-left: 5px solid #94a3b8 !important; }
+                .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+                .user-profile { display: flex; gap: 15px; align-items: center; }
+                .avatar { width: 44px; height: 44px; background: #3b82f6; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+                .av-admin { background: #6366f1; }
+                .u-name { font-weight: 800; color: #1e293b; font-size: 0.95rem; line-height: 1.2; }
+                .u-handle span { color: #3b82f6; font-weight: 700; font-size: 0.8rem; }
+                .u-email { color: #94a3b8; font-size: 0.8rem; }
+                
+                .status-2fa-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    color: #10b981;
+                    font-size: 0.65rem;
+                    font-weight: 900;
+                    letter-spacing: 0.5px;
+                    background: #ecfdf5;
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                }
+                
+                .user-tags { display: flex; gap: 6px; }
+                .chip { padding: 4px 10px; border-radius: 50px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; border: 1px solid rgba(0,0,0,0.05); }
+                .chip-role.administrador { background: #e0e7ff; color: #4338ca; }
+                .chip-role.trabajador { background: #f1f5f9; color: #475569; }
+                .chip-status.active { background: #d1fae5; color: #065f46; }
+                .chip-status.inactive { background: #f1f5f9; color: #94a3b8; }
 
-        .badge-primary {
-          background-color: #607d8b;
-        }
+                .card-actions { border-top: 1px solid #f1f5f9; padding-top: 15px; display: flex; gap: 8px; align-items: center; }
+                .btn-c { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 6px 15px; font-size: 0.8rem; font-weight: 700; transition: 0.2s; }
+                .btn-c:hover { background: #f1f5f9; border-color: #cbd5e1; }
+                .btn-warn { color: #d97706; }
+                .btn-danger-solid { 
+                    background: #ef4444; 
+                    color: white; 
+                    border: 1px solid #dc2626; 
+                }
+                .btn-danger-solid:hover { 
+                    background: #b91c1c; 
+                    border-color: #991b1b; 
+                    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);
+                }
+                .system-tag { font-size: 0.6rem; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; }
 
-        .badge-secondary {
-          background-color: #6c757d;
-        }
+                /* Modals */
+                .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+                .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 500px; overflow: hidden; }
+                .modal-top { padding: 20px 24px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; }
+                .modal-top h5 { margin: 0; font-weight: 900; font-size: 1.1rem; }
+                .close-m { background: none; border: none; font-size: 1.5rem; color: #94a3b8; }
+                
+                .form-item label { display: block; font-size: 0.65rem; font-weight: 800; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; }
+                .form-item input, .form-item select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; outline: none; font-size: 0.9rem; }
+                .form-item input:focus { border-color: #3b82f6; }
+                
+                .btn-cancel { background: #f1f5f9; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; color: #64748b; }
+                .btn-confirm { background: #1e293b; border: none; color: white; padding: 10px 25px; border-radius: 50px; font-weight: 700; }
 
-        .badge-warning {
-          background-color: #ffc107;
-          color: #212529;
-        }
+                /* Confirm Box */
+                .confirm-box { background: white; border-radius: 24px; width: 350px; }
+                .icon-circle { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+                .i-danger { background: #fee2e2; color: #ef4444; }
+                .i-warning { background: #fef3c7; color: #d97706; }
+                .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; }
 
-        .btn-warning {
-          background-color: #ffc107;
-          color: #212529;
-        }
-
-        .btn-warning:hover {
-          background-color: #e0a800;
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 1rem;
-        }
-
-        .modal-content {
-          background: white;
-          border-radius: 0.5rem;
-          width: 100%;
-          max-width: 500px;
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid #dee2e6;
-        }
-
-        .modal-header h3 {
-          margin: 0;
-        }
-
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          color: #6c757d;
-        }
-
-        .modal-body {
-          padding: 1.5rem;
-        }
-
-        .modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 0.5rem;
-          padding: 1rem 1.5rem;
-          border-top: 1px solid #dee2e6;
-        }
-      `}</style>
-        </>
+                .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f2f5; font-weight: 900; color: #0369a1; letter-spacing: 2px; }
+            `}</style>
+        </div>
     );
 }
