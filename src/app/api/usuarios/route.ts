@@ -164,7 +164,6 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
         }
 
-<<<<<<< HEAD
         // Proteger al usuario sadmin (id=1) de ser editado o deshabilitado
         if (id === 1) {
             return NextResponse.json(
@@ -174,9 +173,6 @@ export async function PUT(request: NextRequest) {
         }
 
         const updateData: Record<string, unknown> = {
-=======
-        const updateData: Record<string, any> = {
->>>>>>> 3eeae195966f24f7c36064f67cbddb6c192fce71
             nombre_completo,
             usuario,
             email,
