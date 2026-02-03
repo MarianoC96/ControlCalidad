@@ -143,8 +143,8 @@ export default function UsuariosClient() {
     const openDisableConfirm = (user: Usuario) => {
         setConfirmModal({
             show: true,
-            title: '¿Deshabilitar Personal?',
-            message: `Esta acción bloqueará el acceso de ${user.nombre_completo} al sistema de forma inmediata. ¿Deseas continuar?`,
+            title: '¿Eliminar Personal?',
+            message: `Esta acción eliminará a ${user.nombre_completo} del sistema de forma permanente. ¿Deseas continuar?`,
             type: 'danger',
             action: () => executeDelete(user.id)
         });
@@ -194,70 +194,6 @@ export default function UsuariosClient() {
                     </div>
                 </div>
 
-<<<<<<< HEAD
-                <div className="table-container">
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th style={{ width: '20%' }}>Nombre</th>
-                                <th style={{ width: '15%' }}>Usuario</th>
-                                <th style={{ width: '25%' }}>Email</th>
-                                <th style={{ width: '10%' }}>Rol</th>
-                                <th style={{ width: '10%' }}>Estado</th>
-                                <th style={{ width: '5%' }}>2FA</th>
-                                <th style={{ width: '1%', whiteSpace: 'nowrap' }}>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {usuarios.map((user) => (
-                                <tr key={user.id}>
-                                    <td>{user.nombre_completo}</td>
-                                    <td>{user.usuario}</td>
-                                    <td>{user.email || '-'}</td>
-                                    <td>
-                                        <span className={`badge ${user.roles === 'administrador' ? 'badge-primary' : 'badge-secondary'}`}>
-                                            {user.roles}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`badge ${user.activo ? 'badge-success' : 'badge-danger'}`}>
-                                            {user.activo ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {user.two_factor_secret ? (
-                                            <span className="badge badge-success">Habilitado</span>
-                                        ) : (
-                                            <span className="badge badge-secondary">No</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <div className="btn-group">
-                                            {user.usuario === 'sadmin' ? (
-                                                <span className="badge badge-secondary" style={{ padding: '0.5rem' }}>Sistema</span>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        className="btn btn-primary btn-sm"
-                                                        onClick={() => openEditModal(user)}
-                                                    >
-                                                        Editar
-                                                    </button>
-                                                    <button
-                                                        className={`btn btn-sm ${user.activo ? 'btn-warning' : 'btn-success'}`}
-                                                        onClick={() => toggleActive(user)}
-                                                    >
-                                                        {user.activo ? 'Desactivar' : 'Activar'}
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-danger btn-sm"
-                                                        onClick={() => handleDelete(user)}
-                                                    >
-                                                        Eliminar
-                                                    </button>
-                                                </>
-                                            )}
-=======
                 {/* Filters */}
                 <div className="filters-bar shadow-sm border">
                     <div className="search-group"><i className="bi bi-search"></i><input type="text" placeholder="Buscar personal..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
@@ -278,7 +214,6 @@ export default function UsuariosClient() {
                                     <div className="u-meta">
                                         <div className="u-name">
                                             {user.nombre_completo}
->>>>>>> 3eeae195966f24f7c36064f67cbddb6c192fce71
                                         </div>
                                         <div className="u-handle">
                                             <span>@{user.usuario}</span>
@@ -297,7 +232,7 @@ export default function UsuariosClient() {
                                 </div>
                             </div>
                             <div className="card-actions">
-                                {user.usuario !== 'admin' ? (
+                                {user.usuario !== 'sadmin' ? (
                                     <>
                                         <button className="btn-c" onClick={() => {
                                             setEditingUser(user);
@@ -317,8 +252,8 @@ export default function UsuariosClient() {
                                             <button className="btn-c btn-warn" onClick={() => openReset2FAConfirm(user)}><i className="bi bi-shield-slash"></i> 2FA</button>
                                         )}
 
-                                        <button className="btn-c btn-danger-solid" onClick={() => openDisableConfirm(user)} title="Deshabilitar Acceso">
-                                            <i className="bi bi-person-x-fill me-1"></i> Deshabilitar
+                                        <button className="btn-c btn-danger-solid" onClick={() => openDisableConfirm(user)} title="Eliminar Usuario">
+                                            <i className="bi bi-trash3-fill me-1"></i> Eliminar
                                         </button>
                                     </>
                                 ) : (
