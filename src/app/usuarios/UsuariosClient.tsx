@@ -270,7 +270,7 @@ export default function UsuariosClient() {
                                     </td>
                                     <td>
                                         <div className="btn-group">
-                                            {user.usuario === 'admin' ? (
+                                            {user.usuario === 'sadmin' ? (
                                                 <span className="badge badge-secondary" style={{ padding: '0.5rem' }}>Sistema</span>
                                             ) : (
                                                 <>
