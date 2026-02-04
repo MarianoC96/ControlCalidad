@@ -150,6 +150,32 @@ body {
   cursor: not-allowed;
 }
 
+/* Validation States - Global */
+.form-control.is-valid,
+.form-control:valid:not(:placeholder-shown),
+.is-valid-custom {
+  border-color: #93c5fd !important;
+  background-color: #f0f9ff !important;
+}
+
+.form-control.is-valid:focus,
+.is-valid-custom:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+}
+
+.form-control.is-invalid,
+.is-invalid-custom {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+}
+
+.form-control.is-invalid:focus,
+.is-invalid-custom:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25) !important;
+}
+
 .form-select {
   display: block;
   width: 100%;
