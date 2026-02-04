@@ -143,6 +143,15 @@ export default function ProductosClient() {
     const handleParametroChange = (index: number, field: keyof ParametroForm, value: string | number | null) => {
         setParametrosForm((prev) => {
             const updated = [...prev];
+
+            // Prevent negative values
+            if ((field === 'rango_min' || field === 'rango_max' || (field === 'valor' && updated[index].tipo === 'numero')) && value && typeof value === 'string') {
+                const num = parseFloat(value);
+                if (!isNaN(num) && num < 0) {
+                    value = Math.abs(num).toString();
+                }
+            }
+
             updated[index] = { ...updated[index], [field]: value };
 
             // If selecting a master parameter, update name and type
@@ -490,6 +499,10 @@ export default function ProductosClient() {
                                                             <input
                                                                 type="number"
                                                                 step="0.01"
+                                                                min="0"
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
+                                                                }}
                                                                 className="form-control border-0 bg-light"
                                                                 value={param.valor}
                                                                 onChange={(e) => handleParametroChange(index, 'valor', e.target.value)}
@@ -505,6 +518,10 @@ export default function ProductosClient() {
                                                                 <input
                                                                     type="number"
                                                                     step="0.01"
+                                                                    min="0"
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
+                                                                    }}
                                                                     className="form-control border-0 bg-light"
                                                                     value={param.rango_min}
                                                                     onChange={(e) => handleParametroChange(index, 'rango_min', e.target.value)}
@@ -516,6 +533,10 @@ export default function ProductosClient() {
                                                                 <input
                                                                     type="number"
                                                                     step="0.01"
+                                                                    min="0"
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
+                                                                    }}
                                                                     className="form-control border-0 bg-light"
                                                                     value={param.rango_max}
                                                                     onChange={(e) => handleParametroChange(index, 'rango_max', e.target.value)}

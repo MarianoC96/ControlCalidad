@@ -143,7 +143,13 @@ export default function RegistroProductosClient() {
             const parametro = parametros[index];
 
             if (field === 'valor') {
-                const numValue = parseFloat(value);
+                let numValue = parseFloat(value);
+
+                // Prevent negative values if somehow entered
+                if (!isNaN(numValue) && numValue < 0) {
+                    numValue = Math.abs(numValue);
+                }
+
                 control.valorControl = isNaN(numValue) ? null : numValue;
 
                 // Validate range
@@ -536,6 +542,9 @@ export default function RegistroProductosClient() {
                                 type="number"
                                 id="cantidad"
                                 min="1"
+                                onKeyDown={(e) => {
+                                    if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
+                                }}
                                 className={`form-control ${touched && !formData.cantidad ? 'is-invalid' : ''}`}
                                 value={formData.cantidad}
                                 onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })}
@@ -610,6 +619,10 @@ export default function RegistroProductosClient() {
                                                             <input
                                                                 type="number"
                                                                 step="0.01"
+                                                                min="0"
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
+                                                                }}
                                                                 className={`form-control control-input ${controles[index]?.fueraDeRango ? 'is-invalid is-invalid-custom' : 'is-valid-custom'}`}
                                                                 value={controles[index]?.valorControl ?? ''}
                                                                 onChange={(e) => handleControlChange(index, 'valor', e.target.value)}
