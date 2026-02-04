@@ -265,61 +265,174 @@ export default function UsuariosClient() {
                 </div>
             </main>
 
-            {/* MODAL DE EDICIÓN - ÚNICO PARA TODO */}
+            {/* MODAL DE EDICIÓN - DISEÑO PREMIUM */}
             {showModal && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal-content shadow-lg border-0" onClick={e => e.stopPropagation()}>
-                        <div className="modal-top">
-                            <h5>{editingUser ? 'Actualizar Usuario' : 'Nuevo Registro'}</h5>
-                            <button className="close-m" onClick={() => setShowModal(false)}>&times;</button>
-                        </div>
-                        <div className="modal-body p-4">
-                            <div className="form-item mb-3">
-                                <label>NOMBRE COMPLETO</label>
-                                <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })} placeholder="Ej. Juan Pérez" />
+                        {/* Header con Avatar Dinámico */}
+                        <div className="modal-header-premium">
+                            <div className="modal-header-bg"></div>
+                            <div className="modal-avatar-section">
+                                <div className={`modal-avatar ${formData.roles === 'administrador' ? 'avatar-admin' : 'avatar-worker'}`}>
+                                    {formData.nombre_completo ? formData.nombre_completo.charAt(0).toUpperCase() : '?'}
+                                </div>
+                                <div className="modal-user-preview">
+                                    <span className="preview-name">{formData.nombre_completo || 'Nuevo Usuario'}</span>
+                                    <span className="preview-handle">@{formData.usuario || 'usuario'}</span>
+                                </div>
                             </div>
-                            <div className="row g-3 mb-3">
-                                <div className="col-md-6">
-                                    <div className="form-item">
-                                        <label>USUARIO (@)</label>
-                                        <input type="text" value={formData.usuario} onChange={(e) => setFormData({ ...formData, usuario: e.target.value })} />
+                            <button className="close-modal-btn" onClick={() => setShowModal(false)}>
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        <div className="modal-body-premium">
+                            {/* Título dinámico */}
+                            <div className="modal-section-title">
+                                <i className={`bi ${editingUser ? 'bi-pencil-square' : 'bi-person-plus-fill'}`}></i>
+                                <span>{editingUser ? 'Editar Información' : 'Registrar Personal'}</span>
+                            </div>
+
+                            {/* Nombre Completo */}
+                            <div className="premium-input-group">
+                                <div className="input-icon"><i className="bi bi-person-fill"></i></div>
+                                <div className="input-content">
+                                    <label>Nombre Completo</label>
+                                    <input
+                                        type="text"
+                                        value={formData.nombre_completo}
+                                        onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
+                                        placeholder="Ingresa el nombre completo"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Usuario y Rol en Grid */}
+                            <div className="input-grid">
+                                <div className="premium-input-group">
+                                    <div className="input-icon"><i className="bi bi-at"></i></div>
+                                    <div className="input-content">
+                                        <label>Usuario</label>
+                                        <input
+                                            type="text"
+                                            value={formData.usuario}
+                                            onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
+                                            placeholder="nombre_usuario"
+                                        />
                                     </div>
                                 </div>
-                                <div className="col-md-6">
-                                    <div className="form-item">
-                                        <label>ROL DE ACCESO</label>
-                                        <select value={formData.roles} onChange={(e) => setFormData({ ...formData, roles: e.target.value as any })}>
-                                            <option value="trabajador">Trabajador</option>
-                                            <option value="administrador">Administrador</option>
+
+                                <div className="premium-input-group">
+                                    <div className="input-icon"><i className="bi bi-shield-fill"></i></div>
+                                    <div className="input-content">
+                                        <label>Rol de Acceso</label>
+                                        <select value={formData.roles} onChange={(e) => setFormData({ ...formData, roles: e.target.value as 'administrador' | 'trabajador' })}>
+                                            <option value="trabajador">👷 Trabajador</option>
+                                            <option value="administrador">👑 Administrador</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
-                            <div className="form-item mb-3">
-                                <label>EMAIL INSTITUCIONAL</label>
-                                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                            </div>
-                            <div className="form-item mb-4">
-                                <label>CONTRASEÑA {editingUser ? '(Opcional)' : ''}</label>
-                                <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
-                            </div>
 
-                            {/* ESTADO DE CUENTA - INTERRUPTOR */}
-                            <div className="toggle-box border rounded-4 p-3 d-flex justify-content-between align-items-center">
-                                <div className="toggle-info">
-                                    <div className="fw-bold small">Estado de Cuenta</div>
-                                    <div className={`small ${formData.activo ? 'text-success' : 'text-danger'}`}>{formData.activo ? 'Activa y Habilitada' : 'Inactiva / Bloqueada'}</div>
-                                </div>
-                                <div className="form-check form-switch m-0">
-                                    <input className="form-check-input" type="checkbox" checked={formData.activo} onChange={(e) => setFormData({ ...formData, activo: e.target.checked })} style={{ width: '3rem', height: '1.5rem', cursor: 'pointer' }} />
+                            {/* Email */}
+                            <div className="premium-input-group">
+                                <div className="input-icon"><i className="bi bi-envelope-fill"></i></div>
+                                <div className="input-content">
+                                    <label>Email Institucional</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        placeholder="correo@empresa.com"
+                                    />
                                 </div>
                             </div>
 
-                            {error && <div className="error-msg mt-3"><i className="bi bi-info-circle-fill"></i> {error}</div>}
+                            {/* Contraseña */}
+                            <div className="premium-input-group">
+                                <div className="input-icon"><i className="bi bi-key-fill"></i></div>
+                                <div className="input-content">
+                                    <label>Contraseña {editingUser && <span className="optional-tag">Opcional</span>}</label>
+                                    <input
+                                        type="password"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        placeholder={editingUser ? "Dejar vacío para mantener" : "Contraseña segura"}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* ESTADO DE CUENTA - DISEÑO PREMIUM CON ANIMACIONES */}
+                            <div className={`status-card ${formData.activo ? 'status-active' : 'status-inactive'}`}>
+                                <div className="status-visual">
+                                    <div className="status-icon-container">
+                                        <div className="status-icon-bg"></div>
+                                        <i className={`bi ${formData.activo ? 'bi-shield-check' : 'bi-shield-x'}`}></i>
+                                        {formData.activo && <div className="status-pulse"></div>}
+                                    </div>
+                                </div>
+                                <div className="status-info">
+                                    <div className="status-title">Estado de Cuenta</div>
+                                    <div className="status-description">
+                                        {formData.activo ? (
+                                            <>
+                                                <span className="status-badge active">
+                                                    <i className="bi bi-check-circle-fill"></i> ACTIVA
+                                                </span>
+                                                <p>El usuario puede acceder al sistema normalmente</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="status-badge inactive">
+                                                    <i className="bi bi-x-circle-fill"></i> BLOQUEADA
+                                                </span>
+                                                <p>El acceso al sistema está restringido</p>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="status-toggle">
+                                    <button
+                                        type="button"
+                                        className={`toggle-btn ${formData.activo ? 'toggle-on' : 'toggle-off'}`}
+                                        onClick={() => setFormData({ ...formData, activo: !formData.activo })}
+                                    >
+                                        <span className="toggle-track">
+                                            <span className="toggle-thumb">
+                                                <i className={`bi ${formData.activo ? 'bi-check' : 'bi-x'}`}></i>
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="error-banner">
+                                    <i className="bi bi-exclamation-triangle-fill"></i>
+                                    <span>{error}</span>
+                                </div>
+                            )}
                         </div>
-                        <div className="modal-footer p-4 pt-0 border-0">
-                            <button className="btn-cancel" onClick={() => setShowModal(false)}>Atrás</button>
-                            <button className="btn-confirm" onClick={handleSave} disabled={saving}>{saving ? 'Procesando...' : 'Guardar Cambios'}</button>
+
+                        {/* Footer con botones premium */}
+                        <div className="modal-footer-premium">
+                            <button className="btn-modal-cancel" onClick={() => setShowModal(false)}>
+                                <i className="bi bi-arrow-left"></i>
+                                <span>Cancelar</span>
+                            </button>
+                            <button className="btn-modal-save" onClick={handleSave} disabled={saving}>
+                                {saving ? (
+                                    <>
+                                        <div className="spinner-save"></div>
+                                        <span>Guardando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="bi bi-check2-circle"></i>
+                                        <span>Guardar Cambios</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -434,19 +547,92 @@ export default function UsuariosClient() {
                 }
                 .system-tag { font-size: 0.6rem; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; }
 
-                /* Modals */
-                .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-                .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 500px; overflow: hidden; }
-                .modal-top { padding: 20px 24px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; }
-                .modal-top h5 { margin: 0; font-weight: 900; font-size: 1.1rem; }
-                .close-m { background: none; border: none; font-size: 1.5rem; color: #94a3b8; }
-                
-                .form-item label { display: block; font-size: 0.65rem; font-weight: 800; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; }
-                .form-item input, .form-item select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; outline: none; font-size: 0.9rem; }
-                .form-item input:focus { border-color: #3b82f6; }
-                
-                .btn-cancel { background: #f1f5f9; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; color: #64748b; }
-                .btn-confirm { background: #1e293b; border: none; color: white; padding: 10px 25px; border-radius: 50px; font-weight: 700; }
+                /* Modals - Premium Design */
+                .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s ease-out; }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 520px; overflow: hidden; animation: slideUp 0.3s ease-out; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+                @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+                /* Modal Header Premium */
+                .modal-header-premium { position: relative; padding: 30px 24px 20px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); overflow: hidden; }
+                .modal-header-bg { position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+                .modal-avatar-section { position: relative; display: flex; align-items: center; gap: 16px; }
+                .modal-avatar { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease; }
+                .avatar-worker { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+                .avatar-admin { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
+                .modal-user-preview { display: flex; flex-direction: column; gap: 2px; }
+                .preview-name { color: white; font-weight: 800; font-size: 1.1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+                .preview-handle { color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; }
+                .close-modal-btn { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 12px; background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+                .close-modal-btn:hover { background: rgba(255,255,255,0.2); color: white; transform: rotate(90deg); }
+
+                /* Modal Body Premium */
+                .modal-body-premium { padding: 24px; }
+                .modal-section-title { display: flex; align-items: center; gap: 10px; color: #1e293b; font-weight: 800; font-size: 0.9rem; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; }
+                .modal-section-title i { color: #3b82f6; font-size: 1.1rem; }
+
+                /* Premium Input Groups */
+                .premium-input-group { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding: 14px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; transition: all 0.2s ease; }
+                .premium-input-group:focus-within { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+                .input-icon { width: 40px; height: 40px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 1.1rem; flex-shrink: 0; border: 1px solid #e2e8f0; }
+                .premium-input-group:focus-within .input-icon { background: #3b82f6; color: white; border-color: #3b82f6; }
+                .input-content { flex: 1; min-width: 0; }
+                .input-content label { display: block; font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+                .optional-tag { background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; margin-left: 6px; text-transform: uppercase; }
+                .input-content input, .input-content select { width: 100%; padding: 8px 0; border: none; background: transparent; font-size: 0.95rem; color: #1e293b; outline: none; font-weight: 500; }
+                .input-content input::placeholder { color: #94a3b8; }
+                .input-content select { cursor: pointer; }
+
+                /* Input Grid */
+                .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+                @media (max-width: 500px) { .input-grid { grid-template-columns: 1fr; } }
+
+                /* STATUS CARD - PREMIUM DESIGN WITH ANIMATIONS */
+                .status-card { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: 20px; margin-top: 8px; margin-bottom: 16px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+                .status-card::before { content: ''; position: absolute; inset: 0; opacity: 0.05; background-image: radial-gradient(circle at 20% 50%, currentColor 1px, transparent 1px); background-size: 20px 20px; }
+                .status-active { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #10b981; color: #10b981; }
+                .status-inactive { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; color: #ef4444; }
+
+                .status-visual { position: relative; }
+                .status-icon-container { position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+                .status-icon-bg { position: absolute; inset: 0; border-radius: 16px; background: currentColor; opacity: 0.15; }
+                .status-icon-container i { position: relative; z-index: 1; font-size: 1.6rem; }
+                .status-pulse { position: absolute; inset: -4px; border-radius: 20px; border: 2px solid currentColor; opacity: 0; animation: pulse 2s infinite; }
+                @keyframes pulse { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.3); opacity: 0; } }
+
+                .status-info { flex: 1; }
+                .status-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 6px; color: #1e293b; }
+                .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px; }
+                .status-badge.active { background: #10b981; color: white; }
+                .status-badge.inactive { background: #ef4444; color: white; }
+                .status-description p { margin: 6px 0 0; font-size: 0.8rem; color: #64748b; }
+
+                /* Custom Toggle Button */
+                .status-toggle { flex-shrink: 0; }
+                .toggle-btn { background: none; border: none; cursor: pointer; padding: 0; outline: none; }
+                .toggle-track { display: block; width: 56px; height: 32px; border-radius: 50px; position: relative; transition: all 0.3s ease; }
+                .toggle-on .toggle-track { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
+                .toggle-off .toggle-track { background: linear-gradient(135deg, #94a3b8, #64748b); box-shadow: 0 4px 12px rgba(100,116,139,0.3); }
+                .toggle-thumb { position: absolute; top: 3px; width: 26px; height: 26px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 900; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+                .toggle-on .toggle-thumb { left: 27px; color: #10b981; }
+                .toggle-off .toggle-thumb { left: 3px; color: #64748b; }
+                .toggle-btn:hover .toggle-track { transform: scale(1.05); }
+                .toggle-btn:active .toggle-thumb { width: 30px; }
+
+                /* Error Banner */
+                .error-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, #fef2f2, #fee2e2); border: 1px solid #fca5a5; border-radius: 14px; color: #b91c1c; font-size: 0.85rem; font-weight: 600; animation: shake 0.4s ease-in-out; }
+                @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+                .error-banner i { font-size: 1.1rem; }
+
+                /* Modal Footer Premium */
+                .modal-footer-premium { padding: 20px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; gap: 12px; }
+                .btn-modal-cancel { display: flex; align-items: center; gap: 8px; padding: 12px 24px; background: white; border: 2px solid #e2e8f0; border-radius: 14px; color: #64748b; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+                .btn-modal-cancel:hover { border-color: #cbd5e1; background: #f8fafc; color: #475569; }
+                .btn-modal-save { display: flex; align-items: center; gap: 8px; padding: 12px 28px; background: linear-gradient(135deg, #1e293b, #334155); border: none; border-radius: 14px; color: white; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(30,41,59,0.3); }
+                .btn-modal-save:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30,41,59,0.4); }
+                .btn-modal-save:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+                .spinner-save { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+                @keyframes spin { to { transform: rotate(360deg); } }
 
                 /* Confirm Box */
                 .confirm-box { background: white; border-radius: 24px; width: 350px; }
@@ -454,6 +640,9 @@ export default function UsuariosClient() {
                 .i-danger { background: #fee2e2; color: #ef4444; }
                 .i-warning { background: #fef3c7; color: #d97706; }
                 .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; }
+
+                .btn-cancel { background: #f1f5f9; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; color: #64748b; cursor: pointer; }
+                .btn-confirm { background: #1e293b; border: none; color: white; padding: 10px 25px; border-radius: 50px; font-weight: 700; cursor: pointer; }
 
                 .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f2f5; font-weight: 900; color: #0369a1; letter-spacing: 2px; }
             `}</style>
