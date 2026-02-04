@@ -1018,20 +1018,70 @@ export default function RegistrosClient() {
                 <div className="modal show" tabIndex={-1}>
                     <div className="modal-dialog modal-lg modal-dialog-scrollable">
                         <div className="modal-content">
-                            <div className="modal-header border-0" style={{ background: '#fff3cd' }}>
-                                <h4 className="text-dark mb-0 fw-bold">Edición Controlada</h4>
-                                <button className="btn-close" onClick={handleCancelEdit} aria-label="Cerrar"></button>
+                            <div className="modal-header border-0 sticky-top shadow-sm" style={{ background: 'white', zIndex: 1020, padding: '1.25rem 1.5rem' }}>
+                                <div>
+                                    <div className="text-uppercase small fw-bold text-muted mb-1" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
+                                        Editando Registro
+                                    </div>
+                                    <h4 className="text-dark mb-0 fw-bold d-flex align-items-center gap-2">
+                                        <span className="text-primary truncate-text" style={{ maxWidth: '400px', display: 'inline-block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {editingRegistro.producto_nombre}
+                                        </span>
+                                        <span className="badge bg-light text-secondary border rounded-pill fw-normal" style={{ fontSize: '0.8rem' }}>
+                                            Lote: {editingRegistro.lote_interno}
+                                        </span>
+                                    </h4>
+                                </div>
+                                <button
+                                    className="btn-close-custom"
+                                    onClick={handleCancelEdit}
+                                    style={{
+                                        background: '#f1f5f9',
+                                        border: 'none',
+                                        width: '32px',
+                                        height: '32px',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        color: '#64748b',
+                                        fontSize: '1.2rem',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#1e293b'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
+                                >
+                                    &times;
+                                </button>
                             </div>
 
                             <div className="modal-body p-4">
                                 {/* Header Info */}
-                                <div className="alert alert-info d-flex justify-content-between align-items-center mb-4">
-                                    <div>
-                                        <strong>Tiempo restante:</strong> <span className={`fw-bold ms-2 ${timeLeft === 'Expirado' ? 'text-danger' : 'text-primary'}`} style={{ fontSize: '1.2rem' }}>{timeLeft}</span>
+                                {/* Premium Timer & Info Bar */}
+                                <div className="d-flex align-items-center justify-content-between p-3 mb-4 rounded-3" style={{ background: 'linear-gradient(to right, #f8fafc, #f1f5f9)', border: '1px solid #e2e8f0' }}>
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className={`d-flex align-items-center justify-content-center rounded-circle ${timeLeft === 'Expirado' ? 'bg-danger bg-opacity-10 text-danger' : 'bg-primary bg-opacity-10 text-primary'}`} style={{ width: '40px', height: '40px' }}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" />
+                                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div className="small text-muted fw-bold text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>Tiempo Restante</div>
+                                            <div className={`fw-bold ${timeLeft === 'Expirado' ? 'text-danger' : 'text-primary'}`} style={{ fontSize: '1.2rem', lineHeight: '1' }}>
+                                                {timeLeft}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="small text-end">
-                                        <div>Iniciado por: {userName}</div>
-                                        <div>Inicio: {editLockInfo?.startedAt ? new Date(editLockInfo.startedAt).toLocaleTimeString() : '-'}</div>
+
+                                    <div className="text-end border-start ps-3 ms-3">
+                                        <div className="small text-muted mb-1">
+                                            <span className="fw-semibold text-dark">{userName}</span> (Editor)
+                                        </div>
+                                        <div className="small text-secondary bg-white px-2 py-1 rounded border d-inline-block">
+                                            Inicio: {editLockInfo?.startedAt ? new Date(editLockInfo.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1047,42 +1097,124 @@ export default function RegistrosClient() {
                                     </ul>
                                 </div>
 
-                                {/* Photo Upload */}
-                                <div className="mb-4 p-3 bg-light rounded border">
-                                    <label className="form-label fw-bold d-flex justify-content-between mb-3">
-                                        <span>Gestión de Fotos</span>
-                                        <span className={`badge ${((editingRegistro.fotos?.filter(f => !photosToDelete.includes(f.id)).length || 0) + editPhotos.length) > 2 ? 'bg-danger' : 'bg-secondary'}`}>
-                                            Total: {(editingRegistro.fotos?.filter(f => !photosToDelete.includes(f.id)).length || 0) + editPhotos.length} / 2
+                                {/* Photo Upload Premium Container */}
+                                <div className="mb-4 bg-white rounded-3 overflow-hidden shadow-sm" style={{ border: '1px solid #e2e8f0' }}>
+                                    <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light bg-opacity-50">
+                                        <label className="form-label fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-secondary" viewBox="0 0 16 16">
+                                                <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                                                <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
+                                            </svg>
+                                            Gestión de Evidencias (Fotos)
+                                        </label>
+                                        <span className={`badge rounded-pill fw-normal px-3 py-2 ${((editingRegistro.fotos?.filter(f => !photosToDelete.includes(f.id)).length || 0) + editPhotos.length) > 2 ? 'bg-danger bg-opacity-10 text-danger border border-danger' : 'bg-success bg-opacity-10 text-success border border-success'}`}>
+                                            <span className="fw-bold fs-6 me-1">{(editingRegistro.fotos?.filter(f => !photosToDelete.includes(f.id)).length || 0) + editPhotos.length}</span> / 2 permitidas
                                         </span>
-                                    </label>
+                                    </div>
+                                    <div className="p-3">
 
-                                    {/* Scrollable container for all photos */}
-                                    <div style={{
-                                        maxHeight: '350px',
-                                        overflowY: 'auto',
-                                        overflowX: 'hidden',
-                                        padding: '10px',
-                                        backgroundColor: '#fff',
-                                        borderRadius: '8px',
-                                        border: '1px solid #e0e0e0'
-                                    }}>
-                                        {/* Existing Photos */}
-                                        {editingRegistro.fotos && editingRegistro.fotos.length > 0 && (
-                                            <div className="mb-3">
-                                                <h6 className="small text-muted mb-2 sticky-top bg-white py-1">Fotos Actuales (Guardadas):</h6>
-                                                <div className="d-flex flex-column gap-3">
-                                                    {editingRegistro.fotos.map((photo, idx) => {
-                                                        const isMarkedForDelete = photosToDelete.includes(photo.id);
-                                                        return (
+                                        {/* Scrollable container for all photos */}
+                                        <div style={{
+                                            maxHeight: '350px',
+                                            overflowY: 'auto',
+                                            overflowX: 'hidden',
+                                            padding: '10px',
+                                            backgroundColor: '#fff',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e0e0e0'
+                                        }}>
+                                            {/* Existing Photos */}
+                                            {editingRegistro.fotos && editingRegistro.fotos.length > 0 && (
+                                                <div className="mb-3">
+                                                    <h6 className="small text-muted mb-2 sticky-top bg-white py-1">Fotos Actuales (Guardadas):</h6>
+                                                    <div className="d-flex flex-column gap-3">
+                                                        {editingRegistro.fotos.map((photo, idx) => {
+                                                            const isMarkedForDelete = photosToDelete.includes(photo.id);
+                                                            return (
+                                                                <div
+                                                                    key={photo.id || idx}
+                                                                    className={`position-relative border rounded shadow-sm ${isMarkedForDelete ? 'opacity-50' : ''}`}
+                                                                    style={{
+                                                                        backgroundColor: isMarkedForDelete ? '#ffebee' : '#f8f9fa',
+                                                                        overflow: 'hidden'
+                                                                    }}
+                                                                >
+                                                                    {/* Image container with horizontal scroll for full-size view */}
+                                                                    <div style={{
+                                                                        maxHeight: '200px',
+                                                                        overflowY: 'auto',
+                                                                        overflowX: 'auto',
+                                                                        padding: '8px',
+                                                                        display: 'flex',
+                                                                        justifyContent: 'center'
+                                                                    }}>
+                                                                        <img
+                                                                            src={photo.datos_base64}
+                                                                            alt="Foto existente"
+                                                                            style={{
+                                                                                maxWidth: '100%',
+                                                                                height: 'auto',
+                                                                                cursor: 'zoom-in',
+                                                                                borderRadius: '4px'
+                                                                            }}
+                                                                            onClick={() => setZoomImage({ url: photo.datos_base64, description: photo.descripcion || 'Foto guardada previamente' })}
+                                                                            title="Clic para ampliar"
+                                                                        />
+                                                                    </div>
+
+                                                                    {/* Delete/Restore button */}
+                                                                    <button
+                                                                        className={`btn ${isMarkedForDelete ? 'btn-success' : 'btn-danger'} position-absolute d-flex align-items-center justify-content-center p-0 shadow-sm`}
+                                                                        style={{
+                                                                            width: '28px',
+                                                                            height: '28px',
+                                                                            top: '8px',
+                                                                            right: '8px',
+                                                                            zIndex: 10,
+                                                                            borderRadius: '50%',
+                                                                            border: '2px solid white'
+                                                                        }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (isMarkedForDelete) {
+                                                                                setPhotosToDelete(prev => prev.filter(id => id !== photo.id));
+                                                                            } else {
+                                                                                setPhotosToDelete(prev => [...prev, photo.id]);
+                                                                            }
+                                                                        }}
+                                                                        title={isMarkedForDelete ? 'Restaurar foto' : 'Eliminar foto'}
+                                                                    >
+                                                                        <span style={{ fontSize: '14px', lineHeight: 1, fontWeight: 'bold' }}>
+                                                                            {isMarkedForDelete ? '↺' : '✕'}
+                                                                        </span>
+                                                                    </button>
+
+                                                                    {/* Status label */}
+                                                                    <div className={`text-center small py-1 ${isMarkedForDelete ? 'bg-danger text-white' : 'bg-secondary bg-opacity-10 text-muted'}`} style={{ fontSize: '11px' }}>
+                                                                        {isMarkedForDelete ? '⚠ Se eliminará al guardar' : '✓ Guardada'}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* New Photos Section */}
+                                            {editPhotos.length > 0 && (
+                                                <div className="mb-3">
+                                                    <h6 className="small text-muted mb-2 sticky-top bg-white py-1 border-top pt-2">Fotos Nuevas (Por guardar):</h6>
+                                                    <div className="d-flex flex-column gap-3">
+                                                        {editPhotos.map((photo, idx) => (
                                                             <div
-                                                                key={photo.id || idx}
-                                                                className={`position-relative border rounded shadow-sm ${isMarkedForDelete ? 'opacity-50' : ''}`}
+                                                                key={idx}
+                                                                className="position-relative border rounded shadow-sm"
                                                                 style={{
-                                                                    backgroundColor: isMarkedForDelete ? '#ffebee' : '#f8f9fa',
+                                                                    backgroundColor: '#e8f5e9',
                                                                     overflow: 'hidden'
                                                                 }}
                                                             >
-                                                                {/* Image container with horizontal scroll for full-size view */}
+                                                                {/* Image container with scroll for full-size view */}
                                                                 <div style={{
                                                                     maxHeight: '200px',
                                                                     overflowY: 'auto',
@@ -1092,22 +1224,22 @@ export default function RegistrosClient() {
                                                                     justifyContent: 'center'
                                                                 }}>
                                                                     <img
-                                                                        src={photo.datos_base64}
-                                                                        alt="Foto existente"
+                                                                        src={photo.data}
+                                                                        alt="Vista previa"
                                                                         style={{
                                                                             maxWidth: '100%',
                                                                             height: 'auto',
                                                                             cursor: 'zoom-in',
                                                                             borderRadius: '4px'
                                                                         }}
-                                                                        onClick={() => setZoomImage({ url: photo.datos_base64, description: photo.descripcion || 'Foto guardada previamente' })}
+                                                                        onClick={() => setZoomImage({ url: photo.data, description: 'Vista previa - Nueva foto' })}
                                                                         title="Clic para ampliar"
                                                                     />
                                                                 </div>
 
-                                                                {/* Delete/Restore button */}
+                                                                {/* Delete button */}
                                                                 <button
-                                                                    className={`btn ${isMarkedForDelete ? 'btn-success' : 'btn-danger'} position-absolute d-flex align-items-center justify-content-center p-0 shadow-sm`}
+                                                                    className="btn btn-danger position-absolute d-flex align-items-center justify-content-center p-0 shadow-sm"
                                                                     style={{
                                                                         width: '28px',
                                                                         height: '28px',
@@ -1119,128 +1251,61 @@ export default function RegistrosClient() {
                                                                     }}
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        if (isMarkedForDelete) {
-                                                                            setPhotosToDelete(prev => prev.filter(id => id !== photo.id));
-                                                                        } else {
-                                                                            setPhotosToDelete(prev => [...prev, photo.id]);
-                                                                        }
+                                                                        setEditPhotos(prev => prev.filter((_, i) => i !== idx));
                                                                     }}
-                                                                    title={isMarkedForDelete ? 'Restaurar foto' : 'Eliminar foto'}
+                                                                    title="Eliminar foto"
                                                                 >
-                                                                    <span style={{ fontSize: '14px', lineHeight: 1, fontWeight: 'bold' }}>
-                                                                        {isMarkedForDelete ? '↺' : '✕'}
-                                                                    </span>
+                                                                    <span style={{ fontSize: '14px', lineHeight: 1, fontWeight: 'bold' }}>✕</span>
                                                                 </button>
 
                                                                 {/* Status label */}
-                                                                <div className={`text-center small py-1 ${isMarkedForDelete ? 'bg-danger text-white' : 'bg-secondary bg-opacity-10 text-muted'}`} style={{ fontSize: '11px' }}>
-                                                                    {isMarkedForDelete ? '⚠ Se eliminará al guardar' : '✓ Guardada'}
+                                                                <div className="text-center small py-1 bg-success bg-opacity-25 text-success" style={{ fontSize: '11px' }}>
+                                                                    ★ Nueva - Se guardará
                                                                 </div>
                                                             </div>
-                                                        );
-                                                    })}
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        {/* New Photos Section */}
-                                        {editPhotos.length > 0 && (
-                                            <div className="mb-3">
-                                                <h6 className="small text-muted mb-2 sticky-top bg-white py-1 border-top pt-2">Fotos Nuevas (Por guardar):</h6>
-                                                <div className="d-flex flex-column gap-3">
-                                                    {editPhotos.map((photo, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="position-relative border rounded shadow-sm"
-                                                            style={{
-                                                                backgroundColor: '#e8f5e9',
-                                                                overflow: 'hidden'
-                                                            }}
-                                                        >
-                                                            {/* Image container with scroll for full-size view */}
-                                                            <div style={{
-                                                                maxHeight: '200px',
-                                                                overflowY: 'auto',
-                                                                overflowX: 'auto',
-                                                                padding: '8px',
-                                                                display: 'flex',
-                                                                justifyContent: 'center'
-                                                            }}>
-                                                                <img
-                                                                    src={photo.data}
-                                                                    alt="Vista previa"
-                                                                    style={{
-                                                                        maxWidth: '100%',
-                                                                        height: 'auto',
-                                                                        cursor: 'zoom-in',
-                                                                        borderRadius: '4px'
-                                                                    }}
-                                                                    onClick={() => setZoomImage({ url: photo.data, description: 'Vista previa - Nueva foto' })}
-                                                                    title="Clic para ampliar"
-                                                                />
-                                                            </div>
-
-                                                            {/* Delete button */}
-                                                            <button
-                                                                className="btn btn-danger position-absolute d-flex align-items-center justify-content-center p-0 shadow-sm"
-                                                                style={{
-                                                                    width: '28px',
-                                                                    height: '28px',
-                                                                    top: '8px',
-                                                                    right: '8px',
-                                                                    zIndex: 10,
-                                                                    borderRadius: '50%',
-                                                                    border: '2px solid white'
-                                                                }}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setEditPhotos(prev => prev.filter((_, i) => i !== idx));
-                                                                }}
-                                                                title="Eliminar foto"
-                                                            >
-                                                                <span style={{ fontSize: '14px', lineHeight: 1, fontWeight: 'bold' }}>✕</span>
-                                                            </button>
-
-                                                            {/* Status label */}
-                                                            <div className="text-center small py-1 bg-success bg-opacity-25 text-success" style={{ fontSize: '11px' }}>
-                                                                ★ Nueva - Se guardará
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                            {/* Empty state */}
+                                            {(!editingRegistro.fotos || editingRegistro.fotos.length === 0) && editPhotos.length === 0 && (
+                                                <div className="text-center py-4 text-muted">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" className="mb-2 opacity-50" viewBox="0 0 16 16">
+                                                        <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                                                        <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
+                                                    </svg>
+                                                    <p className="small mb-0">No hay fotos aún</p>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
 
-                                        {/* Empty state */}
-                                        {(!editingRegistro.fotos || editingRegistro.fotos.length === 0) && editPhotos.length === 0 && (
-                                            <div className="text-center py-4 text-muted">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" className="mb-2 opacity-50" viewBox="0 0 16 16">
-                                                    <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-                                                    <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
-                                                </svg>
-                                                <p className="small mb-0">No hay fotos aún</p>
-                                            </div>
-                                        )}
-                                    </div>
+                                        {/* Upload input - outside the scroll container */}
+                                        <div className="mt-3 pt-3 border-top">
+                                            <h6 className="small text-muted mb-2">Agregar Nuevas Fotos:</h6>
+                                            <input
+                                                type="file"
+                                                className="form-control"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleEditPhotoUpload}
+                                                disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                            />
+                                            <small className="text-muted d-block mt-1">Formatos aceptados: JPG, PNG, WebP</small>
+                                        </div>
+                                    </div> {/* Cierre del body p-3 */}
+                                </div> {/* Cierre del contenedor principal premium */}
 
-                                    {/* Upload input - outside the scroll container */}
-                                    <div className="mt-3 pt-3 border-top">
-                                        <h6 className="small text-muted mb-2">Agregar Nuevas Fotos:</h6>
-                                        <input
-                                            type="file"
-                                            className="form-control"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={handleEditPhotoUpload}
-                                            disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
-                                        />
-                                        <small className="text-muted d-block mt-1">Formatos aceptados: JPG, PNG, WebP</small>
-                                    </div>
-                                </div>
-
-                                {/* History Timeline */}
-                                <div className="mb-4 p-3 bg-light rounded border">
-                                    <h5 className="border-bottom pb-2 text-secondary mb-0">Historial de Cambios</h5>
+                                {/* History Timeline Premium Container */}
+                                <div className="mb-4 bg-white rounded-3 overflow-hidden shadow-sm" style={{ border: '1px solid #e2e8f0' }}>
+                                    <h5 className="border-bottom p-3 mb-0 bg-light bg-opacity-50 text-dark fw-bold d-flex align-items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-secondary" viewBox="0 0 16 16">
+                                            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.02 8.02 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z" />
+                                            <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z" />
+                                            <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z" />
+                                        </svg>
+                                        Historial de Cambios
+                                    </h5>
                                     <div style={{
                                         maxHeight: '250px',
                                         overflowY: 'auto',
@@ -1268,13 +1333,13 @@ export default function RegistrosClient() {
                                                     const delCount = delMatch ? parseInt(delMatch[1]) : (actionStr.includes('delete_photo') && !delMatch ? 1 : 0);
 
                                                     return (
-                                                        <div key={hist.id} className="border rounded p-2 bg-white shadow-sm">
-                                                            <div className="d-flex justify-content-between align-items-start mb-1">
-                                                                <div>
-                                                                    <span className="badge me-2 d-inline-flex align-items-center gap-1" style={{ backgroundColor: hist.role === 'administrador' ? '#607d8b' : '#6c757d', color: 'white' }}>
+                                                        <div key={hist.id} className="border-0 rounded-3 p-3 bg-light bg-opacity-50 hover-bg-light transition-all" style={{ borderLeft: `3px solid ${hist.role === 'administrador' ? '#607d8b' : '#94a3b8'}` }}>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <div className="d-flex align-items-center gap-2">
+                                                                    <span className={`badge rounded-pill fw-normal d-inline-flex align-items-center gap-1 px-2 py-1 ${hist.role === 'administrador' ? 'bg-secondary bg-opacity-75' : 'bg-secondary bg-opacity-50'}`} style={{ fontSize: '0.75rem' }}>
                                                                         {hist.role === 'administrador' ? (
                                                                             <>
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
                                                                                     <path d="M14 6.551V11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6.551l7-1.75 7 1.75zM15 11V5l-7 1.75L1 5v6a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3z" />
                                                                                     <path d="M14.5 3a.5.5 0 0 1 .5.5v1.101l-7 1.75-7-1.75V3.5a.5.5 0 0 1 .5-.5h13z" />
                                                                                 </svg>
@@ -1282,34 +1347,34 @@ export default function RegistrosClient() {
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
                                                                                     <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
                                                                                 </svg>
                                                                                 Trabajador
                                                                             </>
                                                                         )}
                                                                     </span>
-                                                                    <strong style={{ fontSize: '0.85rem' }}>
+                                                                    <strong className="text-dark" style={{ fontSize: '0.9rem' }}>
                                                                         {hist.usuarios?.nombre_completo || 'Usuario'}
                                                                     </strong>
                                                                 </div>
-                                                                <small className="text-muted">
+                                                                <small className="text-muted fw-light" style={{ fontSize: '0.75rem' }}>
                                                                     {new Date(hist.created_at).toLocaleString()}
                                                                 </small>
                                                             </div>
-                                                            <div className="mt-2 d-flex flex-wrap gap-2">
+                                                            <div className="d-flex flex-wrap gap-2 ms-1">
                                                                 {addCount > 0 && (
-                                                                    <span className="badge" style={{ backgroundColor: '#198754', color: 'white', fontSize: '12px' }}>
+                                                                    <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-medium px-2 py-1" style={{ fontSize: '0.75rem' }}>
                                                                         + Agregó {addCount} foto{addCount > 1 ? 's' : ''}
                                                                     </span>
                                                                 )}
                                                                 {delCount > 0 && (
-                                                                    <span className="badge" style={{ backgroundColor: '#dc3545', color: 'white', fontSize: '12px' }}>
+                                                                    <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fw-medium px-2 py-1" style={{ fontSize: '0.75rem' }}>
                                                                         − Eliminó {delCount} foto{delCount > 1 ? 's' : ''}
                                                                     </span>
                                                                 )}
                                                                 {addCount === 0 && delCount === 0 && (
-                                                                    <span className="badge" style={{ backgroundColor: '#6c757d', color: 'white', fontSize: '12px' }}>
+                                                                    <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 fw-medium px-2 py-1" style={{ fontSize: '0.75rem' }}>
                                                                         ✎ Editó registro
                                                                     </span>
                                                                 )}

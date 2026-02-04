@@ -308,150 +308,267 @@ export default function ProductosClient() {
                 )}
             </div>
 
-            {/* Modal */}
+            {/* Premium Modal */}
             {showModal && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h3>
-                            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+                    <div className="modal-content premium-modal" onClick={(e) => e.stopPropagation()}>
+                        {/* Sticky Header */}
+                        {/* Fixed Header */}
+                        <div className="modal-header border-bottom shadow-sm d-flex align-items-center position-relative" style={{ flexShrink: 0, padding: '1.25rem 1.75rem', backgroundColor: '#f8fafc' }}>
+                            <div className="d-flex flex-column" style={{ maxWidth: '90%', paddingRight: '2rem' }}>
+                                <span className="text-uppercase small fw-bold text-muted mb-1" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
+                                    {editingProduct ? 'Editando Producto' : 'Nuevo Registro'}
+                                </span>
+                                <h3 className="mb-0 fw-bold text-dark text-truncate" style={{ fontSize: '1.5rem', letterSpacing: '-0.5px' }}>
+                                    {productName || (editingProduct ? 'Sin nombre' : 'Nuevo Producto')}
+                                </h3>
+                            </div>
+                            <button
+                                className="btn-close-custom position-absolute"
+                                onClick={() => setShowModal(false)}
+                                title="Cerrar modal"
+                                style={{ top: '1.25rem', right: '1.25rem' }}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
                         </div>
 
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label">Nombre del Producto *</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={productName}
-                                    onChange={(e) => setProductName(e.target.value)}
-                                    placeholder="Nombre del producto"
-                                />
+                        {/* Scrollable Body */}
+                        <div className="modal-body-scrollable bg-light" style={{ overflowY: 'auto', flex: 1, padding: '1.5rem' }}>
+                            {/* Product Name Section */}
+                            <div className="card border-0 shadow-sm mb-4 rounded-4 overflow-hidden">
+                                <div className="card-body p-4 bg-white">
+                                    <label className="form-label fw-bold text-dark mb-2">Nombre del Producto <span className="text-danger">*</span></label>
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-lg bg-light border-0 fw-semibold text-dark"
+                                        style={{ fontSize: '1.1rem' }}
+                                        value={productName}
+                                        onChange={(e) => setProductName(e.target.value)}
+                                        placeholder="Ej: Leche Entera 1L"
+                                        autoFocus
+                                    />
+                                    <div className="form-text text-muted ps-1">Este nombre aparecerá en todos los reportes y selectores.</div>
+                                </div>
                             </div>
 
-                            <h4 className="mt-4">Parámetros</h4>
+                            <div className="d-flex justify-content-between align-items-center mb-3 px-1">
+                                <h4 className="fw-bold text-secondary mb-0 d-flex align-items-center gap-2">
+                                    Configuración de Parámetros
+                                </h4>
+                                <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                                    {parametrosForm.length} Parámetro{parametrosForm.length !== 1 ? 's' : ''}
+                                </span>
+                            </div>
 
-                            {parametrosForm.map((param, index) => (
-                                <div key={index} className="parametro-row">
-                                    <div className="param-grid">
-                                        <div className="form-group">
-                                            <label className="form-label small">Parámetro Maestro</label>
-                                            <select
-                                                className="form-select"
-                                                value={param.parametro_maestro_id || ''}
-                                                onChange={(e) =>
-                                                    handleParametroChange(index, 'parametro_maestro_id',
-                                                        e.target.value ? parseInt(e.target.value) : null)
-                                                }
-                                            >
-                                                <option value="">Seleccionar...</option>
-                                                {parametrosMaestros.map((m) => (
-                                                    <option key={m.id} value={m.id}>{m.nombre}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label small">Tipo</label>
-                                            <select
-                                                className="form-select"
-                                                value={param.tipo}
-                                                onChange={(e) =>
-                                                    handleParametroChange(index, 'tipo', e.target.value as 'texto' | 'numero' | 'rango')
-                                                }
-                                            >
-                                                <option value="texto">Texto</option>
-                                                <option value="numero">Número</option>
-                                                <option value="rango">Rango</option>
-                                            </select>
-                                        </div>
-
-                                        {param.tipo === 'texto' && (
-                                            <div className="form-group">
-                                                <label className="form-label small">Valor Esperado</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    value={param.valor}
-                                                    onChange={(e) => handleParametroChange(index, 'valor', e.target.value)}
-                                                    placeholder="Valor esperado"
-                                                />
+                            <div className="d-flex flex-column gap-3">
+                                {parametrosForm.map((param, index) => (
+                                    <div key={index} className="card border-0 shadow-sm rounded-4 parameter-card">
+                                        <div className="card-body p-3">
+                                            <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                                <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2">
+                                                    #{index + 1}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center p-0 remove-btn-hover"
+                                                    style={{ width: '28px', height: '28px', transition: 'all 0.2s' }}
+                                                    onClick={() => removeParametro(index)}
+                                                    title="Eliminar parámetro"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+                                                    </svg>
+                                                </button>
                                             </div>
-                                        )}
 
-                                        {param.tipo === 'rango' && (
-                                            <>
-                                                <div className="form-group">
-                                                    <label className="form-label small">Mínimo</label>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        className="form-control"
-                                                        value={param.rango_min}
-                                                        onChange={(e) => handleParametroChange(index, 'rango_min', e.target.value)}
-                                                        placeholder="Mín"
-                                                    />
+                                            <div className="param-grid-premium">
+                                                <div className="form-group mb-0">
+                                                    <label className="form-label small fw-bold text-muted">Parámetro Maestro</label>
+                                                    <select
+                                                        className="form-select border-0 bg-light"
+                                                        value={param.parametro_maestro_id || ''}
+                                                        onChange={(e) =>
+                                                            handleParametroChange(index, 'parametro_maestro_id',
+                                                                e.target.value ? parseInt(e.target.value) : null)
+                                                        }
+                                                    >
+                                                        <option value="">-- Personalizado --</option>
+                                                        {parametrosMaestros.map((m) => (
+                                                            <option key={m.id} value={m.id}>{m.nombre}</option>
+                                                        ))}
+                                                    </select>
                                                 </div>
-                                                <div className="form-group">
-                                                    <label className="form-label small">Máximo</label>
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        className="form-control"
-                                                        value={param.rango_max}
-                                                        onChange={(e) => handleParametroChange(index, 'rango_max', e.target.value)}
-                                                        placeholder="Máx"
-                                                    />
-                                                </div>
-                                            </>
-                                        )}
 
-                                        <div className="form-group">
-                                            <label className="form-label small">Unidad</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                value={param.unidad}
-                                                onChange={(e) => handleParametroChange(index, 'unidad', e.target.value)}
-                                                placeholder="Unidad"
-                                            />
+                                                <div className="form-group mb-0">
+                                                    <label className="form-label small fw-bold text-muted">Nombre Parámetro</label>
+                                                    <div className="position-relative">
+                                                        <input
+                                                            type="text"
+                                                            className={`form-control border-0 ${param.parametro_maestro_id ? 'bg-secondary bg-opacity-10 text-muted fst-italic' : 'bg-light'}`}
+                                                            style={param.parametro_maestro_id ? { cursor: 'not-allowed', paddingRight: '25px' } : {}}
+                                                            value={param.nombre}
+                                                            onChange={(e) => handleParametroChange(index, 'nombre', e.target.value)}
+                                                            placeholder="Nombre del parámetro"
+                                                            readOnly={!!param.parametro_maestro_id}
+                                                        />
+                                                        {param.parametro_maestro_id && (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="text-muted position-absolute" style={{ top: '50%', right: '10px', transform: 'translateY(-50%)' }} viewBox="0 0 16 16">
+                                                                <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Mostrar selector de tipo solo si NO es parámetro maestro */}
+                                                {!param.parametro_maestro_id && (
+                                                    <div className="form-group mb-0">
+                                                        <label className="form-label small fw-bold text-muted">Tipo de Dato</label>
+                                                        <select
+                                                            className="form-select border-0 bg-light"
+                                                            value={param.tipo}
+                                                            onChange={(e) =>
+                                                                handleParametroChange(index, 'tipo', e.target.value as 'texto' | 'numero' | 'rango')
+                                                            }
+                                                        >
+                                                            <option value="texto">Texto Libre</option>
+                                                            <option value="numero">Numérico</option>
+                                                            <option value="rango">Rango (Mín-Máx)</option>
+                                                        </select>
+                                                    </div>
+                                                )}
+
+                                                {/* Badges informatvos del tipo si es maestro (opcional, para contexto) */}
+                                                {param.parametro_maestro_id && (
+                                                    <div className="form-group mb-0 d-flex align-items-end pb-2">
+                                                        <span className="badge bg-light text-secondary border fw-normal py-2 px-3 w-100 text-start">
+                                                            Tipo: {param.tipo === 'texto' ? 'Texto' : param.tipo === 'numero' ? 'Numérico' : 'Rango'}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {param.tipo === 'texto' && (
+                                                    <div className="form-group mb-0" style={{ gridColumn: 'span 2' }}>
+                                                        <label className="form-label small fw-bold text-muted">Valor Esperado (Opcional)</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control border-0 bg-light"
+                                                            value={param.valor}
+                                                            onChange={(e) => handleParametroChange(index, 'valor', e.target.value)}
+                                                            placeholder="Ej: Cumple / No Cumple"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {param.tipo === 'numero' && (
+                                                    <div className="form-group mb-0" style={{ gridColumn: 'span 2' }}>
+                                                        <label className="form-label small fw-bold text-muted">Valor Numérico Esperado</label>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            className="form-control border-0 bg-light"
+                                                            value={param.valor}
+                                                            onChange={(e) => handleParametroChange(index, 'valor', e.target.value)}
+                                                            placeholder="0.00"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {param.tipo === 'rango' && (
+                                                    <>
+                                                        <div className="form-group mb-0">
+                                                            <label className="form-label small fw-bold text-muted">Mínimo</label>
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                className="form-control border-0 bg-light"
+                                                                value={param.rango_min}
+                                                                onChange={(e) => handleParametroChange(index, 'rango_min', e.target.value)}
+                                                                placeholder="Mín"
+                                                            />
+                                                        </div>
+                                                        <div className="form-group mb-0">
+                                                            <label className="form-label small fw-bold text-muted">Máximo</label>
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                className="form-control border-0 bg-light"
+                                                                value={param.rango_max}
+                                                                onChange={(e) => handleParametroChange(index, 'rango_max', e.target.value)}
+                                                                placeholder="Máx"
+                                                            />
+                                                        </div>
+                                                    </>
+                                                )}
+
+                                                {param.tipo !== 'texto' && (
+                                                    <div className="form-group mb-0">
+                                                        <label className="form-label small fw-bold text-muted">Unidad</label>
+                                                        <input
+                                                            type="text"
+                                                            className={`form-control border-0 ${param.parametro_maestro_id ? 'bg-secondary bg-opacity-10 text-muted' : 'bg-light'}`}
+                                                            style={param.parametro_maestro_id ? { cursor: 'not-allowed' } : {}}
+                                                            value={param.unidad}
+                                                            onChange={(e) => handleParametroChange(index, 'unidad', e.target.value)}
+                                                            placeholder="Ej: kg, %, °C"
+                                                            readOnly={!!param.parametro_maestro_id}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-
-                                        <button
-                                            type="button"
-                                            className="btn btn-danger btn-sm remove-btn"
-                                            onClick={() => removeParametro(index)}
-                                        >
-                                            ×
-                                        </button>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
 
                             <button
                                 type="button"
-                                className="btn btn-secondary mt-2"
+                                className="btn btn-outline-primary dashed-border w-100 py-3 mt-4 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2 hover-scale"
                                 onClick={addParametro}
+                                style={{ borderStyle: 'dashed', borderWidth: '2px' }}
                             >
-                                + Agregar Parámetro
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                                </svg>
+                                Agregar Nuevo Parámetro
                             </button>
 
-                            {error && <div className="alert alert-danger mt-3">{error}</div>}
+                            {error && (
+                                <div className="alert alert-danger mt-4 d-flex align-items-center gap-3 rounded-3 shadow-sm border-0 bg-danger bg-opacity-10 text-danger">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                                    </svg>
+                                    <div>
+                                        <div className="fw-bold">Error al guardar</div>
+                                        <div className="small">{error}</div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="modal-footer">
+                        {/* Fixed Footer */}
+                        <div className="modal-footer bg-white border-top p-3" style={{ flexShrink: 0 }}>
                             <button
-                                className="btn btn-secondary"
+                                className="btn btn-light text-secondary fw-bold px-4 rounded-pill"
                                 onClick={() => setShowModal(false)}
                             >
                                 Cancelar
                             </button>
                             <button
-                                className="btn btn-success"
+                                className="btn btn-primary fw-bold px-5 rounded-pill shadow-sm hover-shadow"
                                 onClick={handleSave}
                                 disabled={saving}
+                                style={{ background: 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)', border: 'none' }}
                             >
-                                {saving ? 'Guardando...' : 'Guardar'}
+                                {saving ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Guardando...
+                                    </>
+                                ) : 'Guardar Producto'}
                             </button>
                         </div>
                     </div>
@@ -459,6 +576,7 @@ export default function ProductosClient() {
             )}
 
             <style jsx>{`
+        /* ... (otros estilos previos se mantienen si no conflictuan) ... */
         .actions-bar {
           display: flex;
           gap: 1rem;
@@ -486,12 +604,23 @@ export default function ProductosClient() {
 
         .product-card {
           padding: 1rem;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          background: white;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         .product-card h3 {
           font-size: 1.1rem;
           margin: 0 0 1rem 0;
-          color: #333;
+          color: #1e293b;
+          font-weight: 700;
         }
 
         .card-actions {
@@ -499,97 +628,112 @@ export default function ProductosClient() {
           gap: 0.5rem;
         }
 
-        .btn-sm {
-          padding: 0.25rem 0.75rem;
-          font-size: 0.875rem;
-        }
-
-        /* Modal Styles */
+        /* Modal Premium Styles Optimized */
         .modal-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(15, 23, 42, 0.5); /* Sin blur para mejor rendimiento */
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 1000;
           padding: 1rem;
+          animation: fadeIn 0.15s ease-out; /* Más rápido */
         }
 
-        .modal-content {
-          background: white;
-          border-radius: 0.5rem;
+        .modal-content.premium-modal {
+          background: #f8fafc;
+          border-radius: 12px;
           width: 100%;
-          max-width: 900px;
+          max-width: 800px;
+          height: 90vh; /* Altura fija para forzar estructura vertical */
           max-height: 90vh;
-          overflow-y: auto;
+          display: flex; /* Estructura Flex Column */
+          flex-direction: column;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); 
+          animation: slideUp 0.2s ease-out;
+          will-change: transform, opacity;
+          overflow: hidden; /* Evitar scroll en el contenedor principal */
+        }
+        
+        .modal-body-scrollable {
+            overflow-y: auto;
+            flex: 1; /* Ocupar el espacio restante */
+            padding: 1.5rem;
         }
 
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid #dee2e6;
+        .btn-close-custom {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 0.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0; /* Evitar que se aplaste */
+        }
+        
+        .btn-close-custom:hover {
+            background: #e2e8f0;
+            color: #ef4444;
         }
 
-        .modal-header h3 {
-          margin: 0;
-        }
-
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          color: #6c757d;
-        }
-
-        .modal-body {
-          padding: 1.5rem;
-        }
-
-        .modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 0.5rem;
-          padding: 1rem 1.5rem;
-          border-top: 1px solid #dee2e6;
-        }
-
-        .param-grid {
+        .param-grid-premium {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) auto;
-          gap: 0.5rem;
-          align-items: end;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 1rem;
+          align-items: flex-start; /* Cambiado de end a flex-start para mejor alineación */
+        }
+        
+        /* Eliminar transiciones complejas en móviles o listas largas */
+        .parameter-card {
+            border: 1px solid transparent;
+        }
+        .parameter-card:hover {
+            border-color: #cbd5e1;
         }
 
-        .form-label.small {
-          font-size: 0.75rem;
-          margin-bottom: 0.25rem;
+        .remove-btn-hover:hover {
+            background-color: #ef4444 !important;
+            color: white !important;
         }
 
-        .remove-btn {
-          width: 32px;
-          height: 32px;
-          padding: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .hover-scale {
+            transition: transform 0.1s;
+        }
+        .hover-scale:hover {
+            transform: scale(1.005);
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+        
+        /* Sombras simples al hover */
+        .hover-shadow {
+            transition: box-shadow 0.15s;
+        }
+        .hover-shadow:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @media (max-width: 768px) {
-          .param-grid {
+          .param-grid-premium {
             grid-template-columns: 1fr;
-          }
-
-          .remove-btn {
-            width: 100%;
-            height: auto;
-            padding: 0.25rem;
+            gap: 0.75rem;
           }
         }
       `}</style>
