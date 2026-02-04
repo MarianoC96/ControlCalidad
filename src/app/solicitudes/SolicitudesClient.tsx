@@ -33,6 +33,13 @@ export default function SolicitudesClient() {
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
     const [actionLoading, setActionLoading] = useState<number | null>(null);
     const [viewingMotivo, setViewingMotivo] = useState<string | null>(null);
+    const [confirmModal, setConfirmModal] = useState<{
+        show: boolean;
+        type: 'aprobar' | 'rechazar';
+        requestId: number | null;
+        userName: string;
+        productName: string;
+    }>({ show: false, type: 'aprobar', requestId: null, userName: '', productName: '' });
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -81,9 +88,26 @@ export default function SolicitudesClient() {
         }
     };
 
-    const handleAction = async (id: number, status: 'aprobado' | 'rechazado') => {
-        if (!confirm(`¿Estás seguro de que deseas ${status === 'aprobado' ? 'APROBAR' : 'RECHAZAR'} esta solicitud?`)) return;
+    // Función para abrir el modal de confirmación
+    const openConfirmModal = (req: EditRequest, type: 'aprobar' | 'rechazar') => {
+        setConfirmModal({
+            show: true,
+            type,
+            requestId: req.id,
+            userName: req.usuarios.nombre_completo,
+            productName: req.registros.producto_nombre
+        });
+    };
+
+    // Función para ejecutar la acción después de confirmar
+    const executeAction = async () => {
+        if (!confirmModal.requestId) return;
+        const id = confirmModal.requestId;
+        const status = confirmModal.type === 'aprobar' ? 'aprobado' : 'rechazado';
+
+        setConfirmModal({ ...confirmModal, show: false });
         setActionLoading(id);
+
         try {
             const response = await fetch('/api/admin/edit-requests', {
                 method: 'PUT',
@@ -203,10 +227,10 @@ export default function SolicitudesClient() {
                                         <div className="actions-col">
                                             {req.status === 'pendiente' ? (
                                                 <div className="action-buttons">
-                                                    <button className="btn-approve" onClick={() => handleAction(req.id, 'aprobado')} disabled={actionLoading === req.id}>
+                                                    <button className="btn-approve" onClick={() => openConfirmModal(req, 'aprobar')} disabled={actionLoading === req.id}>
                                                         {actionLoading === req.id ? '...' : 'Aprobar'}
                                                     </button>
-                                                    <button className="btn-reject" onClick={() => handleAction(req.id, 'rechazado')} disabled={actionLoading === req.id}>
+                                                    <button className="btn-reject" onClick={() => openConfirmModal(req, 'rechazar')} disabled={actionLoading === req.id}>
                                                         Rechazar
                                                     </button>
                                                 </div>
@@ -241,6 +265,73 @@ export default function SolicitudesClient() {
                         </div>
                         <div className="modal-body">
                             <p>"{viewingMotivo}"</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL DE CONFIRMACIÓN PREMIUM */}
+            {confirmModal.show && (
+                <div className="confirm-overlay" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>
+                    <div className={`confirm-modal ${confirmModal.type}`} onClick={e => e.stopPropagation()}>
+                        {/* Icono animado */}
+                        <div className={`confirm-icon-wrapper ${confirmModal.type}`}>
+                            <div className="confirm-icon-bg"></div>
+                            {confirmModal.type === 'aprobar' ? (
+                                <svg className="confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                                    <circle cx="12" cy="12" r="10" />
+                                </svg>
+                            ) : (
+                                <svg className="confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M15 9l-6 6M9 9l6 6" strokeLinecap="round" />
+                                </svg>
+                            )}
+                        </div>
+
+                        {/* Contenido */}
+                        <div className="confirm-content">
+                            <h3 className="confirm-title">
+                                {confirmModal.type === 'aprobar' ? '¿Aprobar Solicitud?' : '¿Rechazar Solicitud?'}
+                            </h3>
+                            <p className="confirm-subtitle">
+                                {confirmModal.type === 'aprobar'
+                                    ? 'El usuario podrá editar el registro una vez.'
+                                    : 'Esta acción no se puede deshacer.'}
+                            </p>
+
+                            {/* Info card */}
+                            <div className="confirm-info-card">
+                                <div className="info-row">
+                                    <span className="info-label">Usuario</span>
+                                    <span className="info-value">{confirmModal.userName}</span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="info-label">Producto</span>
+                                    <span className="info-value">{confirmModal.productName}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Botones */}
+                        <div className="confirm-actions">
+                            <button
+                                className="confirm-btn-cancel"
+                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className={`confirm-btn-action ${confirmModal.type}`}
+                                onClick={executeAction}
+                            >
+                                {confirmModal.type === 'aprobar' ? (
+                                    <><i className="bi bi-check-lg"></i> Sí, Aprobar</>
+                                ) : (
+                                    <><i className="bi bi-x-lg"></i> Sí, Rechazar</>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -355,8 +446,10 @@ export default function SolicitudesClient() {
 
                 .actions-col { flex-shrink: 0; padding-left: 24px; }
                 .action-buttons { display: flex; flex-direction: column; gap: 8px; }
-                .btn-approve { background: #10b981; color: white; border: none; border-radius: 50px; padding: 8px 20px; font-weight: 700; font-size: 0.85rem; }
-                .btn-reject { background: transparent; color: #ef4444; border: 1px solid #fee2e2; border-radius: 50px; padding: 8px 20px; font-weight: 700; font-size: 0.85rem; }
+                .btn-approve { background: #10b981; color: white; border: none; border-radius: 50px; padding: 8px 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
+                .btn-approve:hover { background: #059669; transform: translateY(-1px); }
+                .btn-reject { background: transparent; color: #ef4444; border: 1px solid #fee2e2; border-radius: 50px; padding: 8px 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
+                .btn-reject:hover { background: #fef2f2; border-color: #fca5a5; }
 
                 .reason-bubble {
                     margin-top: 16px;
@@ -384,6 +477,168 @@ export default function SolicitudesClient() {
                 .modal-header h5 { margin: 0; font-weight: 800; }
                 .close-btn { background: none; border: none; font-size: 1.5rem; color: #94a3b8; }
                 .modal-body { padding: 24px; font-size: 1.1rem; color: #334155; font-style: italic; }
+                /* MODAL DE CONFIRMACIÓN PREMIUM */
+                .confirm-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(15, 23, 42, 0.7);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1100;
+                    padding: 20px;
+                }
+
+                .confirm-modal {
+                    background: white;
+                    border-radius: 24px;
+                    width: 100%;
+                    max-width: 400px;
+                    padding: 32px;
+                    text-align: center;
+                    animation: modalIn 0.2s ease-out;
+                }
+
+                @keyframes modalIn {
+                    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+
+                .confirm-icon-wrapper {
+                    width: 80px;
+                    height: 80px;
+                    margin: 0 auto 24px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                }
+
+                .confirm-icon-wrapper.aprobar {
+                    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+                }
+
+                .confirm-icon-wrapper.rechazar {
+                    background: linear-gradient(135deg, #fee2e2, #fecaca);
+                }
+
+                .confirm-icon {
+                    width: 40px;
+                    height: 40px;
+                }
+
+                .confirm-icon-wrapper.aprobar .confirm-icon {
+                    color: #059669;
+                }
+
+                .confirm-icon-wrapper.rechazar .confirm-icon {
+                    color: #dc2626;
+                }
+
+                .confirm-content {
+                    margin-bottom: 24px;
+                }
+
+                .confirm-title {
+                    font-size: 1.4rem;
+                    font-weight: 800;
+                    color: #1e293b;
+                    margin: 0 0 8px;
+                }
+
+                .confirm-subtitle {
+                    font-size: 0.9rem;
+                    color: #64748b;
+                    margin: 0 0 20px;
+                }
+
+                .confirm-info-card {
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 16px;
+                    padding: 16px;
+                    text-align: left;
+                }
+
+                .info-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                }
+
+                .info-row:not(:last-child) {
+                    border-bottom: 1px solid #e2e8f0;
+                }
+
+                .info-label {
+                    font-size: 0.8rem;
+                    color: #94a3b8;
+                    font-weight: 600;
+                }
+
+                .info-value {
+                    font-size: 0.85rem;
+                    color: #334155;
+                    font-weight: 700;
+                }
+
+                .confirm-actions {
+                    display: flex;
+                    gap: 12px;
+                }
+
+                .confirm-btn-cancel {
+                    flex: 1;
+                    padding: 14px 20px;
+                    border: 2px solid #e2e8f0;
+                    background: white;
+                    border-radius: 14px;
+                    font-weight: 700;
+                    font-size: 0.9rem;
+                    color: #64748b;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+
+                .confirm-btn-cancel:hover {
+                    background: #f8fafc;
+                    border-color: #cbd5e1;
+                }
+
+                .confirm-btn-action {
+                    flex: 1;
+                    padding: 14px 20px;
+                    border: none;
+                    border-radius: 14px;
+                    font-weight: 700;
+                    font-size: 0.9rem;
+                    color: white;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                }
+
+                .confirm-btn-action.aprobar {
+                    background: linear-gradient(135deg, #10b981, #059669);
+                }
+
+                .confirm-btn-action.aprobar:hover {
+                    background: linear-gradient(135deg, #059669, #047857);
+                    transform: translateY(-1px);
+                }
+
+                .confirm-btn-action.rechazar {
+                    background: linear-gradient(135deg, #ef4444, #dc2626);
+                }
+
+                .confirm-btn-action.rechazar:hover {
+                    background: linear-gradient(135deg, #dc2626, #b91c1c);
+                    transform: translateY(-1px);
+                }
 
                 @media (max-width: 768px) {
                     .header-container { flex-direction: column; text-align: center; gap: 20px; }
@@ -391,6 +646,7 @@ export default function SolicitudesClient() {
                     .product-col { border: none; padding: 10px 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; width: 100%; }
                     .actions-col { padding: 0; width: 100%; }
                     .action-buttons { flex-direction: row; justify-content: center; }
+                    .confirm-actions { flex-direction: column; }
                 }
             `}</style>
         </div>

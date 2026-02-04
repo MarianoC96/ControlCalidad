@@ -282,7 +282,7 @@ export default function UsuariosClient() {
                                 </div>
                             </div>
                             <button className="close-modal-btn" onClick={() => setShowModal(false)}>
-                                <i className="bi bi-x-lg"></i>
+                                ×
                             </button>
                         </div>
 
@@ -531,13 +531,14 @@ export default function UsuariosClient() {
                 .chip-status.inactive { background: #f1f5f9; color: #94a3b8; }
 
                 .card-actions { border-top: 1px solid #f1f5f9; padding-top: 15px; display: flex; gap: 8px; align-items: center; }
-                .btn-c { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 6px 15px; font-size: 0.8rem; font-weight: 700; transition: 0.2s; }
+                .btn-c { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 6px 15px; font-size: 0.8rem; font-weight: 700; transition: 0.2s; cursor: pointer; }
                 .btn-c:hover { background: #f1f5f9; border-color: #cbd5e1; }
                 .btn-warn { color: #d97706; }
                 .btn-danger-solid { 
                     background: #ef4444; 
                     color: white; 
-                    border: 1px solid #dc2626; 
+                    border: 1px solid #dc2626;
+                    cursor: pointer;
                 }
                 .btn-danger-solid:hover { 
                     background: #b91c1c; 
@@ -561,8 +562,8 @@ export default function UsuariosClient() {
                 .modal-user-preview { display: flex; flex-direction: column; gap: 2px; }
                 .preview-name { color: white; font-weight: 800; font-size: 1.1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
                 .preview-handle { color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; }
-                .close-modal-btn { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 1.1rem; }
-                .close-modal-btn:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.4); }
+                .close-modal-btn { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 1.3rem; font-weight: 300; line-height: 1; }
+                .close-modal-btn:hover { background: rgba(239,68,68,0.9); border-color: transparent; color: white; }
 
                 /* Modal Body Premium */
                 .modal-body-premium { padding: 24px; }
