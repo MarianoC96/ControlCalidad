@@ -1127,8 +1127,8 @@ export default function RegistroProductosClient() {
         }
 
         .is-valid-custom {
-            border-color: #198754;
-            background-color: #f8fff9;
+            border-color: #93c5fd;
+            background-color: #f0f9ff;
         }
         
         .is-invalid-custom {
