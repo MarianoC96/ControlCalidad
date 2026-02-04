@@ -455,13 +455,13 @@ export default function UsuariosClient() {
             )}
 
             <style jsx>{`
-                .admin-page-wrapper { min-height: 100vh; background-color: #f0f2f5; font-family: 'Inter', system-ui, sans-serif; }
+                .admin-page-wrapper { min-height: 100vh; background-color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
                 .main-content { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
 
                 /* Header */
                 .header-container { background: white; border-radius: 24px; padding: 25px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-                .badge-system { display: inline-flex; align-items: center; gap: 8px; color: #0369a1; font-weight: 800; font-size: 0.7rem; margin-bottom: 10px; }
-                .dot-pulse { width: 8px; height: 8px; background: #0369a1; border-radius: 50%; animation: p 2s infinite; }
+                .badge-system { display: inline-flex; align-items: center; gap: 8px; color: #2563eb; font-weight: 800; font-size: 0.7rem; margin-bottom: 10px; }
+                .dot-pulse { width: 8px; height: 8px; background: #2563eb; border-radius: 50%; animation: p 2s infinite; }
                 @keyframes p { 0% { box-shadow: 0 0 0 0 rgba(3,105,161,0.4); } 70% { box-shadow: 0 0 0 6px rgba(3,105,161,0); } 100% { box-shadow: 0 0 0 0 rgba(3,105,161,0); } }
                 .title { font-size: 1.6rem; font-weight: 900; color: #1e293b; margin: 0; }
                 .subtitle { color: #64748b; font-size: 0.9rem; }
@@ -639,7 +639,7 @@ export default function UsuariosClient() {
                 .btn-cancel { background: #f1f5f9; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; color: #64748b; cursor: pointer; }
                 .btn-confirm { background: #1e293b; border: none; color: white; padding: 10px 25px; border-radius: 50px; font-weight: 700; cursor: pointer; }
 
-                .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f2f5; font-weight: 900; color: #0369a1; letter-spacing: 2px; }
+                .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; font-weight: 900; color: #2563eb; letter-spacing: 2px; }
             `}</style>
         </div>
     );

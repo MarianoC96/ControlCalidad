@@ -1402,7 +1402,7 @@ export default function RegistrosClient() {
                     display: inline-flex;
                     align-items: center;
                     gap: 8px;
-                    color: #0369a1;
+                    color: #2563eb;
                     font-weight: 800;
                     font-size: 0.7rem;
                     margin-bottom: 10px;
@@ -1410,7 +1410,7 @@ export default function RegistrosClient() {
                 .dot-pulse {
                     width: 8px;
                     height: 8px;
-                    background: #0369a1;
+                    background: #2563eb;
                     border-radius: 50%;
                     animation: pulse-dot 2s infinite;
                 }

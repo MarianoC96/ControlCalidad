@@ -416,7 +416,7 @@ export default function SolicitudesClient() {
                     align-items: center;
                     gap: 8px;
                     background: #e0f2fe;
-                    color: #0369a1;
+                    color: #2563eb;
                     padding: 4px 12px;
                     border-radius: 50px;
                     font-size: 0.75rem;
@@ -427,7 +427,7 @@ export default function SolicitudesClient() {
                 .dot-pulse {
                     width: 8px;
                     height: 8px;
-                    background: #0369a1;
+                    background: #2563eb;
                     border-radius: 50%;
                     animation: pulse 2s infinite;
                 }

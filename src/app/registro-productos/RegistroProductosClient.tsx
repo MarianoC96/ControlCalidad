@@ -785,7 +785,7 @@ export default function RegistroProductosClient() {
         /* Page Layout */
         .page-wrapper {
             min-height: 100vh;
-            background-color: #f0f2f5;
+            background-color: #f8fafc;
             font-family: 'Inter', system-ui, sans-serif;
         }
         .main-content {
@@ -808,7 +808,7 @@ export default function RegistroProductosClient() {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: #0369a1;
+            color: #2563eb;
             font-weight: 800;
             font-size: 0.7rem;
             margin-bottom: 10px;
@@ -816,7 +816,7 @@ export default function RegistroProductosClient() {
         .dot-pulse {
             width: 8px;
             height: 8px;
-            background: #0369a1;
+            background: #2563eb;
             border-radius: 50%;
             animation: pulse-dot 2s infinite;
         }
