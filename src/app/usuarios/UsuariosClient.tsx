@@ -368,7 +368,6 @@ export default function UsuariosClient() {
                                     <div className="status-icon-container">
                                         <div className="status-icon-bg"></div>
                                         <i className={`bi ${formData.activo ? 'bi-shield-check' : 'bi-shield-x'}`}></i>
-                                        {formData.activo && <div className="status-pulse"></div>}
                                     </div>
                                 </div>
                                 <div className="status-info">
@@ -547,11 +546,10 @@ export default function UsuariosClient() {
                 }
                 .system-tag { font-size: 0.6rem; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; }
 
-                /* Modals - Premium Design */
-                .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s ease-out; }
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 520px; overflow: hidden; animation: slideUp 0.3s ease-out; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
-                @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+                /* Modals - Premium Design (Optimized) */
+                .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+                .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 520px; overflow: hidden; animation: slideUp 0.15s ease-out; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+                @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
                 /* Modal Header Premium */
                 .modal-header-premium { position: relative; padding: 30px 24px 20px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); overflow: hidden; }
@@ -563,8 +561,8 @@ export default function UsuariosClient() {
                 .modal-user-preview { display: flex; flex-direction: column; gap: 2px; }
                 .preview-name { color: white; font-weight: 800; font-size: 1.1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
                 .preview-handle { color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; }
-                .close-modal-btn { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 12px; background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
-                .close-modal-btn:hover { background: rgba(255,255,255,0.2); color: white; transform: rotate(90deg); }
+                .close-modal-btn { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 1.1rem; }
+                .close-modal-btn:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.4); }
 
                 /* Modal Body Premium */
                 .modal-body-premium { padding: 24px; }
@@ -587,18 +585,15 @@ export default function UsuariosClient() {
                 .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
                 @media (max-width: 500px) { .input-grid { grid-template-columns: 1fr; } }
 
-                /* STATUS CARD - PREMIUM DESIGN WITH ANIMATIONS */
-                .status-card { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: 20px; margin-top: 8px; margin-bottom: 16px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
-                .status-card::before { content: ''; position: absolute; inset: 0; opacity: 0.05; background-image: radial-gradient(circle at 20% 50%, currentColor 1px, transparent 1px); background-size: 20px 20px; }
+                /* STATUS CARD - OPTIMIZED */
+                .status-card { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: 20px; margin-top: 8px; margin-bottom: 16px; transition: background 0.2s, border-color 0.2s; }
                 .status-active { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #10b981; color: #10b981; }
                 .status-inactive { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; color: #ef4444; }
 
                 .status-visual { position: relative; }
                 .status-icon-container { position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
                 .status-icon-bg { position: absolute; inset: 0; border-radius: 16px; background: currentColor; opacity: 0.15; }
-                .status-icon-container i { position: relative; z-index: 1; font-size: 1.6rem; }
-                .status-pulse { position: absolute; inset: -4px; border-radius: 20px; border: 2px solid currentColor; opacity: 0; animation: pulse 2s infinite; }
-                @keyframes pulse { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.3); opacity: 0; } }
+                .status-icon-container i { font-size: 1.6rem; }
 
                 .status-info { flex: 1; }
                 .status-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 6px; color: #1e293b; }
@@ -610,14 +605,13 @@ export default function UsuariosClient() {
                 /* Custom Toggle Button */
                 .status-toggle { flex-shrink: 0; }
                 .toggle-btn { background: none; border: none; cursor: pointer; padding: 0; outline: none; }
-                .toggle-track { display: block; width: 56px; height: 32px; border-radius: 50px; position: relative; transition: all 0.3s ease; }
-                .toggle-on .toggle-track { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
-                .toggle-off .toggle-track { background: linear-gradient(135deg, #94a3b8, #64748b); box-shadow: 0 4px 12px rgba(100,116,139,0.3); }
-                .toggle-thumb { position: absolute; top: 3px; width: 26px; height: 26px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 900; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+                .toggle-track { display: block; width: 56px; height: 32px; border-radius: 50px; position: relative; transition: background 0.2s; }
+                .toggle-on .toggle-track { background: #10b981; }
+                .toggle-off .toggle-track { background: #94a3b8; }
+                .toggle-thumb { position: absolute; top: 3px; width: 26px; height: 26px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 900; transition: left 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
                 .toggle-on .toggle-thumb { left: 27px; color: #10b981; }
                 .toggle-off .toggle-thumb { left: 3px; color: #64748b; }
-                .toggle-btn:hover .toggle-track { transform: scale(1.05); }
-                .toggle-btn:active .toggle-thumb { width: 30px; }
+
 
                 /* Error Banner */
                 .error-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, #fef2f2, #fee2e2); border: 1px solid #fca5a5; border-radius: 14px; color: #b91c1c; font-size: 0.85rem; font-weight: 600; animation: shake 0.4s ease-in-out; }
