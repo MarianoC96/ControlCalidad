@@ -143,115 +143,165 @@ export default function SolicitudesClient() {
             <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
 
             <main className="main-content">
-                {/* Header Section - Better contrast and contained */}
+                {/* Header Premium */}
                 <div className="header-container shadow-sm border">
                     <div className="header-info">
-                        <div className="badge-system">
-                            <span className="dot-pulse"></span>
-                            SISTEMA DE GESTIÓN
-                        </div>
+                        <div className="badge-system"><span className="dot-pulse"></span>ADMINISTRACIÓN</div>
                         <h1 className="title">Solicitudes de Edición</h1>
-                        <p className="subtitle">Administre las peticiones de cambios extraordinarios de forma segura.</p>
+                        <p className="subtitle">Gestione las peticiones de cambios extraordinarios de forma segura.</p>
                     </div>
-
                     <div className="header-stats">
-                        <div className="stat-box">
-                            <div className="stat-value text-primary">{requests.filter(r => r.status === 'pendiente').length}</div>
-                            <div className="stat-label">PENDIENTES</div>
+                        <div className="stat-pill pending">
+                            <span className="val">{requests.filter(r => r.status === 'pendiente').length}</span>
+                            <span className="lab">PENDIENTES</span>
                         </div>
-                        <div className="stat-box">
-                            <div className="stat-value text-dark">{requests.length}</div>
-                            <div className="stat-label">TOTAL</div>
+                        <div className="stat-pill">
+                            <span className="val">{requests.length}</span>
+                            <span className="lab">TOTAL</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Filters - High Contrast */}
-                <div className="filters-bar shadow-sm">
-                    <div className="search-input-group">
-                        <i className="bi bi-search"></i>
-                        <input
-                            type="text"
-                            placeholder="Buscar personal o producto..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <select className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                        <option value="all">Todos los estados</option>
-                        <option value="pendiente">Pendientes</option>
-                        <option value="aprobado">Aprobados</option>
-                        <option value="rechazado">Rechazados</option>
-                    </select>
-                    <input
-                        type="date"
-                        className="filter-date"
-                        value={dateFilter}
-                        onChange={(e) => setDateFilter(e.target.value)}
-                    />
-                </div>
+                <div className="card shadow-sm border-0 bg-white" style={{ borderRadius: '12px', minHeight: '600px' }}>
+                    <div className="card-body p-4">
 
-                {/* Feed Section */}
-                <div className="requests-feed">
-                    {loading ? (
-                        <div className="spinner-container">
-                            <div className="spinner-glow"></div>
-                            <p>SINCRONIZANDO...</p>
+                        {/* Toolbar */}
+                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #dee2e6' }}>
+                            {/* Left Side: Search */}
+                            <div style={{ width: '300px', position: 'relative' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="text-secondary" viewBox="0 0 16 16" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    className="form-control border-secondary-subtle rounded-pill text-secondary shadow-none bg-light"
+                                    placeholder="Buscar personal o producto..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    style={{ fontSize: '0.9rem', backgroundColor: '#f8f9fa', paddingLeft: '35px' }}
+                                />
+                            </div>
+
+                            {/* Right Side: Filters */}
+                            <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                                <select
+                                    className="form-select form-select-sm rounded-pill border-secondary-subtle bg-light text-secondary fw-medium shadow-none"
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    style={{ width: 'auto' }}
+                                >
+                                    <option value="all">Todos los estados</option>
+                                    <option value="pendiente">Pendientes</option>
+                                    <option value="aprobado">Aprobados</option>
+                                    <option value="rechazado">Rechazados</option>
+                                </select>
+                                <input
+                                    type="date"
+                                    className="form-control form-control-sm rounded-pill border-secondary-subtle bg-light text-secondary shadow-none"
+                                    value={dateFilter}
+                                    onChange={(e) => setDateFilter(e.target.value)}
+                                    style={{ width: 'auto' }}
+                                />
+                            </div>
                         </div>
-                    ) : filteredRequests.length === 0 ? (
-                        <div className="empty-state shadow-sm border">
-                            <i className="bi bi-clipboard-x"></i>
-                            <h5>Sin coincidencias</h5>
-                            <button className="btn-link" onClick={() => { setSearchTerm(''); setStatusFilter('all'); setDateFilter(''); }}>
-                                Restablecer filtros
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="feed-list">
-                            {filteredRequests.map((req) => (
-                                <div key={req.id} className={`request-item shadow-sm border ${req.status === 'pendiente' ? 'pending-border' : ''}`}>
-                                    <div className="item-layout">
-                                        <div className="user-col">
-                                            <div className="avatar">{req.usuarios.nombre_completo.charAt(0)}</div>
-                                            <div className="user-info">
-                                                <div className="user-name">{req.usuarios.nombre_completo}</div>
-                                                <div className="user-tag">@{req.usuarios.usuario} • {new Date(req.created_at).toLocaleDateString()}</div>
-                                            </div>
-                                        </div>
 
-                                        <div className="product-col">
-                                            <div className="product-name">{req.registros.producto_nombre}</div>
-                                            <div className="product-lote">Lote: <span>{req.registros.lote_interno}</span></div>
-                                        </div>
-
-                                        <div className="actions-col">
-                                            {req.status === 'pendiente' ? (
-                                                <div className="action-buttons">
-                                                    <button className="btn-approve" onClick={() => openConfirmModal(req, 'aprobar')} disabled={actionLoading === req.id}>
-                                                        {actionLoading === req.id ? '...' : 'Aprobar'}
-                                                    </button>
-                                                    <button className="btn-reject" onClick={() => openConfirmModal(req, 'rechazar')} disabled={actionLoading === req.id}>
-                                                        Rechazar
-                                                    </button>
+                        {/* Table Content */}
+                        <div className="table-responsive">
+                            <table className="table table-hover mb-0 align-middle">
+                                <thead className="table-light text-secondary text-uppercase small">
+                                    <tr>
+                                        <th className="ps-3 fw-semibold text-secondary">Usuario</th>
+                                        <th className="fw-semibold text-secondary">Producto</th>
+                                        <th className="fw-semibold text-secondary">Lote</th>
+                                        <th className="fw-semibold text-secondary">Fecha</th>
+                                        <th className="fw-semibold text-secondary">Estado</th>
+                                        <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan={6} className="text-center py-5">
+                                                <div className="spinner-border text-primary" role="status">
+                                                    <span className="visually-hidden">Cargando...</span>
                                                 </div>
-                                            ) : (
-                                                <div className="status-display">
-                                                    {getStatusBadge(req.status)}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {req.motivo && (
-                                        <div className="reason-bubble" onClick={() => setViewingMotivo(req.motivo)}>
-                                            <i className="bi bi-chat-dots me-2"></i>
-                                            "{req.motivo}"
-                                        </div>
+                                            </td>
+                                        </tr>
+                                    ) : filteredRequests.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="text-center py-5 text-muted">
+                                                No hay solicitudes que coincidan con los filtros.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredRequests.map((req) => (
+                                            <tr key={req.id} className={req.status === 'pendiente' ? 'table-warning' : ''}>
+                                                <td className="ps-3">
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
+                                                            {req.usuarios.nombre_completo.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
+                                                            <div className="text-muted small">@{req.usuarios.usuario}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="text-dark" style={{ fontSize: '0.9rem' }}>{req.registros.producto_nombre}</td>
+                                                <td className="fw-bold text-dark">{req.registros.lote_interno}</td>
+                                                <td className="text-muted small">{new Date(req.created_at).toLocaleDateString('es-PE')}</td>
+                                                <td>{getStatusBadge(req.status)}</td>
+                                                <td className="text-end pe-3">
+                                                    {req.status === 'pendiente' ? (
+                                                        <div className="d-flex justify-content-end gap-2">
+                                                            <button
+                                                                className="btn btn-sm btn-success rounded-pill px-3"
+                                                                onClick={() => openConfirmModal(req, 'aprobar')}
+                                                                disabled={actionLoading === req.id}
+                                                                style={{ fontSize: '0.8rem' }}
+                                                            >
+                                                                {actionLoading === req.id ? (
+                                                                    <span className="spinner-border spinner-border-sm" role="status"></span>
+                                                                ) : 'Aprobar'}
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                                onClick={() => openConfirmModal(req, 'rechazar')}
+                                                                disabled={actionLoading === req.id}
+                                                                style={{ fontSize: '0.8rem' }}
+                                                            >
+                                                                Rechazar
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-muted small">—</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
                                     )}
-                                </div>
-                            ))}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
+
+                        {/* Footer */}
+                        {filteredRequests.length > 0 && (
+                            <div className="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                                <span className="small text-muted">
+                                    Mostrando {filteredRequests.length} de {requests.length} solicitudes
+                                </span>
+                                {(searchTerm || statusFilter !== 'all' || dateFilter) && (
+                                    <button
+                                        className="btn btn-sm btn-link text-decoration-none"
+                                        onClick={() => { setSearchTerm(''); setStatusFilter('all'); setDateFilter(''); }}
+                                    >
+                                        Limpiar filtros
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             </main>
 
@@ -391,10 +441,20 @@ export default function SolicitudesClient() {
                 .title { font-size: 1.8rem; font-weight: 900; color: #1e293b; margin: 0; }
                 .subtitle { color: #64748b; font-size: 0.95rem; margin: 8px 0 0; }
 
-                .header-stats { display: flex; gap: 16px; }
-                .stat-box { background: #f8fafc; padding: 12px 20px; border-radius: 16px; text-align: center; min-width: 100px; border: 1px solid #e2e8f0; }
-                .stat-value { font-size: 1.4rem; font-weight: 900; line-height: 1; }
-                .stat-label { font-size: 0.65rem; font-weight: 700; color: #94a3b8; margin-top: 4px; }
+                .header-stats { display: flex; gap: 16px; align-items: center; }
+                .stat-pill {
+                    background: #f8fafc;
+                    padding: 8px 15px;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    display: flex;
+                    flex-direction: column;
+                    text-align: center;
+                }
+                .stat-pill .val { font-weight: 900; font-size: 1.2rem; line-height: 1; color: #1e293b; }
+                .stat-pill .lab { font-size: 0.6rem; font-weight: 800; color: #94a3b8; }
+                .stat-pill.pending { border-color: #fbbf24; background: #fef3c7; }
+                .stat-pill.pending .val { color: #92400e; }
 
                 /* Filter Bar - Modern & Clear */
                 .filters-bar {

@@ -413,9 +413,8 @@ export default function RegistrosClient() {
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
 
-    // Grouping Logic with Filters
-    const groupedRegistros = useMemo(() => {
-        // If year or month not selected, return empty
+    // Filter Logic
+    const filteredRegistros = useMemo(() => {
         if (!selectedYear || !selectedMonth) {
             return [];
         }
@@ -428,7 +427,7 @@ export default function RegistrosClient() {
             new Date(r.fecha_registro).getMonth().toString() === selectedMonth
         );
 
-        // Apply Search (Debounced)
+        // Apply Search
         if (debouncedSearch) {
             const normalizedSearch = normalizeString(debouncedSearch);
             filtered = filtered.filter(r =>
@@ -439,29 +438,9 @@ export default function RegistrosClient() {
         }
 
         // Sort by date desc
-        const sorted = filtered.sort((a, b) =>
+        return filtered.sort((a, b) =>
             new Date(b.fecha_registro).getTime() - new Date(a.fecha_registro).getTime()
-        );
-
-        // Apply Limit (to total records)
-        const confined = sorted.slice(0, limit);
-
-        const groups: { title: string; items: RegistroWithDetails[] }[] = [];
-
-        confined.forEach(reg => {
-            const date = new Date(reg.fecha_registro);
-            const key = date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-            const formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
-
-            let lastGroup = groups[groups.length - 1];
-            if (!lastGroup || lastGroup.title !== formattedKey) {
-                lastGroup = { title: formattedKey, items: [] };
-                groups.push(lastGroup);
-            }
-            lastGroup.items.push(reg);
-        });
-
-        return groups;
+        ).slice(0, limit);
     }, [registros, selectedYear, selectedMonth, debouncedSearch, limit]);
 
     if (loading) {
@@ -482,26 +461,33 @@ export default function RegistrosClient() {
         <>
             <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
 
-            <main className="container mt-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h2 className="mb-0 fw-bold text-dark">Historial de Registros</h2>
-                    <button
-                        className="btn btn-primary d-flex align-items-center gap-2"
-                        onClick={() => setIsDownloadModalOpen(true)}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-cloud-download" viewBox="0 0 16 16">
-                            <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z" />
-                            <path d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z" />
-                        </svg>
-                        Descarga Masiva
-                    </button>
+            <main className="historial-page-container">
+                {/* Header Premium */}
+                <div className="header-container shadow-sm border">
+                    <div className="header-info">
+                        <div className="badge-system"><span className="dot-pulse"></span>CONTROL DE CALIDAD</div>
+                        <h1 className="title">Historial de Registros</h1>
+                        <p className="subtitle">Consulte y gestione todos los registros de productos verificados.</p>
+                    </div>
+                    <div className="header-stats">
+                        <div className="stat-pill">
+                            <span className="val">{registros.length}</span>
+                            <span className="lab">TOTAL</span>
+                        </div>
+                        <button className="btn-add-premium shadow-sm" onClick={() => setIsDownloadModalOpen(true)}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style={{ marginRight: '8px' }}>
+                                <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z" />
+                                <path d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z" />
+                            </svg>
+                            <span>Descarga Masiva</span>
+                        </button>
+                    </div>
                 </div>
+
 
                 <div className="card shadow-sm border-0 bg-white" style={{ borderRadius: '12px', minHeight: '600px' }}>
                     <div className="card-body p-4">
 
-                        {/* Toolbar */}
-                        {/* Toolbar */}
                         {/* Toolbar */}
                         <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #dee2e6' }}>
                             {/* Left Side: Filters */}
@@ -511,7 +497,7 @@ export default function RegistrosClient() {
                                     value={selectedYear}
                                     onChange={(e) => setSelectedYear(e.target.value)}
                                     aria-label="Año"
-                                    style={{ width: 'auto', display: 'inline-block' }}
+                                    style={{ width: 'auto' }}
                                 >
                                     {availableYears.map(year => (
                                         <option key={year} value={year}>{year}</option>
@@ -523,7 +509,7 @@ export default function RegistrosClient() {
                                     value={selectedMonth}
                                     onChange={(e) => setSelectedMonth(e.target.value)}
                                     aria-label="Mes"
-                                    style={{ width: 'auto', display: 'inline-block' }}
+                                    style={{ width: 'auto' }}
                                 >
                                     {availableMonths.map(monthIndex => (
                                         <option key={monthIndex} value={monthIndex}>{MONTH_NAMES[monthIndex]}</option>
@@ -548,93 +534,82 @@ export default function RegistrosClient() {
                         </div>
 
                         {/* List Content */}
-                        {groupedRegistros.length === 0 ? (
-                            <div className="empty-state text-center py-5">
-                                <div className="mb-3 text-secondary" style={{ opacity: 0.5 }}>
-                                    {/* Icon removed as requested */}
-                                </div>
-                                {!selectedYear || !selectedMonth ? (
-                                    <p className="text-muted">Seleccione año y mes para ver los registros.</p>
-                                ) : (
-                                    <p className="text-muted">No se encontraron registros con los filtros actuales.</p>
-                                )}
-                            </div>
-                        ) : (
-                            groupedRegistros.map((group) => (
-                                <div key={group.title} className="mb-5 group-section">
-                                    <h5 className="text-secondary fw-bold mb-3 border-start border-4 border-primary ps-2">{group.title}</h5>
-                                    <div className="table-responsive">
-                                        <table className="table table-hover align-middle">
-                                            <thead className="table-light text-secondary text-uppercase small">
-                                                <tr>
-                                                    <th className="fw-semibold text-secondary" style={{ width: '15%' }}>Fecha</th>
-                                                    <th className="fw-semibold text-secondary" style={{ width: '15%' }}>Lote Interno</th>
-                                                    <th className="fw-semibold text-secondary" style={{ width: '35%' }}>Producto</th>
-                                                    <th className="fw-semibold text-secondary" style={{ width: '20%' }}>Verificado por</th>
-                                                    <th className="fw-semibold text-secondary text-end" style={{ width: '15%' }}>Acciones</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {group.items.map((registro) => (
-                                                    <tr key={registro.id}>
-                                                        <td className="text-muted fw-medium">{formatDate(registro.fecha_registro).split(',')[0]}</td>
-                                                        <td className="fw-bold text-dark">{registro.lote_interno}</td>
-                                                        <td className="text-dark">{registro.producto_nombre}</td>
-                                                        <td className="text-secondary small">
-                                                            <div className="d-flex align-items-center gap-2">
-                                                                {registro.verificado_por || registro.usuario_nombre}
-                                                            </div>
-                                                        </td>
-                                                        <td className="text-end">
-                                                            <div className="d-flex justify-content-end gap-2">
-                                                                <button
-                                                                    className="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-medium"
-                                                                    onClick={() => viewDetails(registro)}
-                                                                >
-                                                                    Ver
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="bi bi-eye ms-1" viewBox="0 0 16 16">
-                                                                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" />
-                                                                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z" />
-                                                                    </svg>
-                                                                </button>
-                                                                <span className="text-muted separator">|</span>
-                                                                <button
-                                                                    className="btn btn-sm btn-link text-warning p-0 text-decoration-none fw-medium"
-                                                                    onClick={() => handleEdit(registro)}
-                                                                >
-                                                                    Editar
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="bi bi-pencil-square ms-1" viewBox="0 0 16 16">
-                                                                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                                                                        <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
-                                                                    </svg>
-                                                                </button>
-                                                                <span className="text-muted separator">|</span>
-                                                                <button
-                                                                    className="btn btn-sm btn-link text-secondary p-0 text-decoration-none"
-                                                                    onClick={() => handleDownloadPDF(registro)}
-                                                                    disabled={downloadingId === registro.id}
-                                                                >
-                                                                    {downloadingId === registro.id ? '...' : (
-                                                                        <>
-                                                                            PDF
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="bi bi-file-earmark-arrow-down ms-1" viewBox="0 0 16 16">
-                                                                                <path d="M8.5 6.5a.5.5 0 0 0-1 0v3.793L6.354 9.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 10.293V6.5z" />
-                                                                                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
-                                                                            </svg>
-                                                                        </>
-                                                                    )}
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-
+                        <div className="table-responsive">
+                            <table className="table table-hover mb-0 align-middle">
+                                <thead className="table-light text-secondary text-uppercase small">
+                                    <tr>
+                                        <th className="ps-3 fw-semibold text-secondary">Fecha</th>
+                                        <th className="fw-semibold text-secondary">Lote Interno</th>
+                                        <th className="fw-semibold text-secondary">Producto</th>
+                                        <th className="fw-semibold text-secondary">Verificado por</th>
+                                        <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredRegistros.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="text-center py-5 text-muted">
+                                                {!selectedYear || !selectedMonth ? (
+                                                    "Seleccione año y mes para ver los registros."
+                                                ) : (
+                                                    "No se encontraron registros con los filtros actuales."
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredRegistros.map((registro) => (
+                                            <tr key={registro.id}>
+                                                <td className="ps-3 text-muted fw-medium">{formatDate(registro.fecha_registro).split(',')[0]}</td>
+                                                <td className="fw-bold text-dark">{registro.lote_interno}</td>
+                                                <td className="text-dark">{registro.producto_nombre}</td>
+                                                <td className="text-secondary small">
+                                                    {registro.verificado_por || registro.usuario_nombre}
+                                                </td>
+                                                <td className="text-end pe-3">
+                                                    <div className="d-flex justify-content-end gap-2">
+                                                        <button
+                                                            className="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-medium"
+                                                            onClick={() => viewDetails(registro)}
+                                                            title="Ver detalles"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-eye" viewBox="0 0 16 16">
+                                                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" />
+                                                                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-link text-warning p-0 text-decoration-none fw-medium ms-2"
+                                                            onClick={() => handleEdit(registro)}
+                                                            title="Editar registro"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pencil-square" viewBox="0 0 16 16">
+                                                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                                                <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-link text-secondary p-0 text-decoration-none ms-2"
+                                                            onClick={() => handleDownloadPDF(registro)}
+                                                            disabled={downloadingId === registro.id}
+                                                            title="Descargar PDF"
+                                                        >
+                                                            {downloadingId === registro.id ? (
+                                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                            ) : (
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-pdf" viewBox="0 0 16 16">
+                                                                    <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
+                                                                    <path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.305 11.305 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029zm1.379-1.901c-.166.076-.32.156-.459.238-.328.194-.541.383-.647.545-.094.145-.096.25-.04.361.01.022.02.036.026.044a.266.266 0 0 0 .035-.012c.137-.056.355-.235.635-.572a8.18 8.18 0 0 0 .45-.606zm1.64-1.33a12.71 12.71 0 0 1 1.01-.193 11.744 11.744 0 0 1-.51-.858 20.801 20.801 0 0 1-.5 1.05zm2.446.45c.15.163.296.3.435.41.24.19.407.253.498.256a.107.107 0 0 0 .07-.015.307.307 0 0 0 .094-.125.436.436 0 0 0 .059-.2.095.095 0 0 0-.026-.063c-.052-.062-.2-.152-.518-.209a3.876 3.876 0 0 0-.612-.053zM8.06 7.152c-.066.301-.1.656-.104.97-.002.35.038.64.09.855.023-.105.048-.21.077-.315a13.36 13.36 0 0 1 .15-.654c.068-.198.141-.397.214-.593a12.636 12.636 0 0 0-.427-.263zm2.34-3.132a1.056 1.056 0 0 0-.087-.332c-.03-.075-.07-.16-.14-.24a.276.276 0 0 0-.175-.062c-.08 0-.15.025-.2.07-.06.052-.098.117-.123.18-.046.12-.058.267-.044.423.013.14.053.332.146.616.035.105.156.417.37.755.088-.173.166-.353.253-.53z" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
                         {/* Footer Controls */}
                         <div className="d-flex justify-content-end align-items-center mt-4 pt-3 border-top">
@@ -1405,6 +1380,118 @@ export default function RegistrosClient() {
             )}
 
             <style jsx>{`
+                /* Page Container */
+                .historial-page-container {
+                    max-width: 1100px;
+                    margin: 0 auto;
+                    padding: 40px 20px;
+                    font-family: 'Inter', system-ui, sans-serif;
+                }
+
+                /* Header Premium */
+                .header-container {
+                    background: white;
+                    border-radius: 24px;
+                    padding: 25px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 24px;
+                }
+                .badge-system {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: #0369a1;
+                    font-weight: 800;
+                    font-size: 0.7rem;
+                    margin-bottom: 10px;
+                }
+                .dot-pulse {
+                    width: 8px;
+                    height: 8px;
+                    background: #0369a1;
+                    border-radius: 50%;
+                    animation: pulse-dot 2s infinite;
+                }
+                @keyframes pulse-dot {
+                    0% { box-shadow: 0 0 0 0 rgba(3,105,161,0.4); }
+                    70% { box-shadow: 0 0 0 6px rgba(3,105,161,0); }
+                    100% { box-shadow: 0 0 0 0 rgba(3,105,161,0); }
+                }
+                .title {
+                    font-size: 1.6rem;
+                    font-weight: 900;
+                    color: #1e293b;
+                    margin: 0;
+                }
+                .subtitle {
+                    color: #64748b;
+                    font-size: 0.9rem;
+                    margin: 5px 0 0 0;
+                }
+                .header-stats {
+                    display: flex;
+                    gap: 15px;
+                    align-items: center;
+                }
+                .stat-pill {
+                    background: #f8fafc;
+                    padding: 8px 15px;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    display: flex;
+                    flex-direction: column;
+                    text-align: center;
+                }
+                .stat-pill .val {
+                    font-weight: 900;
+                    font-size: 1.2rem;
+                    line-height: 1;
+                    color: #1e293b;
+                }
+                .stat-pill .lab {
+                    font-size: 0.6rem;
+                    font-weight: 800;
+                    color: #94a3b8;
+                }
+                .btn-add-premium {
+                    background: #3b82f6;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 14px;
+                    font-weight: 800;
+                    font-size: 0.85rem;
+                    display: flex;
+                    align-items: center;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    cursor: pointer;
+                }
+                .btn-add-premium:hover {
+                    transform: translateY(-2px);
+                    background: #2563eb;
+                    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+                }
+
+                @media (max-width: 768px) {
+                    .header-container {
+                        flex-direction: column;
+                        text-align: center;
+                        gap: 20px;
+                    }
+                    .header-stats {
+                        flex-direction: column;
+                        width: 100%;
+                    }
+                    .btn-add-premium {
+                        width: 100%;
+                        justify-content: center;
+                    }
+                }
+
                 .group-section {
                     background: white;
                     border-radius: 8px;

@@ -458,12 +458,22 @@ export default function RegistroProductosClient() {
     }
 
     return (
-        <>
+        <div className="page-wrapper">
             <Navbar userName={userName} userRole={userRole} />
 
-            <main className="container mt-4">
-                <h2 className="text-center mb-4">Registro de Producto</h2>
-                <p className="fecha text-center">{getCurrentDate()}</p>
+            <main className="main-content">
+                {/* Header Premium */}
+                <div className="header-container shadow-sm border">
+                    <div className="header-info">
+                        <div className="badge-system"><span className="dot-pulse"></span>REGISTRO</div>
+                        <h1 className="title">Registro de Producto</h1>
+                        <p className="subtitle">Ingrese la información de control de calidad del lote.</p>
+                    </div>
+                    <div className="header-date">
+                        <span className="date-label">FECHA ACTUAL</span>
+                        <span className="date-value">{getCurrentDate()}</span>
+                    </div>
+                </div>
 
                 <form onSubmit={handleSubmit} noValidate>
                     <div className="form-grid">
@@ -772,6 +782,90 @@ export default function RegistroProductosClient() {
             )}
 
             <style jsx>{`
+        /* Page Layout */
+        .page-wrapper {
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .main-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header Premium */
+        .header-container {
+            background: white;
+            border-radius: 24px;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .badge-system {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #0369a1;
+            font-weight: 800;
+            font-size: 0.7rem;
+            margin-bottom: 10px;
+        }
+        .dot-pulse {
+            width: 8px;
+            height: 8px;
+            background: #0369a1;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(3,105,161,0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(3,105,161,0); }
+            100% { box-shadow: 0 0 0 0 rgba(3,105,161,0); }
+        }
+        .title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: #1e293b;
+            margin: 0;
+        }
+        .subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 5px 0 0 0;
+        }
+        .header-date {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+        }
+        .date-label {
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .date-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            .header-date {
+                align-items: center;
+                text-align: center;
+            }
+        }
+
         .fecha {
           font-weight: bold;
           color: #455a64; /* Darkened from #607d8b for better contrast */
@@ -1043,6 +1137,6 @@ export default function RegistroProductosClient() {
             color: #b91c1c !important;
         }
       `}</style>
-        </>
+        </div>
     );
 }

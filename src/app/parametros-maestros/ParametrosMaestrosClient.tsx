@@ -175,16 +175,29 @@ export default function ParametrosMaestrosClient() {
     }
 
     return (
-        <>
+        <div className="page-wrapper">
             <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
 
-            <div className="container mt-4">
-                <h2 className="text-center mb-4">Parámetros Maestros</h2>
-
-                <div className="actions-bar">
-                    <button className="btn btn-success" onClick={openNewModal}>
-                        + Agregar Parámetro
-                    </button>
+            <main className="main-content">
+                {/* Header Premium */}
+                <div className="header-container shadow-sm border">
+                    <div className="header-info">
+                        <div className="badge-system"><span className="dot-pulse"></span>CONFIGURACIÓN</div>
+                        <h1 className="title">Parámetros Maestros</h1>
+                        <p className="subtitle">Defina los parámetros base que se pueden usar en productos.</p>
+                    </div>
+                    <div className="header-stats">
+                        <div className="stat-pill">
+                            <span className="val">{parametros.length}</span>
+                            <span className="lab">TOTAL</span>
+                        </div>
+                        <button className="btn-add-premium shadow-sm" onClick={openNewModal}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style={{ marginRight: '8px' }}>
+                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                            </svg>
+                            <span>Agregar Parámetro</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="table-container">
@@ -228,58 +241,176 @@ export default function ParametrosMaestrosClient() {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </main>
 
             {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>{editingParam ? 'Editar Parámetro' : 'Nuevo Parámetro'}</h3>
-                            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-                        </div>
-
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label">Nombre *</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={formData.nombre}
-                                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                                    placeholder="Nombre del parámetro"
-                                />
+            {
+                showModal && (
+                    <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>{editingParam ? 'Editar Parámetro' : 'Nuevo Parámetro'}</h3>
+                                <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
                             </div>
 
-                            <div className="form-group mt-3">
-                                <label className="form-label">Tipo *</label>
-                                <select
-                                    className="form-select"
-                                    value={formData.tipo}
-                                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'texto' | 'numero' | 'rango' })}
-                                >
-                                    <option value="texto">Texto</option>
-                                    <option value="numero">Número</option>
-                                    <option value="rango">Rango</option>
-                                </select>
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label className="form-label">Nombre *</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={formData.nombre}
+                                        onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                                        placeholder="Nombre del parámetro"
+                                    />
+                                </div>
+
+                                <div className="form-group mt-3">
+                                    <label className="form-label">Tipo *</label>
+                                    <select
+                                        className="form-select"
+                                        value={formData.tipo}
+                                        onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'texto' | 'numero' | 'rango' })}
+                                    >
+                                        <option value="texto">Texto</option>
+                                        <option value="numero">Número</option>
+                                        <option value="rango">Rango</option>
+                                    </select>
+                                </div>
+
+                                {error && <div className="alert alert-danger mt-3">{error}</div>}
                             </div>
 
-                            {error && <div className="alert alert-danger mt-3">{error}</div>}
-                        </div>
-
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                                Cancelar
-                            </button>
-                            <button className="btn btn-success" onClick={handleSave} disabled={saving}>
-                                {saving ? 'Guardando...' : 'Guardar'}
-                            </button>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                                    Cancelar
+                                </button>
+                                <button className="btn btn-success" onClick={handleSave} disabled={saving}>
+                                    {saving ? 'Guardando...' : 'Guardar'}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <style jsx>{`
+        /* Page Layout */
+        .page-wrapper {
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .main-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header Premium */
+        .header-container {
+            background: white;
+            border-radius: 24px;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .badge-system {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #0369a1;
+            font-weight: 800;
+            font-size: 0.7rem;
+            margin-bottom: 10px;
+        }
+        .dot-pulse {
+            width: 8px;
+            height: 8px;
+            background: #0369a1;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(3,105,161,0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(3,105,161,0); }
+            100% { box-shadow: 0 0 0 0 rgba(3,105,161,0); }
+        }
+        .title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: #1e293b;
+            margin: 0;
+        }
+        .subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 5px 0 0 0;
+        }
+        .header-stats {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .stat-pill {
+            background: #f8fafc;
+            padding: 8px 15px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+        .stat-pill .val {
+            font-weight: 900;
+            font-size: 1.2rem;
+            line-height: 1;
+            color: #1e293b;
+        }
+        .stat-pill .lab {
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #94a3b8;
+        }
+        .btn-add-premium {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+        }
+        .btn-add-premium:hover {
+            transform: translateY(-2px);
+            background: #059669;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            .header-stats {
+                flex-direction: column;
+                width: 100%;
+            }
+            .btn-add-premium {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
         .actions-bar {
           display: flex;
           justify-content: flex-end;
@@ -362,6 +493,6 @@ export default function ParametrosMaestrosClient() {
           border-top: 1px solid #dee2e6;
         }
       `}</style>
-        </>
+        </div>
     );
 }
