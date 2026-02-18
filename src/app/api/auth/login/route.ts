@@ -14,6 +14,17 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Trim username (case-insensitive login)
+        const usuarioTrimmed = usuario.trim().toLowerCase();
+
+        // Password cannot contain spaces
+        if (password.includes(' ')) {
+            return NextResponse.json(
+                { error: 'La contraseña no puede contener espacios' },
+                { status: 400 }
+            );
+        }
+
         // Use SERVICE_ROLE_KEY to bypass RLS for authentication check
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,12 +37,11 @@ export async function POST(request: NextRequest) {
             }
         );
 
-        // Get user from database
+        // Get user from database (case-insensitive search for username/email)
         const { data: user, error } = await supabase
             .from('usuarios')
             .select('*')
-            // Search by username OR email
-            .or(`usuario.eq.${usuario},email.eq.${usuario}`)
+            .or(`usuario.ilike.${usuarioTrimmed},email.ilike.${usuarioTrimmed}`)
             .eq('activo', true)
             .eq('is_deleted', false)
             .single();

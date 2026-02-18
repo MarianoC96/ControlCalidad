@@ -113,7 +113,7 @@ export default function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value.replace(/\s/g, '') })}
                 required
                 placeholder="••••••••"
               />
