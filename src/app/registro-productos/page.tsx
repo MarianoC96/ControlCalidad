@@ -1,7 +1,8 @@
 'use client';
 
+import RouteGuard from '@/components/RouteGuard';
 import RegistroProductosClient from './RegistroProductosClient';
 
 export default function RegistroProductosPage() {
-    return <RegistroProductosClient />;
+    return <RouteGuard><RegistroProductosClient /></RouteGuard>;
 }

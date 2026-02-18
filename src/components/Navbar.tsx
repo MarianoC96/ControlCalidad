@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface NavbarProps {
@@ -16,14 +16,33 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [allowedModules, setAllowedModules] = useState<string[]>([]);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
   const isActive = (path: string) => pathname === path;
-  const isAdmin = userRole === 'administrador';
+
+  // Fetch permissions on mount
+  const fetchPermissions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/permisos');
+      if (res.ok) {
+        const data = await res.json();
+        setAllowedModules(data.allowedModules || []);
+      }
+    } catch (e) {
+      console.error('Error fetching permissions:', e);
+    } finally {
+      setPermissionsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPermissions();
+  }, [fetchPermissions]);
 
   // Ajustar el margen del contenido principal según el estado del sidebar
   useEffect(() => {
     const root = document.documentElement;
-    // Solo actualizamos la variable si estamos en desktop para controlar el colapso
     if (window.innerWidth > 992) {
       root.style.setProperty('--sidebar-width', isCollapsed ? '72px' : '260px');
     }
@@ -33,70 +52,80 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
     {
       href: '/registro-productos',
       label: 'Registrar',
+      moduleKey: 'registro-productos',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
       ),
-      adminOnly: false
     },
     {
       href: '/historial',
       label: 'Historial',
+      moduleKey: 'historial',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
       ),
-      adminOnly: false
     },
     {
       href: '/historial-descargas',
       label: 'Historial de descargas masivas',
+      moduleKey: 'historial-descargas',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z" /></svg>
       ),
-      adminOnly: false
     },
     {
       href: '/solicitudes',
       label: 'Solicitudes',
+      moduleKey: 'solicitudes',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       ),
-      adminOnly: true
     },
     {
       href: '/productos',
       label: 'Productos',
+      moduleKey: 'productos',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
       ),
-      adminOnly: true
     },
     {
       href: '/parametros-maestros',
       label: 'Parámetros',
+      moduleKey: 'parametros-maestros',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
       ),
-      adminOnly: true
     },
     {
       href: '/usuarios',
       label: 'Usuarios',
+      moduleKey: 'usuarios',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
       ),
-      adminOnly: true
     },
     {
       href: '/admin/config-pdf',
       label: 'Edición de PDF',
+      moduleKey: 'admin/config-pdf',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
       ),
-      adminOnly: true
+    },
+    {
+      href: '/accesos',
+      label: 'Accesos a Sistema',
+      moduleKey: 'accesos',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+      ),
     },
   ];
 
-  const filteredLinks = navLinks.filter(link => !link.adminOnly || isAdmin);
+  const filteredLinks = permissionsLoaded
+    ? navLinks.filter(link => allowedModules.includes(link.moduleKey))
+    : [];
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleMobile = () => setIsMobileOpen(!isMobileOpen);

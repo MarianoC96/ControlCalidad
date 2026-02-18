@@ -1,9 +1,8 @@
+'use client';
+
+import RouteGuard from '@/components/RouteGuard';
 import SolicitudesClient from './SolicitudesClient';
 
-export const metadata = {
-    title: 'Solicitudes de Edición | Control de Calidad',
-};
-
 export default function SolicitudesPage() {
-    return <SolicitudesClient />;
+    return <RouteGuard><SolicitudesClient /></RouteGuard>;
 }

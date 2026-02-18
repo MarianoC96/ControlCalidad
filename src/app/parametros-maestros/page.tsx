@@ -1,7 +1,8 @@
 'use client';
 
+import RouteGuard from '@/components/RouteGuard';
 import ParametrosMaestrosClient from './ParametrosMaestrosClient';
 
 export default function ParametrosMaestrosPage() {
-    return <ParametrosMaestrosClient />;
+    return <RouteGuard><ParametrosMaestrosClient /></RouteGuard>;
 }
