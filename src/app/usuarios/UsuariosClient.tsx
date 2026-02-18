@@ -338,7 +338,7 @@ export default function UsuariosClient() {
                             <div className="premium-input-group">
                                 <div className="input-icon"><i className="bi bi-envelope-fill"></i></div>
                                 <div className="input-content">
-                                    <label>Email Institucional</label>
+                                    <label>Email Institucional <span className="optional-tag">Opcional</span></label>
                                     <input
                                         type="email"
                                         value={formData.email}
@@ -548,8 +548,8 @@ export default function UsuariosClient() {
                 .system-tag { font-size: 0.6rem; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; }
 
                 /* Modals - Premium Design (Optimized) */
-                .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-                .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 520px; overflow: hidden; animation: slideUp 0.15s ease-out; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+                .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.7); display: flex; align-items: flex-start; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px; }
+                .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 520px; overflow: hidden; animation: slideUp 0.15s ease-out; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); margin: auto; display: flex; flex-direction: column; max-height: calc(100vh - 40px); }
                 @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
                 /* Modal Header Premium */
@@ -566,7 +566,7 @@ export default function UsuariosClient() {
                 .close-modal-btn:hover { background: rgba(239,68,68,0.9); border-color: transparent; color: white; }
 
                 /* Modal Body Premium */
-                .modal-body-premium { padding: 24px; }
+                .modal-body-premium { padding: 24px; overflow-y: auto; flex: 1; }
                 .modal-section-title { display: flex; align-items: center; gap: 10px; color: #1e293b; font-weight: 800; font-size: 0.9rem; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; }
                 .modal-section-title i { color: #3b82f6; font-size: 1.1rem; }
 
@@ -620,7 +620,7 @@ export default function UsuariosClient() {
                 .error-banner i { font-size: 1.1rem; }
 
                 /* Modal Footer Premium */
-                .modal-footer-premium { padding: 20px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; gap: 12px; }
+                .modal-footer-premium { padding: 20px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; gap: 12px; flex-shrink: 0; }
                 .btn-modal-cancel { display: flex; align-items: center; gap: 8px; padding: 12px 24px; background: white; border: 2px solid #e2e8f0; border-radius: 14px; color: #64748b; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
                 .btn-modal-cancel:hover { border-color: #cbd5e1; background: #f8fafc; color: #475569; }
                 .btn-modal-save { display: flex; align-items: center; gap: 8px; padding: 12px 28px; background: linear-gradient(135deg, #1e293b, #334155); border: none; border-radius: 14px; color: white; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(30,41,59,0.3); }
@@ -640,6 +640,47 @@ export default function UsuariosClient() {
                 .btn-confirm { background: #1e293b; border: none; color: white; padding: 10px 25px; border-radius: 50px; font-weight: 700; cursor: pointer; }
 
                 .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; font-weight: 900; color: #2563eb; letter-spacing: 2px; }
+
+                /* ===== RESPONSIVE ===== */
+                @media (max-width: 640px) {
+                    .main-content { padding: 20px 12px; }
+                    .header-container { flex-direction: column; gap: 16px; text-align: center; padding: 20px 16px; border-radius: 18px; }
+                    .header-stats { width: 100%; justify-content: center; }
+                    .btn-add-premium { width: 100%; justify-content: center; }
+                    .title { font-size: 1.3rem; }
+                    .filters-bar { flex-direction: column; border-radius: 18px; padding: 12px; gap: 10px; }
+                    .filter-select { width: 100%; }
+                    .user-card { border-radius: 16px; padding: 16px; }
+                    .card-top { flex-direction: column; gap: 12px; }
+                    .user-tags { align-self: flex-start; }
+                    .card-actions { flex-wrap: wrap; }
+                    .card-actions .btn-c { flex: 1; min-width: 0; justify-content: center; text-align: center; font-size: 0.75rem; padding: 6px 10px; }
+
+                    /* Modal responsive */
+                    .modal-overlay { padding: 10px; }
+                    .modal-content { border-radius: 20px; max-height: calc(100vh - 20px); }
+                    .modal-header-premium { padding: 20px 16px 16px; }
+                    .modal-avatar { width: 44px; height: 44px; font-size: 1.2rem; border-radius: 12px; }
+                    .preview-name { font-size: 0.95rem; }
+                    .preview-handle { font-size: 0.75rem; }
+                    .modal-body-premium { padding: 16px; }
+                    .modal-section-title { font-size: 0.8rem; margin-bottom: 14px; }
+                    .premium-input-group { padding: 10px; margin-bottom: 12px; border-radius: 12px; }
+                    .input-icon { width: 34px; height: 34px; border-radius: 10px; font-size: 0.95rem; }
+                    .input-content label { font-size: 0.65rem; }
+                    .input-content input, .input-content select { font-size: 0.85rem; padding: 6px 0; }
+                    .status-card { padding: 14px; border-radius: 14px; gap: 12px; flex-wrap: wrap; }
+                    .status-icon-container { width: 40px; height: 40px; }
+                    .status-icon-container i { font-size: 1.3rem; }
+                    .status-badge { font-size: 0.65rem; }
+                    .status-description p { font-size: 0.75rem; }
+                    .modal-footer-premium { padding: 14px 16px; flex-direction: row; }
+                    .btn-modal-cancel { padding: 10px 16px; font-size: 0.8rem; flex: 1; justify-content: center; }
+                    .btn-modal-save { padding: 10px 16px; font-size: 0.8rem; flex: 1; justify-content: center; }
+
+                    /* Confirm box responsive */
+                    .confirm-box { width: 90% !important; max-width: 320px; }
+                }
             `}</style>
         </div>
     );
