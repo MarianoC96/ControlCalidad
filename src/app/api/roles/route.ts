@@ -21,6 +21,8 @@ const ALL_MODULES = [
     'usuarios',
     'admin/config-pdf',
     'accesos',
+    'temporal',
+    'auditoria',
 ];
 
 async function getAuthUser(supabase: ReturnType<typeof createAdminClient>) {

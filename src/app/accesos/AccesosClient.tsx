@@ -28,6 +28,8 @@ const MODULE_LABELS: Record<string, string> = {
     'usuarios': 'Usuarios',
     'admin/config-pdf': 'Edición de PDF',
     'accesos': 'Accesos a Sistema',
+    'temporal': 'Temporal (Contingencia)',
+    'auditoria': 'Auditoría',
 };
 
 export default function AccesosClient() {

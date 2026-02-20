@@ -7,6 +7,8 @@ import AutocompleteSelect from '@/components/AutocompleteSelect';
 import { createClient } from '@/lib/supabase/client';
 import { getCurrentDate, formatRange, validateRange, validateText } from '@/lib/utils';
 import type { Producto, Parametro } from '@/lib/supabase/types';
+import { useOnlineStatus } from '@/lib/useOnlineStatus';
+import { saveOfflineRecord, cacheProducts, getCachedProducts } from '@/lib/temporal-db';
 
 interface ControlValue {
     parametroNombre: string;
@@ -56,6 +58,10 @@ export default function RegistroProductosClient() {
     const [loadingParametros, setLoadingParametros] = useState(false);
     const [touched, setTouched] = useState(false);
 
+    // Offline detection
+    const { isOnline } = useOnlineStatus();
+    const [userId, setUserId] = useState<number | null>(null);
+
     // Load products on mount
     useEffect(() => {
         loadProductos();
@@ -64,11 +70,25 @@ export default function RegistroProductosClient() {
 
     const loadUserInfo = async () => {
         // Get user from session/cookie
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-            const data = await response.json();
-            setUserName(data.nombre_completo || data.usuario);
-            setUserRole(data.roles);
+        try {
+            const response = await fetch('/api/auth/me');
+            if (response.ok) {
+                const data = await response.json();
+                setUserName(data.nombre_completo || data.usuario);
+                setUserRole(data.roles);
+                setUserId(data.id || null);
+            }
+        } catch {
+            // Offline – try to read from cookies
+            const cookieName = document.cookie.match(/user_name=([^;]+)/);
+            const cookieRole = document.cookie.match(/user_role=([^;]+)/);
+            const cookieId = document.cookie.match(/user_id=([^;]+)/);
+            if (cookieName) setUserName(decodeURIComponent(cookieName[1]));
+            if (cookieRole) {
+                const r = decodeURIComponent(cookieRole[1]);
+                if (r === 'administrador' || r === 'trabajador') setUserRole(r);
+            }
+            if (cookieId) setUserId(parseInt(decodeURIComponent(cookieId[1])));
         }
     };
 
@@ -80,8 +100,26 @@ export default function RegistroProductosClient() {
 
             const data = await response.json();
             setProductos(data || []);
+
+            // Cache products in IndexedDB for offline use
+            try {
+                await cacheProducts(data || []);
+            } catch (e) {
+                console.warn('No se pudo cachear productos en IndexedDB:', e);
+            }
         } catch (err) {
-            setError('Error al cargar productos: ' + (err instanceof Error ? err.message : ''));
+            // If offline, try to load from IndexedDB cache
+            try {
+                const cached = await getCachedProducts();
+                if (cached.length > 0) {
+                    setProductos(cached as Producto[]);
+                    console.log('Productos cargados desde caché offline');
+                } else {
+                    setError('Sin conexión y no hay productos en caché');
+                }
+            } catch {
+                setError('Error al cargar productos: ' + (err instanceof Error ? err.message : ''));
+            }
             console.error(err);
         } finally {
             setLoading(false);
@@ -376,7 +414,46 @@ export default function RegistroProductosClient() {
             const selectedProduct = productos.find(p => p.id === parseInt(formData.productoId));
             if (!selectedProduct) throw new Error('Producto no encontrado');
 
-            // Save registration via API
+            // ─── OFFLINE: Save to IndexedDB ───
+            if (!isOnline) {
+                const fotosPreviews: string[] = [];
+                for (const fotoObj of fotos) {
+                    if (fotoObj && fotoObj.preview) {
+                        fotosPreviews.push(fotoObj.preview);
+                    }
+                }
+
+                await saveOfflineRecord({
+                    formData: { ...formData },
+                    productoNombre: selectedProduct.nombre,
+                    controles: controles.map(c => ({ ...c })),
+                    fotos: fotosPreviews,
+                    verificadoPor: userName,
+                    userId: userId,
+                    timestamp: new Date().toISOString(),
+                    synced: false,
+                });
+
+                setSuccess('⏱️ Registro guardado temporalmente (offline). Sincronice desde el módulo Temporal cuando tenga conexión.');
+
+                // Reset form
+                setFormData({
+                    loteInterno: '',
+                    loteProducto: '',
+                    guia: '',
+                    marca: '',
+                    cantidad: '',
+                    productoId: '',
+                    observacionesGenerales: '',
+                });
+                setControles([]);
+                setFotos([null, null]);
+                setTouched(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // ─── ONLINE: Save via API (original flow) ───
             const response = await fetch('/api/registros', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -439,7 +516,7 @@ export default function RegistroProductosClient() {
             });
             setControles([]);
             setFotos([null, null]);
-            setTouched(false); // Reset validation state
+            setTouched(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
         } catch (err) {
@@ -469,9 +546,30 @@ export default function RegistroProductosClient() {
 
             <main className="main-content">
                 {/* Header Premium */}
+                {/* Offline Banner */}
+                {!isOnline && (
+                    <div style={{
+                        background: 'linear-gradient(90deg, #dc2626, #b91c1c)',
+                        color: 'white', padding: '0.75rem 1.25rem', borderRadius: '10px',
+                        marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        fontWeight: 600, fontSize: '0.95rem', animation: 'pulseOffline 2s infinite',
+                    }}>
+                        <span style={{ fontSize: '1.3rem' }}>📡</span>
+                        <div>
+                            <div>SIN CONEXIÓN A INTERNET</div>
+                            <div style={{ fontWeight: 400, fontSize: '0.8rem', opacity: 0.9 }}>
+                                Los registros se guardarán temporalmente y podrá sincronizarlos desde el módulo Temporal
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="header-container shadow-sm border">
                     <div className="header-info">
-                        <div className="badge-system"><span className="dot-pulse"></span>REGISTRO</div>
+                        <div className="badge-system">
+                            <span className="dot-pulse" style={!isOnline ? { background: '#ef4444' } : {}}></span>
+                            {isOnline ? 'REGISTRO' : 'REGISTRO OFFLINE'}
+                        </div>
                         <h1 className="title">Registro de Producto</h1>
                         <p className="subtitle">Ingrese la información de control de calidad del lote.</p>
                     </div>
@@ -760,11 +858,11 @@ export default function RegistroProductosClient() {
                     <div className="text-center mt-4 mb-4">
                         <button
                             type="submit"
-                            className="btn btn-success btn-lg"
+                            className={`btn ${isOnline ? 'btn-success' : 'btn-warning'} btn-lg`}
                             disabled={saving}
                             aria-label="Guardar Registro"
                         >
-                            {saving ? 'Guardando...' : 'Guardar Registro'}
+                            {saving ? 'Guardando...' : (isOnline ? 'Guardar Registro' : '⏱️ Guardar Temporalmente')}
                         </button>
                     </div>
                 </form>

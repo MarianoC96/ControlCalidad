@@ -14,6 +14,8 @@ const PATH_TO_MODULE: Record<string, string> = {
     '/usuarios': 'usuarios',
     '/admin/config-pdf': 'admin/config-pdf',
     '/accesos': 'accesos',
+    '/temporal': 'temporal',
+    '/auditoria': 'auditoria',
 };
 
 interface RouteGuardProps {
@@ -33,6 +35,13 @@ export default function RouteGuard({ children, moduleKey }: RouteGuardProps) {
                 const key = moduleKey || PATH_TO_MODULE[pathname];
                 if (!key) {
                     // No module restriction for this path
+                    setAuthorized(true);
+                    setChecking(false);
+                    return;
+                }
+
+                // Temporal module is always accessible (critical contingency)
+                if (key === 'temporal') {
                     setAuthorized(true);
                     setChecking(false);
                     return;

@@ -33,7 +33,8 @@ export async function GET() {
                 allowedModules: [
                     'registro-productos', 'historial', 'historial-descargas',
                     'solicitudes', 'productos', 'parametros-maestros',
-                    'usuarios', 'admin/config-pdf', 'accesos'
+                    'usuarios', 'admin/config-pdf', 'accesos',
+                    'temporal', 'auditoria'
                 ],
                 isSadmin: true,
                 roleName: 'sadmin'
@@ -47,14 +48,15 @@ export async function GET() {
                     allowedModules: [
                         'registro-productos', 'historial', 'historial-descargas',
                         'solicitudes', 'productos', 'parametros-maestros',
-                        'usuarios', 'admin/config-pdf'
+                        'usuarios', 'admin/config-pdf',
+                        'temporal'
                     ],
                     isSadmin: false,
                     roleName: 'administrador'
                 });
             } else {
                 return NextResponse.json({
-                    allowedModules: ['registro-productos', 'historial', 'historial-descargas'],
+                    allowedModules: ['registro-productos', 'historial', 'historial-descargas', 'temporal'],
                     isSadmin: false,
                     roleName: 'trabajador'
                 });
@@ -76,6 +78,11 @@ export async function GET() {
             .eq('habilitado', true);
 
         const allowedModules = (permisos || []).map(p => p.modulo_key);
+
+        // 'temporal' is always available for all users (contingency module)
+        if (!allowedModules.includes('temporal')) {
+            allowedModules.push('temporal');
+        }
 
         return NextResponse.json({
             allowedModules,
