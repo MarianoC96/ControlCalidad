@@ -141,9 +141,9 @@ export default function DownloadHistory() {
             <div className="card-body p-4">
 
                 {/* Toolbar */}
-                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #dee2e6' }}>
+                <div className="toolbar-row">
                     {/* Left Side: Filters */}
-                    <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                    <div className="toolbar-filters">
                         <select
                             className="form-select form-select-sm rounded-pill border-secondary-subtle bg-light text-secondary fw-medium shadow-none"
                             value={selectedYear}
@@ -168,8 +168,8 @@ export default function DownloadHistory() {
                     </div>
 
                     {/* Right Side: Search */}
-                    <div style={{ width: '250px', minWidth: '250px', position: 'relative' }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="text-secondary" viewBox="0 0 16 16" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                    <div className="toolbar-search">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="search-icon" viewBox="0 0 16 16">
                             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                         </svg>
                         <input
@@ -183,58 +183,106 @@ export default function DownloadHistory() {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="table-responsive">
-                    <table className="table table-hover mb-0 align-middle">
-                        <thead className="table-light text-secondary text-uppercase small">
-                            <tr>
-                                <th className="ps-3 fw-semibold text-secondary">Fecha Solicitud</th>
-                                <th className="fw-semibold text-secondary">Usuario</th>
-                                <th className="fw-semibold text-secondary">Rango</th>
-                                <th className="fw-semibold text-secondary">Estado</th>
-                                <th className="fw-semibold text-secondary">Archivos</th>
-                                <th className="text-end pe-3 fw-semibold text-secondary">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredDownloads.length === 0 ? (
+                {/* Desktop Table */}
+                <div className="desktop-table">
+                    <div className="table-responsive">
+                        <table className="table table-hover mb-0 align-middle">
+                            <thead className="table-light text-secondary text-uppercase small">
                                 <tr>
-                                    <td colSpan={6} className="text-center py-4 text-muted">
-                                        No se encontraron descargas con los filtros actuales.
-                                    </td>
+                                    <th className="ps-3 fw-semibold text-secondary">Fecha Solicitud</th>
+                                    <th className="fw-semibold text-secondary">Usuario</th>
+                                    <th className="fw-semibold text-secondary">Rango</th>
+                                    <th className="fw-semibold text-secondary">Estado</th>
+                                    <th className="fw-semibold text-secondary">Archivos</th>
+                                    <th className="text-end pe-3 fw-semibold text-secondary">Acción</th>
                                 </tr>
-                            ) : (
-                                filteredDownloads.map(d => (
-                                    <tr key={d.id}>
-                                        <td className="ps-3 text-muted fw-medium">{new Date(d.created_at).toLocaleString('es-PE')}</td>
-                                        <td className="fw-bold text-dark">{d.usuarios?.nombre_completo || 'Desconocido'}</td>
-                                        <td className="text-muted">{d.start_date.split('-').reverse().join('-')} al {d.end_date.split('-').reverse().join('-')}</td>
-                                        <td>
-                                            {getStatusBadge(d.status)}
-                                            {d.error_message && <div className="text-danger small mt-1">{d.error_message}</div>}
-                                        </td>
-                                        <td className="text-dark">{d.total_files}</td>
-                                        <td className="text-end pe-3">
-                                            {d.status === 'ready' && (
-                                                <a
-                                                    href={`/api/downloads/${d.id}/download`}
-                                                    target="_blank"
-                                                    className="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-medium"
-                                                    title="Descargar archivo ZIP"
-                                                >
-                                                    Descargar ZIP
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-arrow-down ms-1" viewBox="0 0 16 16">
-                                                        <path d="M8.5 6.5a.5.5 0 0 0-1 0v3.793L6.354 9.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 10.293V6.5z" />
-                                                        <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
-                                                    </svg>
-                                                </a>
-                                            )}
+                            </thead>
+                            <tbody>
+                                {filteredDownloads.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-4 text-muted">
+                                            No se encontraron descargas con los filtros actuales.
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    filteredDownloads.map(d => (
+                                        <tr key={d.id}>
+                                            <td className="ps-3 text-muted fw-medium">{new Date(d.created_at).toLocaleString('es-PE')}</td>
+                                            <td className="fw-bold text-dark">{d.usuarios?.nombre_completo || 'Desconocido'}</td>
+                                            <td className="text-muted">{d.start_date.split('-').reverse().join('-')} al {d.end_date.split('-').reverse().join('-')}</td>
+                                            <td>
+                                                {getStatusBadge(d.status)}
+                                                {d.error_message && <div className="text-danger small mt-1">{d.error_message}</div>}
+                                            </td>
+                                            <td className="text-dark">{d.total_files}</td>
+                                            <td className="text-end pe-3">
+                                                {d.status === 'ready' && (
+                                                    <a
+                                                        href={`/api/downloads/${d.id}/download`}
+                                                        target="_blank"
+                                                        className="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-medium"
+                                                        title="Descargar archivo ZIP"
+                                                    >
+                                                        Descargar ZIP
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-arrow-down ms-1" viewBox="0 0 16 16">
+                                                            <path d="M8.5 6.5a.5.5 0 0 0-1 0v3.793L6.354 9.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 10.293V6.5z" />
+                                                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
+                                                        </svg>
+                                                    </a>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="mobile-cards">
+                    {filteredDownloads.length === 0 ? (
+                        <div className="text-center py-4 text-muted">
+                            No se encontraron descargas con los filtros actuales.
+                        </div>
+                    ) : (
+                        filteredDownloads.map(d => (
+                            <div key={d.id} className="mobile-card">
+                                <div className="mobile-card-header">
+                                    <span className="mobile-card-users">{d.usuarios?.nombre_completo || 'Desconocido'}</span>
+                                    {getStatusBadge(d.status)}
+                                </div>
+                                <div className="mobile-card-body">
+                                    <div className="mobile-card-row">
+                                        <span className="label">Fecha:</span>
+                                        <span className="value">{new Date(d.created_at).toLocaleString('es-PE')}</span>
+                                    </div>
+                                    <div className="mobile-card-row">
+                                        <span className="label">Rango:</span>
+                                        <span className="value">{d.start_date.split('-').reverse().join('-')} al {d.end_date.split('-').reverse().join('-')}</span>
+                                    </div>
+                                    <div className="mobile-card-row">
+                                        <span className="label">Archivos:</span>
+                                        <span className="value">{d.total_files}</span>
+                                    </div>
+                                    {d.error_message && (
+                                        <div className="text-danger small mt-1">{d.error_message}</div>
+                                    )}
+                                </div>
+                                {d.status === 'ready' && (
+                                    <div className="mobile-card-actions">
+                                        <a
+                                            href={`/api/downloads/${d.id}/download`}
+                                            target="_blank"
+                                            className="mobile-action-btn download"
+                                        >
+                                            ⬇ Descargar ZIP
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 {/* Footer Controls */}
@@ -255,6 +303,131 @@ export default function DownloadHistory() {
                 </div>
 
             </div>
+            <style jsx>{`
+                /* Toolbar */
+                .toolbar-row {
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1.5rem;
+                    border-bottom: 1px solid #dee2e6;
+                    gap: 12px;
+                }
+                .toolbar-filters {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 10px;
+                    align-items: center;
+                }
+                .toolbar-search {
+                    width: 250px;
+                    min-width: 200px;
+                    position: relative;
+                }
+                .search-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    z-index: 10;
+                    color: #6c757d;
+                }
+
+                /* Desktop table visible, mobile cards hidden by default */
+                .desktop-table { display: block; }
+                .mobile-cards { display: none; }
+
+                /* Mobile Cards */
+                .mobile-card {
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 14px;
+                    margin-bottom: 10px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+                }
+                .mobile-card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                    padding-bottom: 8px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+                .mobile-card-users {
+                    font-weight: 800;
+                    font-size: 0.95rem;
+                    color: #1e293b;
+                }
+                .mobile-card-body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    margin-bottom: 10px;
+                }
+                .mobile-card-row {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 0.85rem;
+                }
+                .mobile-card-row .label {
+                    color: #64748b;
+                    font-weight: 500;
+                }
+                .mobile-card-row .value {
+                    color: #334155;
+                    font-weight: 600;
+                    text-align: right;
+                }
+                .mobile-card-actions {
+                    display: flex;
+                    gap: 8px;
+                    padding-top: 5px;
+                }
+                .mobile-action-btn {
+                    flex: 1;
+                    padding: 8px 0;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    background: #f8fafc;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s;
+                    text-decoration: none;
+                    display: block;
+                }
+                .mobile-action-btn:hover { background: #e2e8f0; }
+                .mobile-action-btn.download { color: #2563eb; background: #eff6ff; border-color: #bfdbfe; }
+
+                /* ===== MOBILE BREAKPOINT ===== */
+                @media (max-width: 768px) {
+                    /* Toolbar stacks */
+                    .toolbar-row {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 10px;
+                    }
+                    .toolbar-filters {
+                        width: 100%;
+                    }
+                    .toolbar-filters select {
+                        flex: 1;
+                        width: 100% !important;
+                    }
+                    .toolbar-search {
+                        width: 100%;
+                        min-width: unset;
+                    }
+
+                    /* Hide table, show cards */
+                    .desktop-table { display: none !important; }
+                    .mobile-cards { display: block !important; }
+                }
+            `}</style>
         </div>
     );
 }

@@ -481,7 +481,7 @@ export default function ProductosClient() {
                                                     )}
 
                                                     {param.tipo === 'texto' && (
-                                                        <div className="form-group mb-0" style={{ gridColumn: 'span 2' }}>
+                                                        <div className="form-group mb-0 col-span-2">
                                                             <label className="form-label small fw-bold text-muted">Valor Esperado (Opcional)</label>
                                                             <input
                                                                 type="text"
@@ -494,7 +494,7 @@ export default function ProductosClient() {
                                                     )}
 
                                                     {param.tipo === 'numero' && (
-                                                        <div className="form-group mb-0" style={{ gridColumn: 'span 2' }}>
+                                                        <div className="form-group mb-0 col-span-2">
                                                             <label className="form-label small fw-bold text-muted">Valor Numérico Esperado</label>
                                                             <input
                                                                 type="number"
@@ -910,11 +910,41 @@ export default function ProductosClient() {
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .col-span-2 { grid-column: span 2; }
+
         @media (max-width: 768px) {
-          .param-grid-premium {
-            grid-template-columns: 1fr;
-            gap: 0.75rem;
-          }
+            .header-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            .header-stats {
+                flex-direction: column;
+                width: 100%;
+            }
+            .btn-add-premium {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            /* Modal Mobile Optimizations */
+            .modal-overlay { padding: 0 !important; alignItems: flex-end; }
+            .modal-content.premium-modal {
+                width: 100%;
+                height: 100vh; /* Fallback */
+                height: 100dvh;
+                max-height: 100dvh;
+                border-radius: 0;
+                border: none;
+            }
+            .modal-header { padding: 1rem; }
+            .modal-body-scrollable { padding: 1rem; }
+
+            .param-grid-premium {
+                grid-template-columns: 1fr !important;
+                gap: 1rem;
+            }
+            .col-span-2 { grid-column: auto !important; }
         }
       `}</style>
         </div>

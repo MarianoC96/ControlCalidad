@@ -489,9 +489,9 @@ export default function RegistrosClient() {
                     <div className="card-body p-4">
 
                         {/* Toolbar */}
-                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #dee2e6' }}>
+                        <div className="toolbar-row">
                             {/* Left Side: Filters */}
-                            <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                            <div className="toolbar-filters">
                                 <select
                                     className="form-select form-select-sm rounded-pill border-secondary-subtle bg-light text-secondary fw-medium shadow-none"
                                     value={selectedYear}
@@ -518,8 +518,8 @@ export default function RegistrosClient() {
                             </div>
 
                             {/* Right Side: Search */}
-                            <div style={{ width: '250px', minWidth: '250px', position: 'relative' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="text-secondary" viewBox="0 0 16 16" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                            <div className="toolbar-search">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="search-icon" viewBox="0 0 16 16">
                                     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                                 </svg>
                                 <input
@@ -534,81 +534,81 @@ export default function RegistrosClient() {
                         </div>
 
                         {/* List Content */}
-                        <div className="table-responsive">
-                            <table className="table table-hover mb-0 align-middle">
-                                <thead className="table-light text-secondary text-uppercase small">
-                                    <tr>
-                                        <th className="ps-3 fw-semibold text-secondary">Fecha</th>
-                                        <th className="fw-semibold text-secondary">Lote Interno</th>
-                                        <th className="fw-semibold text-secondary">Producto</th>
-                                        <th className="fw-semibold text-secondary">Verificado por</th>
-                                        <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredRegistros.length === 0 ? (
+                        {/* Desktop Table */}
+                        <div className="desktop-table">
+                            <div className="table-responsive">
+                                <table className="table table-hover mb-0 align-middle">
+                                    <thead className="table-light text-secondary text-uppercase small">
                                         <tr>
-                                            <td colSpan={5} className="text-center py-5 text-muted">
-                                                {!selectedYear || !selectedMonth ? (
-                                                    "Seleccione año y mes para ver los registros."
-                                                ) : (
-                                                    "No se encontraron registros con los filtros actuales."
-                                                )}
-                                            </td>
+                                            <th className="ps-3 fw-semibold text-secondary">Fecha</th>
+                                            <th className="fw-semibold text-secondary">Lote Interno</th>
+                                            <th className="fw-semibold text-secondary">Producto</th>
+                                            <th className="fw-semibold text-secondary">Verificado por</th>
+                                            <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
                                         </tr>
-                                    ) : (
-                                        filteredRegistros.map((registro) => (
-                                            <tr key={registro.id}>
-                                                <td className="ps-3 text-muted fw-medium">{formatDate(registro.fecha_registro).split(',')[0]}</td>
-                                                <td className="fw-bold text-dark">{registro.lote_interno}</td>
-                                                <td className="text-dark">{registro.producto_nombre}</td>
-                                                <td className="text-secondary small">
-                                                    {registro.verificado_por || registro.usuario_nombre}
-                                                </td>
-                                                <td className="text-end pe-3">
-                                                    <div className="d-flex justify-content-end gap-2">
-                                                        <button
-                                                            className="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-medium"
-                                                            onClick={() => viewDetails(registro)}
-                                                            title="Ver detalles"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-eye" viewBox="0 0 16 16">
-                                                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" />
-                                                                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-sm btn-link text-warning p-0 text-decoration-none fw-medium ms-2"
-                                                            onClick={() => handleEdit(registro)}
-                                                            title="Editar registro"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pencil-square" viewBox="0 0 16 16">
-                                                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                                                                <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-sm btn-link text-secondary p-0 text-decoration-none ms-2"
-                                                            onClick={() => handleDownloadPDF(registro)}
-                                                            disabled={downloadingId === registro.id}
-                                                            title="Descargar PDF"
-                                                        >
-                                                            {downloadingId === registro.id ? (
-                                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                            ) : (
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-pdf" viewBox="0 0 16 16">
-                                                                    <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
-                                                                    <path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.305 11.305 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029zm1.379-1.901c-.166.076-.32.156-.459.238-.328.194-.541.383-.647.545-.094.145-.096.25-.04.361.01.022.02.036.026.044a.266.266 0 0 0 .035-.012c.137-.056.355-.235.635-.572a8.18 8.18 0 0 0 .45-.606zm1.64-1.33a12.71 12.71 0 0 1 1.01-.193 11.744 11.744 0 0 1-.51-.858 20.801 20.801 0 0 1-.5 1.05zm2.446.45c.15.163.296.3.435.41.24.19.407.253.498.256a.107.107 0 0 0 .07-.015.307.307 0 0 0 .094-.125.436.436 0 0 0 .059-.2.095.095 0 0 0-.026-.063c-.052-.062-.2-.152-.518-.209a3.876 3.876 0 0 0-.612-.053zM8.06 7.152c-.066.301-.1.656-.104.97-.002.35.038.64.09.855.023-.105.048-.21.077-.315a13.36 13.36 0 0 1 .15-.654c.068-.198.141-.397.214-.593a12.636 12.636 0 0 0-.427-.263zm2.34-3.132a1.056 1.056 0 0 0-.087-.332c-.03-.075-.07-.16-.14-.24a.276.276 0 0 0-.175-.062c-.08 0-.15.025-.2.07-.06.052-.098.117-.123.18-.046.12-.058.267-.044.423.013.14.053.332.146.616.035.105.156.417.37.755.088-.173.166-.353.253-.53z" />
-                                                                </svg>
-                                                            )}
-                                                        </button>
-                                                    </div>
+                                    </thead>
+                                    <tbody>
+                                        {filteredRegistros.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="text-center py-5 text-muted">
+                                                    {!selectedYear || !selectedMonth ? "Seleccione año y mes para ver los registros." : "No se encontraron registros con los filtros actuales."}
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                                        ) : (
+                                            filteredRegistros.map((registro) => (
+                                                <tr key={registro.id}>
+                                                    <td className="ps-3 text-muted fw-medium">{formatDate(registro.fecha_registro).split(',')[0]}</td>
+                                                    <td className="fw-bold text-dark">{registro.lote_interno}</td>
+                                                    <td className="text-dark">{registro.producto_nombre}</td>
+                                                    <td className="text-secondary small">{registro.verificado_por || registro.usuario_nombre}</td>
+                                                    <td className="text-end pe-3">
+                                                        <div className="d-flex justify-content-end gap-2">
+                                                            <button className="btn btn-sm btn-link text-primary p-0" onClick={() => viewDetails(registro)} title="Ver detalles">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" /><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z" /></svg>
+                                                            </button>
+                                                            <button className="btn btn-sm btn-link text-warning p-0 ms-2" onClick={() => handleEdit(registro)} title="Editar">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" /><path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" /></svg>
+                                                            </button>
+                                                            <button className="btn btn-sm btn-link text-secondary p-0 ms-2" onClick={() => handleDownloadPDF(registro)} disabled={downloadingId === registro.id} title="PDF">
+                                                                {downloadingId === registro.id ? <span className="spinner-border spinner-border-sm"></span> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" /><path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.305 11.305 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029z" /></svg>}
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Mobile Cards */}
+                        <div className="mobile-cards">
+                            {filteredRegistros.length === 0 ? (
+                                <div className="text-center py-5 text-muted">
+                                    {!selectedYear || !selectedMonth ? "Seleccione año y mes para ver los registros." : "No se encontraron registros con los filtros actuales."}
+                                </div>
+                            ) : (
+                                filteredRegistros.map((registro) => (
+                                    <div key={registro.id} className="mobile-card">
+                                        <div className="mobile-card-header">
+                                            <span className="mobile-card-lote">{registro.lote_interno}</span>
+                                            <span className="mobile-card-date">{formatDate(registro.fecha_registro).split(',')[0]}</span>
+                                        </div>
+                                        <div className="mobile-card-body">
+                                            <span className="mobile-card-product">{registro.producto_nombre}</span>
+                                            <span className="mobile-card-user">{registro.verificado_por || registro.usuario_nombre}</span>
+                                        </div>
+                                        <div className="mobile-card-actions">
+                                            <button className="mobile-action-btn view" onClick={() => viewDetails(registro)}>👁 Ver</button>
+                                            <button className="mobile-action-btn edit" onClick={() => handleEdit(registro)}>✏️ Editar</button>
+                                            <button className="mobile-action-btn pdf" onClick={() => handleDownloadPDF(registro)} disabled={downloadingId === registro.id}>
+                                                {downloadingId === registro.id ? '...' : '📄 PDF'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
 
                         {/* Footer Controls */}
@@ -1476,19 +1476,174 @@ export default function RegistrosClient() {
                     box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
                 }
 
+                /* Toolbar */
+                .toolbar-row {
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1.5rem;
+                    border-bottom: 1px solid #dee2e6;
+                    gap: 12px;
+                }
+                .toolbar-filters {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 10px;
+                    align-items: center;
+                }
+                .toolbar-search {
+                    width: 250px;
+                    min-width: 200px;
+                    position: relative;
+                }
+                .search-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    z-index: 10;
+                    color: #6c757d;
+                }
+
+                /* Desktop table visible, mobile cards hidden by default */
+                .desktop-table { display: block; }
+                .mobile-cards { display: none; }
+
+                /* Mobile Cards */
+                .mobile-card {
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 14px;
+                    margin-bottom: 10px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+                }
+                .mobile-card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }
+                .mobile-card-lote {
+                    font-weight: 800;
+                    font-size: 0.95rem;
+                    color: #1e293b;
+                }
+                .mobile-card-date {
+                    font-size: 0.78rem;
+                    color: #94a3b8;
+                    font-weight: 500;
+                }
+                .mobile-card-body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    margin-bottom: 10px;
+                }
+                .mobile-card-product {
+                    font-size: 0.88rem;
+                    color: #334155;
+                }
+                .mobile-card-user {
+                    font-size: 0.78rem;
+                    color: #94a3b8;
+                }
+                .mobile-card-actions {
+                    display: flex;
+                    gap: 8px;
+                    border-top: 1px solid #f1f5f9;
+                    padding-top: 10px;
+                }
+                .mobile-action-btn {
+                    flex: 1;
+                    padding: 7px 0;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    background: #f8fafc;
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s;
+                }
+                .mobile-action-btn:hover { background: #e2e8f0; }
+                .mobile-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+                .mobile-action-btn.view { color: #2563eb; }
+                .mobile-action-btn.edit { color: #d97706; }
+                .mobile-action-btn.pdf { color: #64748b; }
+
+                /* ===== MOBILE BREAKPOINT ===== */
                 @media (max-width: 768px) {
+                    .historial-page-container {
+                        padding: 16px 10px;
+                    }
                     .header-container {
                         flex-direction: column;
                         text-align: center;
-                        gap: 20px;
+                        gap: 16px;
+                        padding: 18px 14px;
+                        border-radius: 16px;
                     }
+                    .title { font-size: 1.25rem; }
+                    .subtitle { font-size: 0.8rem; }
                     .header-stats {
-                        flex-direction: column;
+                        flex-direction: row;
                         width: 100%;
+                        justify-content: center;
+                        flex-wrap: wrap;
                     }
                     .btn-add-premium {
                         width: 100%;
                         justify-content: center;
+                        font-size: 0.8rem;
+                        padding: 10px 14px;
+                    }
+
+                    /* Toolbar stacks */
+                    .toolbar-row {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 10px;
+                    }
+                    .toolbar-filters {
+                        width: 100%;
+                    }
+                    .toolbar-filters select {
+                        flex: 1;
+                        width: 100% !important;
+                    }
+                    .toolbar-search {
+                        width: 100%;
+                        min-width: unset;
+                    }
+
+                    /* Hide table, show cards */
+                    .desktop-table { display: none !important; }
+                    .mobile-cards { display: block !important; }
+
+                    /* Modal mobile */
+                    .modal-content {
+                        max-width: 100%;
+                        max-height: 95vh;
+                        border-radius: 12px 12px 0 0;
+                        margin: 0;
+                    }
+                    .modal-overlay {
+                        padding: 0;
+                        align-items: flex-end;
+                    }
+                    .modal-body { padding: 1rem; }
+                    .modal-header { padding: 0.75rem 1rem; }
+                    .modal-header h3 { font-size: 1.1rem; }
+                    .modal-footer { padding: 0.75rem 1rem; }
+
+                    .detail-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .photos-grid {
+                        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
                     }
                 }
 
@@ -1690,11 +1845,6 @@ export default function RegistrosClient() {
             line-height: 1.4;
         }
 
-        @media (max-width: 768px) {
-          .detail-grid {
-            grid-template-columns: 1fr;
-          }
-        }
 
         /* Lightbox CSS */
         .zoom-overlay {

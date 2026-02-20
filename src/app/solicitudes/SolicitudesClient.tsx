@@ -166,10 +166,11 @@ export default function SolicitudesClient() {
                     <div className="card-body p-4">
 
                         {/* Toolbar */}
-                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #dee2e6' }}>
+                        {/* Toolbar */}
+                        <div className="toolbar-row">
                             {/* Left Side: Search */}
-                            <div style={{ width: '300px', position: 'relative' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="text-secondary" viewBox="0 0 16 16" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                            <div className="toolbar-search">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="search-icon" viewBox="0 0 16 16">
                                     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                                 </svg>
                                 <input
@@ -183,7 +184,7 @@ export default function SolicitudesClient() {
                             </div>
 
                             {/* Right Side: Filters */}
-                            <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                            <div className="toolbar-filters">
                                 <select
                                     className="form-select form-select-sm rounded-pill border-secondary-subtle bg-light text-secondary fw-medium shadow-none"
                                     value={statusFilter}
@@ -206,82 +207,146 @@ export default function SolicitudesClient() {
                         </div>
 
                         {/* Table Content */}
-                        <div className="table-responsive">
-                            <table className="table table-hover mb-0 align-middle">
-                                <thead className="table-light text-secondary text-uppercase small">
-                                    <tr>
-                                        <th className="ps-3 fw-semibold text-secondary">Usuario</th>
-                                        <th className="fw-semibold text-secondary">Producto</th>
-                                        <th className="fw-semibold text-secondary">Lote</th>
-                                        <th className="fw-semibold text-secondary">Fecha</th>
-                                        <th className="fw-semibold text-secondary">Estado</th>
-                                        <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {loading ? (
+                        {/* Desktop Table */}
+                        <div className="desktop-table">
+                            <div className="table-responsive">
+                                <table className="table table-hover mb-0 align-middle">
+                                    <thead className="table-light text-secondary text-uppercase small">
                                         <tr>
-                                            <td colSpan={6} className="text-center py-5">
-                                                <div className="spinner-border text-primary" role="status">
-                                                    <span className="visually-hidden">Cargando...</span>
-                                                </div>
-                                            </td>
+                                            <th className="ps-3 fw-semibold text-secondary">Usuario</th>
+                                            <th className="fw-semibold text-secondary">Producto</th>
+                                            <th className="fw-semibold text-secondary">Lote</th>
+                                            <th className="fw-semibold text-secondary">Fecha</th>
+                                            <th className="fw-semibold text-secondary">Estado</th>
+                                            <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
                                         </tr>
-                                    ) : filteredRequests.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="text-center py-5 text-muted">
-                                                No hay solicitudes que coincidan con los filtros.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredRequests.map((req) => (
-                                            <tr key={req.id} className={req.status === 'pendiente' ? 'table-warning' : ''}>
-                                                <td className="ps-3">
-                                                    <div className="d-flex align-items-center gap-2">
-                                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
-                                                            {req.usuarios.nombre_completo.charAt(0)}
-                                                        </div>
-                                                        <div>
-                                                            <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
-                                                            <div className="text-muted small">@{req.usuarios.usuario}</div>
-                                                        </div>
+                                    </thead>
+                                    <tbody>
+                                        {loading ? (
+                                            <tr>
+                                                <td colSpan={6} className="text-center py-5">
+                                                    <div className="spinner-border text-primary" role="status">
+                                                        <span className="visually-hidden">Cargando...</span>
                                                     </div>
                                                 </td>
-                                                <td className="text-dark" style={{ fontSize: '0.9rem' }}>{req.registros.producto_nombre}</td>
-                                                <td className="fw-bold text-dark">{req.registros.lote_interno}</td>
-                                                <td className="text-muted small">{new Date(req.created_at).toLocaleDateString('es-PE')}</td>
-                                                <td>{getStatusBadge(req.status)}</td>
-                                                <td className="text-end pe-3">
-                                                    {req.status === 'pendiente' ? (
-                                                        <div className="d-flex justify-content-end gap-2">
-                                                            <button
-                                                                className="btn btn-sm btn-success rounded-pill px-3"
-                                                                onClick={() => openConfirmModal(req, 'aprobar')}
-                                                                disabled={actionLoading === req.id}
-                                                                style={{ fontSize: '0.8rem' }}
-                                                            >
-                                                                {actionLoading === req.id ? (
-                                                                    <span className="spinner-border spinner-border-sm" role="status"></span>
-                                                                ) : 'Aprobar'}
-                                                            </button>
-                                                            <button
-                                                                className="btn btn-sm btn-outline-danger rounded-pill px-3"
-                                                                onClick={() => openConfirmModal(req, 'rechazar')}
-                                                                disabled={actionLoading === req.id}
-                                                                style={{ fontSize: '0.8rem' }}
-                                                            >
-                                                                Rechazar
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-muted small">—</span>
-                                                    )}
+                                            </tr>
+                                        ) : filteredRequests.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="text-center py-5 text-muted">
+                                                    No hay solicitudes que coincidan con los filtros.
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                                        ) : (
+                                            filteredRequests.map((req) => (
+                                                <tr key={req.id} className={req.status === 'pendiente' ? 'table-warning' : ''}>
+                                                    <td className="ps-3">
+                                                        <div className="d-flex align-items-center gap-2">
+                                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
+                                                                {req.usuarios.nombre_completo.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
+                                                                <div className="text-muted small">@{req.usuarios.usuario}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-dark" style={{ fontSize: '0.9rem' }}>{req.registros.producto_nombre}</td>
+                                                    <td className="fw-bold text-dark">{req.registros.lote_interno}</td>
+                                                    <td className="text-muted small">{new Date(req.created_at).toLocaleDateString('es-PE')}</td>
+                                                    <td>{getStatusBadge(req.status)}</td>
+                                                    <td className="text-end pe-3">
+                                                        {req.status === 'pendiente' ? (
+                                                            <div className="d-flex justify-content-end gap-2">
+                                                                <button
+                                                                    className="btn btn-sm btn-success rounded-pill px-3"
+                                                                    onClick={() => openConfirmModal(req, 'aprobar')}
+                                                                    disabled={actionLoading === req.id}
+                                                                    style={{ fontSize: '0.8rem' }}
+                                                                >
+                                                                    {actionLoading === req.id ? (
+                                                                        <span className="spinner-border spinner-border-sm" role="status"></span>
+                                                                    ) : 'Aprobar'}
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                                    onClick={() => openConfirmModal(req, 'rechazar')}
+                                                                    disabled={actionLoading === req.id}
+                                                                    style={{ fontSize: '0.8rem' }}
+                                                                >
+                                                                    Rechazar
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted small">—</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Mobile Cards */}
+                        <div className="mobile-cards">
+                            {loading ? (
+                                <div className="text-center py-5">
+                                    <div className="spinner-border text-primary" role="status">
+                                        <span className="visually-hidden">Cargando...</span>
+                                    </div>
+                                </div>
+                            ) : filteredRequests.length === 0 ? (
+                                <div className="text-center py-5 text-muted">
+                                    No hay solicitudes que coincidan con los filtros.
+                                </div>
+                            ) : (
+                                filteredRequests.map(req => (
+                                    <div key={req.id} className={`mobile-card ${req.status === 'pendiente' ? 'border-warning' : ''}`}>
+                                        <div className="mobile-card-header">
+                                            <div className="d-flex align-items-center gap-2">
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                                                    {req.usuarios.nombre_completo.charAt(0)}
+                                                </div>
+                                                <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
+                                            </div>
+                                            {getStatusBadge(req.status)}
+                                        </div>
+                                        <div className="mobile-card-body">
+                                            <div className="mobile-card-row">
+                                                <span className="label">Producto:</span>
+                                                <span className="value">{req.registros.producto_nombre}</span>
+                                            </div>
+                                            <div className="mobile-card-row">
+                                                <span className="label">Lote:</span>
+                                                <span className="value">{req.registros.lote_interno}</span>
+                                            </div>
+                                            <div className="mobile-card-row">
+                                                <span className="label">Fecha:</span>
+                                                <span className="value">{new Date(req.created_at).toLocaleDateString('es-PE')}</span>
+                                            </div>
+                                        </div>
+                                        {req.status === 'pendiente' && (
+                                            <div className="mobile-card-actions">
+                                                <button
+                                                    className="mobile-action-btn approve"
+                                                    onClick={() => openConfirmModal(req, 'aprobar')}
+                                                    disabled={actionLoading === req.id}
+                                                >
+                                                    Aprobar
+                                                </button>
+                                                <button
+                                                    className="mobile-action-btn reject"
+                                                    onClick={() => openConfirmModal(req, 'rechazar')}
+                                                    disabled={actionLoading === req.id}
+                                                >
+                                                    Rechazar
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
                         </div>
 
                         {/* Footer */}
@@ -700,12 +765,144 @@ export default function SolicitudesClient() {
                     transform: translateY(-1px);
                 }
 
+                /* Toolbar */
+                .toolbar-row {
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1.5rem;
+                    border-bottom: 1px solid #dee2e6;
+                    gap: 12px;
+                }
+                .toolbar-filters {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 10px;
+                    align-items: center;
+                }
+                .toolbar-search {
+                    width: 300px;
+                    min-width: 200px;
+                    position: relative;
+                }
+                .search-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    z-index: 10;
+                    color: #6c757d;
+                }
+
+                /* Layout Toggles */
+                .desktop-table { display: block; }
+                .mobile-cards { display: none; }
+
+                /* Mobile Card Styles */
+                .mobile-card {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 16px;
+                    margin-bottom: 12px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+                }
+                .mobile-card.border-warning { border-color: #fbbf24; border-left-width: 4px; }
+                
+                .mobile-card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 12px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+                .mobile-card-body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin-bottom: 16px;
+                }
+                .mobile-card-row {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 0.9rem;
+                }
+                .mobile-card-row .label { color: #64748b; font-weight: 500; }
+                .mobile-card-row .value { color: #1e293b; font-weight: 600; text-align: right; }
+                
+                .mobile-card-actions {
+                    display: flex;
+                    gap: 8px;
+                }
+                .mobile-action-btn {
+                    flex: 1;
+                    padding: 10px 0;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: opacity 0.2s;
+                }
+                .mobile-action-btn.approve { background: #10b981; color: white; }
+                .mobile-action-btn.reject { background: #fee2e2; color: #991b1b; }
+                .mobile-action-btn:disabled { opacity: 0.5; }
+
                 @media (max-width: 768px) {
-                    .header-container { flex-direction: column; text-align: center; gap: 20px; }
-                    .item-layout { flex-direction: column; gap: 16px; text-align: center; }
-                    .product-col { border: none; padding: 10px 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; width: 100%; }
-                    .actions-col { padding: 0; width: 100%; }
-                    .action-buttons { flex-direction: row; justify-content: center; }
+                    /* Header Compacto */
+                    .header-container { 
+                        flex-direction: column; 
+                        text-align: center; 
+                        gap: 16px; 
+                        padding: 24px 16px !important;
+                        border-radius: 20px; 
+                    }
+                    .title { font-size: 1.5rem !important; }
+                    .subtitle { font-size: 0.85rem !important; margin-top: 4px; }
+                    
+                    /* Stats Horizontales */
+                    .header-stats { 
+                        width: 100%; 
+                        justify-content: space-between; 
+                        gap: 10px; 
+                    }
+                    .stat-pill {
+                        flex: 1;
+                        flex-direction: row;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        padding: 8px 10px;
+                    }
+                    .stat-pill .val { font-size: 1.1rem; }
+                    .stat-pill .lab { font-size: 0.65rem; text-align: left; line-height: 1.1; }
+
+                    /* Toolbar Stacks */
+                    .toolbar-row { flex-direction: column; gap: 12px; align-items: stretch; margin-bottom: 1rem; padding-bottom: 1rem; }
+                    .toolbar-search { width: 100%; }
+                    .toolbar-filters { width: 100%; gap: 8px; }
+                    .toolbar-filters select, .toolbar-filters input { 
+                        flex: 1; 
+                        width: 100% !important; 
+                        height: 42px; /* Touch target */
+                    }
+                    
+                    /* Table -> Cards */
+                    .desktop-table { display: none !important; }
+                    .mobile-cards { display: block !important; }
+                    
+                    .mobile-cards > .text-center {
+                        background: #f8fafc;
+                        border: 2px dashed #e2e8f0;
+                        border-radius: 16px;
+                        padding: 32px 20px !important;
+                        margin-top: 10px;
+                        font-size: 0.95rem;
+                    }
+                    
                     .confirm-actions { flex-direction: column; }
                 }
             `}</style>

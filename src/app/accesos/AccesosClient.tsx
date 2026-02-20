@@ -87,11 +87,26 @@ export default function AccesosClient() {
     const handleTogglePermission = (moduleKey: string) => {
         if (!selectedRole || selectedRole.is_system) return;
         if (moduleKey === 'accesos' && !isSadmin) return;
-        const currentPermisos = selectedRole.permisos.map(p => {
-            if (p.modulo_key === moduleKey) return { ...p, habilitado: !p.habilitado };
-            return p;
-        });
-        setSelectedRole({ ...selectedRole, permisos: currentPermisos });
+
+        const existingPermission = selectedRole.permisos.find(p => p.modulo_key === moduleKey);
+        let newPermisos;
+
+        if (existingPermission) {
+            newPermisos = selectedRole.permisos.map(p => {
+                if (p.modulo_key === moduleKey) return { ...p, habilitado: !p.habilitado };
+                return p;
+            });
+        } else {
+            // Si el permiso no existe, lo agregamos habilitado
+            newPermisos = [...selectedRole.permisos, {
+                id: Date.now(), // ID temporal
+                role_id: selectedRole.id,
+                modulo_key: moduleKey,
+                habilitado: true
+            }];
+        }
+
+        setSelectedRole({ ...selectedRole, permisos: newPermisos });
     };
 
     const handleSavePermissions = async () => {
