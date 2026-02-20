@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getCurrentDate, formatRange, validateRange, validateText } from '@/lib/utils';
 import type { Producto, Parametro } from '@/lib/supabase/types';
 import { useOnlineStatus } from '@/lib/useOnlineStatus';
-import { saveOfflineRecord, cacheProducts, getCachedProducts } from '@/lib/temporal-db';
+import { saveOfflineRecord, cacheProducts, getCachedProducts, getCachedProduct } from '@/lib/temporal-db';
 
 interface ControlValue {
     parametroNombre: string;
@@ -101,9 +101,24 @@ export default function RegistroProductosClient() {
             const data = await response.json();
             setProductos(data || []);
 
-            // Cache products in IndexedDB for offline use
+            // Cache products WITH their parameters for offline use
             try {
-                await cacheProducts(data || []);
+                const productsWithParams = await Promise.all(
+                    (data || []).map(async (p: Producto) => {
+                        try {
+                            const detailRes = await fetch(`/api/productos?id=${p.id}`);
+                            if (detailRes.ok) {
+                                const detail = await detailRes.json();
+                                return { id: p.id, nombre: p.nombre, parametros: detail.parametros || [] };
+                            }
+                        } catch {
+                            // If individual fetch fails, cache without params
+                        }
+                        return { id: p.id, nombre: p.nombre, parametros: [] };
+                    })
+                );
+                await cacheProducts(productsWithParams);
+                console.log('Productos cacheados con parámetros para uso offline');
             } catch (e) {
                 console.warn('No se pudo cachear productos en IndexedDB:', e);
             }
@@ -126,6 +141,25 @@ export default function RegistroProductosClient() {
         }
     };
 
+    const initializeControles = (data: Parametro[]) => {
+        const initialControles: ControlValue[] = data.map((param: Parametro) => ({
+            parametroNombre: param.nombre,
+            rangoCompleto: param.rango_completo
+                ? param.rango_completo
+                : (param.tipo === 'rango'
+                    ? formatRange(param.rango_min, param.rango_max, param.unidad)
+                    : param.valor_texto || param.valor || ''),
+            valorControl: null,
+            textoControl: null,
+            parametroTipo: param.tipo,
+            observacion: '',
+            fueraDeRango: false,
+            mensajeAlerta: '',
+        }));
+        setParametros(data);
+        setControles(initialControles);
+    };
+
     const loadParametros = useCallback(async (productoId: string) => {
         if (!productoId) {
             setParametros([]);
@@ -135,36 +169,28 @@ export default function RegistroProductosClient() {
 
         setLoadingParametros(true);
         try {
-            // Usar la API endpoiint con el ID para traer parametros seguros
+            // Try online API first
             const response = await fetch(`/api/productos?id=${productoId}`);
             if (!response.ok) throw new Error('Error al cargar detalles del producto');
 
             const productoDetalle = await response.json();
-            // La API devuelve: { ...producto, parametros: [...] }
             const data = productoDetalle.parametros || [];
-
-            setParametros(data);
-
-            // Initialize control values
-            const initialControles: ControlValue[] = data.map((param: Parametro) => ({
-                parametroNombre: param.nombre,
-                rangoCompleto: param.rango_completo
-                    ? param.rango_completo
-                    : (param.tipo === 'rango'
-                        ? formatRange(param.rango_min, param.rango_max, param.unidad)
-                        : param.valor_texto || param.valor || ''),
-                valorControl: null,
-                textoControl: null,
-                parametroTipo: param.tipo,
-                observacion: '',
-                fueraDeRango: false,
-                mensajeAlerta: '',
-            }));
-
-            setControles(initialControles);
+            initializeControles(data);
         } catch (err) {
-            setError('Error al cargar parámetros del producto');
-            console.error(err);
+            // ─── OFFLINE FALLBACK: Load parameters from IndexedDB cache ───
+            try {
+                const cached = await getCachedProduct(parseInt(productoId));
+                if (cached && cached.parametros && (cached.parametros as Parametro[]).length > 0) {
+                    const data = cached.parametros as Parametro[];
+                    initializeControles(data);
+                    console.log('Parámetros cargados desde caché offline');
+                } else {
+                    setError('Sin conexión: no hay parámetros cacheados para este producto. Conecte a internet al menos una vez para cachear los datos.');
+                }
+            } catch {
+                setError('Error al cargar parámetros del producto');
+                console.error(err);
+            }
         } finally {
             setLoadingParametros(false);
         }

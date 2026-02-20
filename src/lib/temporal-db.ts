@@ -99,6 +99,18 @@ export async function getCachedProducts(): Promise<CachedProduct[]> {
     });
 }
 
+export async function getCachedProduct(id: number): Promise<CachedProduct | null> {
+    const db = await openDB();
+    const tx = db.transaction(PRODUCTS_STORE, 'readonly');
+    const store = tx.objectStore(PRODUCTS_STORE);
+
+    return new Promise((resolve, reject) => {
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+    });
+}
+
 // ─── Offline Records ─────────────────────────────────────
 
 export async function saveOfflineRecord(record: Omit<OfflineRecord, 'id'>): Promise<number> {
