@@ -57,6 +57,7 @@ export default function RegistroProductosClient() {
 
     const [loadingParametros, setLoadingParametros] = useState(false);
     const [touched, setTouched] = useState(false);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
 
     // Offline detection
     const { isOnline } = useOnlineStatus();
@@ -419,6 +420,11 @@ export default function RegistroProductosClient() {
             return;
         }
 
+        // Show preview modal instead of saving immediately
+        setShowPreviewModal(true);
+    };
+
+    const confirmAndSave = async () => {
         setSaving(true);
 
         try {
@@ -472,6 +478,7 @@ export default function RegistroProductosClient() {
                 setControles([]);
                 setFotos([null, null]);
                 setTouched(false);
+                setShowPreviewModal(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
@@ -540,6 +547,7 @@ export default function RegistroProductosClient() {
             setControles([]);
             setFotos([null, null]);
             setTouched(false);
+            setShowPreviewModal(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
         } catch (err) {
@@ -915,6 +923,152 @@ export default function RegistroProductosClient() {
                 </div>
             )}
 
+            {/* Preview Modal */}
+            {showPreviewModal && (
+                <div className="preview-modal-overlay">
+                    <div className="preview-modal-content shadow-lg">
+                        <div className="preview-header">
+                            <h4 className="m-0 d-flex align-items-center gap-2">
+                                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                Resumen del Registro
+                            </h4>
+                        </div>
+                        <div className="preview-body p-4">
+                            <div className="summary-grid">
+                                <div className="summary-card product-card">
+                                    <div className="summary-content">
+                                        <span className="preview-label">Producto</span>
+                                        <span className="preview-value fw-bold">
+                                            {productos.find(p => p.id === parseInt(formData.productoId))?.nombre || 'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="summary-card">
+                                    <div className="summary-content">
+                                        <span className="preview-label">Lote Producto</span>
+                                        <span className="preview-value">{formData.loteProducto}</span>
+                                    </div>
+                                </div>
+
+                                <div className="summary-card">
+                                    <div className="summary-content">
+                                        <span className="preview-label">Lote Interno</span>
+                                        <span className="preview-value">{formData.loteInterno}</span>
+                                    </div>
+                                </div>
+
+                                <div className="summary-card">
+                                    <div className="summary-content">
+                                        <span className="preview-label">Guía</span>
+                                        <span className="preview-value">{formData.guia}</span>
+                                    </div>
+                                </div>
+
+                                <div className="summary-card">
+                                    <div className="summary-content">
+                                        <span className="preview-label">Marca</span>
+                                        <span className="preview-value">{formData.marca}</span>
+                                    </div>
+                                </div>
+
+                                <div className="summary-card">
+                                    <div className="summary-content">
+                                        <span className="preview-label">Cantidad</span>
+                                        <span className="preview-value">{formData.cantidad} unidades</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Controles Status */}
+                            {controles.some(c => c.fueraDeRango) && (
+                                <div className="alert alert-danger d-flex align-items-center gap-2 mb-3">
+                                    <i className="bi bi-exclamation-triangle-fill fs-5"></i>
+                                    <div>
+                                        <strong>Atención:</strong> Hay {controles.filter(c => c.fueraDeRango).length} parámetro(s) fuera de rango.
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="table-responsive mb-4">
+                                <table className="table table-sm table-bordered preview-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Parámetro</th>
+                                            <th>Resultado</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {controles.map((c, i) => {
+                                            const isVacio = c.parametroTipo === 'texto'
+                                                ? !c.textoControl || c.textoControl.trim() === ''
+                                                : c.valorControl === null || c.valorControl === undefined || c.valorControl.toString().trim() === '';
+
+                                            return (
+                                                <tr key={i} className={c.fueraDeRango ? 'table-danger' : (isVacio ? 'table-warning' : '')}>
+                                                    <td className="fw-medium">{c.parametroNombre}</td>
+                                                    <td>
+                                                        {c.fueraDeRango ? (
+                                                            <div className="d-flex flex-column align-items-start">
+                                                                <span className="text-danger fw-bold fs-6">
+                                                                    {c.parametroTipo === 'texto' ? (c.textoControl || '(Vacío)') : (c.valorControl ?? '(Vacío)')}
+                                                                </span>
+                                                                <div className="alert alert-danger p-2 mt-2 mb-0 d-flex align-items-center gap-1" style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
+                                                                    <i className="bi bi-x-circle-fill"></i>
+                                                                    <span>{c.mensajeAlerta}</span>
+                                                                </div>
+                                                            </div>
+                                                        ) : isVacio ? (
+                                                            <span className="text-warning fw-bold fst-italic">(Vacío)</span>
+                                                        ) : (
+                                                            <span>{c.parametroTipo === 'texto' ? c.textoControl : c.valorControl}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="align-middle text-center">
+                                                        {c.fueraDeRango ? (
+                                                            <span className="status-badge badge-error">
+                                                                <i className="bi bi-x-circle-fill me-1"></i> Revisar
+                                                            </span>
+                                                        ) : isVacio ? (
+                                                            <span className="status-badge badge-warning">
+                                                                <i className="bi bi-exclamation-triangle-fill me-1"></i> Incompleto
+                                                            </span>
+                                                        ) : (
+                                                            <span className="status-badge badge-success">
+                                                                <i className="bi bi-check-circle-fill me-1"></i> Correcto
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="preview-footer-info">
+                                <div><strong>Conclusión:</strong> {formData.observacionesGenerales || 'Ninguna'}</div>
+                                <div><strong>Verificado por:</strong> {userName}</div>
+                                <div><strong>Evidencias:</strong> {fotos.filter(f => f?.preview).length} foto(s) adjuntas</div>
+                            </div>
+                        </div>
+                        <div className="preview-actions">
+                            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPreviewModal(false)} disabled={saving}>
+                                Editar y Corregir
+                            </button>
+                            <button type="button" className={`btn ${isOnline ? 'btn-primary' : 'btn-warning'}`} onClick={confirmAndSave} disabled={saving}>
+                                {saving ? (
+                                    <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...</span>
+                                ) : (
+                                    isOnline ? 'Confirmar y Guardar' : 'Confirmar y Guardar (Offline)'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style jsx>{`
         /* Page Layout */
         .page-wrapper {
@@ -1269,6 +1423,197 @@ export default function RegistroProductosClient() {
             /* Fallback */
             background-color: #fee2e2 !important;
             color: #b91c1c !important;
+        }
+
+        /* Preview Modal */
+        .preview-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .preview-modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .preview-header {
+            background: #f8fafc;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+
+        .preview-body {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Modal Enhanced Styles */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            transition: all 0.2s;
+        }
+        
+        .summary-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            transform: translateY(-2px);
+        }
+
+        .product-card {
+            grid-column: 1 / -1; /* spans full width */
+            background: linear-gradient(145deg, #ffffff, #f0f9ff);
+            border-color: #bae6fd;
+        }
+
+        .icon-wrapper {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            /* Subtitle backgrounds generated via Bootstrap utility combos we added in markup */
+        }
+
+        .summary-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .preview-label {
+            font-size: 0.70rem;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .preview-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+        
+        /* Mobile adjustment */
+        @media (max-width: 640px) {
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .preview-table th {
+            font-size: 0.85rem;
+            color: #ffffff !important;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .preview-table td {
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        .table-danger td {
+            background-color: #fef2f2 !important;
+            border-color: #fecaca !important;
+        }
+
+        /* Custom Badges to avoid Bootstrap contrast issues */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #ffffff !important;
+            white-space: nowrap;
+        }
+
+        .badge-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            border: 1px solid #b91c1c;
+        }
+
+        .badge-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+            border: 1px solid #b45309;
+        }
+
+        .badge-success {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+            border: 1px solid #047857;
+        }
+
+        .table-warning td {
+            background-color: #fffbeb !important;
+            border-color: #fde68a !important;
+        }
+
+        .preview-footer-info {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #475569;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .preview-actions {
+            padding: 16px 24px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: white;
         }
       `}</style>
         </div>

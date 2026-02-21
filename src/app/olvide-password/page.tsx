@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import '../login.css';
 
 export default function OlvidePasswordPage() {
   const [email, setEmail] = useState('');
@@ -77,75 +78,6 @@ export default function OlvidePasswordPage() {
         </div>
       </div>
 
-      <style jsx>{`
-        .login-container {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #667eea 0%, #4a5568 100%);
-          padding: 1rem;
-        }
-
-        .login-card {
-          background: white;
-          border-radius: 1rem;
-          padding: 2rem;
-          width: 100%;
-          max-width: 400px;
-          min-height: 380px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-
-        .login-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .login-header h1 {
-          color: #4a5568;
-          font-size: 1.5rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .login-header p {
-          color: #718096;
-          font-size: 0.875rem;
-        }
-
-        .w-full {
-          width: 100%;
-        }
-
-        .mt-4 {
-          margin-top: 1rem;
-        }
-
-        .text-center {
-          text-align: center;
-        }
-
-        .link {
-          color: #667eea;
-          text-decoration: none;
-        }
-
-        .link:hover {
-          text-decoration: underline;
-        }
-
-        .alert-success {
-          background-color: #d4edda;
-          border-color: #c3e6cb;
-          color: #155724;
-          padding: 0.75rem 1rem;
-          border-radius: 0.375rem;
-          margin-bottom: 1rem;
-        }
-      `}</style>
     </div>
   );
 }

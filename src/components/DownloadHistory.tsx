@@ -189,7 +189,8 @@ export default function DownloadHistory() {
                         <table className="table table-hover mb-0 align-middle">
                             <thead className="table-light text-secondary text-uppercase small">
                                 <tr>
-                                    <th className="ps-3 fw-semibold text-secondary">Fecha Solicitud</th>
+                                    <th className="ps-3 fw-semibold text-secondary">ID</th>
+                                    <th className="fw-semibold text-secondary">Fecha Solicitud</th>
                                     <th className="fw-semibold text-secondary">Usuario</th>
                                     <th className="fw-semibold text-secondary">Rango</th>
                                     <th className="fw-semibold text-secondary">Estado</th>
@@ -200,39 +201,46 @@ export default function DownloadHistory() {
                             <tbody>
                                 {filteredDownloads.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-4 text-muted">
+                                        <td colSpan={7} className="text-center py-4 text-muted">
                                             No se encontraron descargas con los filtros actuales.
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredDownloads.map(d => (
-                                        <tr key={d.id}>
-                                            <td className="ps-3 text-muted fw-medium">{new Date(d.created_at).toLocaleString('es-PE')}</td>
-                                            <td className="fw-bold text-dark">{d.usuarios?.nombre_completo || 'Desconocido'}</td>
-                                            <td className="text-muted">{d.start_date.split('-').reverse().join('-')} al {d.end_date.split('-').reverse().join('-')}</td>
-                                            <td>
-                                                {getStatusBadge(d.status)}
-                                                {d.error_message && <div className="text-danger small mt-1">{d.error_message}</div>}
-                                            </td>
-                                            <td className="text-dark">{d.total_files}</td>
-                                            <td className="text-end pe-3">
-                                                {d.status === 'ready' && (
-                                                    <a
-                                                        href={`/api/downloads/${d.id}/download`}
-                                                        target="_blank"
-                                                        className="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-medium"
-                                                        title="Descargar archivo ZIP"
-                                                    >
-                                                        Descargar ZIP
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-arrow-down ms-1" viewBox="0 0 16 16">
-                                                            <path d="M8.5 6.5a.5.5 0 0 0-1 0v3.793L6.354 9.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 10.293V6.5z" />
-                                                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
-                                                        </svg>
-                                                    </a>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))
+                                    filteredDownloads.map(d => {
+                                        const date = new Date(d.created_at);
+                                        const monthStr = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][date.getMonth()];
+                                        const displayId = `M-${monthStr}${String(d.id).padStart(4, '0')}`;
+
+                                        return (
+                                            <tr key={d.id}>
+                                                <td className="ps-3 fw-bold text-primary">{displayId}</td>
+                                                <td className="text-muted fw-medium">{new Date(d.created_at).toLocaleString('es-PE')}</td>
+                                                <td className="fw-bold text-dark">{d.usuarios?.nombre_completo || 'Desconocido'}</td>
+                                                <td className="text-muted">{d.start_date.split('-').reverse().join('-')} al {d.end_date.split('-').reverse().join('-')}</td>
+                                                <td>
+                                                    {getStatusBadge(d.status)}
+                                                    {d.error_message && <div className="text-danger small mt-1">{d.error_message}</div>}
+                                                </td>
+                                                <td className="text-dark">{d.total_files}</td>
+                                                <td className="text-end pe-3">
+                                                    {d.status === 'ready' && (
+                                                        <a
+                                                            href={`/api/downloads/${d.id}/download`}
+                                                            target="_blank"
+                                                            className="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-medium"
+                                                            title="Descargar archivo ZIP"
+                                                        >
+                                                            Descargar ZIP
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-arrow-down ms-1" viewBox="0 0 16 16">
+                                                                <path d="M8.5 6.5a.5.5 0 0 0-1 0v3.793L6.354 9.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 10.293V6.5z" />
+                                                                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
+                                                            </svg>
+                                                        </a>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )
+                                    })
                                 )}
                             </tbody>
                         </table>
@@ -246,42 +254,52 @@ export default function DownloadHistory() {
                             No se encontraron descargas con los filtros actuales.
                         </div>
                     ) : (
-                        filteredDownloads.map(d => (
-                            <div key={d.id} className="mobile-card">
-                                <div className="mobile-card-header">
-                                    <span className="mobile-card-users">{d.usuarios?.nombre_completo || 'Desconocido'}</span>
-                                    {getStatusBadge(d.status)}
-                                </div>
-                                <div className="mobile-card-body">
-                                    <div className="mobile-card-row">
-                                        <span className="label">Fecha:</span>
-                                        <span className="value">{new Date(d.created_at).toLocaleString('es-PE')}</span>
+                        filteredDownloads.map(d => {
+                            const date = new Date(d.created_at);
+                            const monthStr = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][date.getMonth()];
+                            const displayId = `M-${monthStr}${String(d.id).padStart(4, '0')}`;
+
+                            return (
+                                <div key={d.id} className="mobile-card">
+                                    <div className="mobile-card-header">
+                                        <span className="mobile-card-users fw-bold text-primary">{displayId}</span>
+                                        {getStatusBadge(d.status)}
                                     </div>
-                                    <div className="mobile-card-row">
-                                        <span className="label">Rango:</span>
-                                        <span className="value">{d.start_date.split('-').reverse().join('-')} al {d.end_date.split('-').reverse().join('-')}</span>
+                                    <div className="mobile-card-body">
+                                        <div className="mobile-card-row mb-1">
+                                            <span className="label">Usuario:</span>
+                                            <span className="value fw-bold">{d.usuarios?.nombre_completo || 'Desconocido'}</span>
+                                        </div>
+                                        <div className="mobile-card-row">
+                                            <span className="label">Fecha:</span>
+                                            <span className="value">{new Date(d.created_at).toLocaleString('es-PE')}</span>
+                                        </div>
+                                        <div className="mobile-card-row">
+                                            <span className="label">Rango:</span>
+                                            <span className="value">{d.start_date.split('-').reverse().join('-')} al {d.end_date.split('-').reverse().join('-')}</span>
+                                        </div>
+                                        <div className="mobile-card-row">
+                                            <span className="label">Archivos:</span>
+                                            <span className="value">{d.total_files}</span>
+                                        </div>
+                                        {d.error_message && (
+                                            <div className="text-danger small mt-1">{d.error_message}</div>
+                                        )}
                                     </div>
-                                    <div className="mobile-card-row">
-                                        <span className="label">Archivos:</span>
-                                        <span className="value">{d.total_files}</span>
-                                    </div>
-                                    {d.error_message && (
-                                        <div className="text-danger small mt-1">{d.error_message}</div>
+                                    {d.status === 'ready' && (
+                                        <div className="mobile-card-actions">
+                                            <a
+                                                href={`/api/downloads/${d.id}/download`}
+                                                target="_blank"
+                                                className="mobile-action-btn download"
+                                            >
+                                                ⬇ Descargar ZIP
+                                            </a>
+                                        </div>
                                     )}
                                 </div>
-                                {d.status === 'ready' && (
-                                    <div className="mobile-card-actions">
-                                        <a
-                                            href={`/api/downloads/${d.id}/download`}
-                                            target="_blank"
-                                            className="mobile-action-btn download"
-                                        >
-                                            ⬇ Descargar ZIP
-                                        </a>
-                                    </div>
-                                )}
-                            </div>
-                        ))
+                            )
+                        })
                     )}
                 </div>
 
