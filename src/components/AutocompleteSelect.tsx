@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { normalizeString } from '@/lib/utils';
 
 interface Option {
@@ -40,9 +40,16 @@ export default function AutocompleteSelect({
     const selectedOption = options.find(opt => opt.id.toString() === value);
 
     // Filter options based on search term (insensitive to case and accents)
-    const filteredOptions = options.filter(opt =>
-        normalizeString(opt.nombre).includes(normalizeString(searchTerm))
-    );
+    // Memoize the filtering to avoid heavy recalculations on large arrays
+    const filteredOptions = useMemo(() => {
+        const normalizedSearch = normalizeString(searchTerm);
+        if (!normalizedSearch) {
+            return options.slice(0, 50); // Show top 50 by default when empty to prevent sluggish render
+        }
+        return options
+            .filter(opt => normalizeString(opt.nombre).includes(normalizedSearch))
+            .slice(0, 50); // Cap at 50 results for performance
+    }, [options, searchTerm]);
 
     // Handle click outside to close dropdown
     useEffect(() => {

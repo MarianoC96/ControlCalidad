@@ -113,8 +113,13 @@ export function validateText(
     message: string;
 } {
     const normalize = normalizeString;
+    const normalizedValue = normalize(value);
 
-    const isValid = normalize(value) === normalize(expected);
+    // Permitir múltiples opciones separadas por "/"
+    const expectedOptions = expected.split('/').map(opt => normalize(opt));
+
+    const isValid = expectedOptions.includes(normalizedValue);
+
     return {
         isValid,
         message: isValid

@@ -34,7 +34,7 @@ export async function GET() {
                     'registro-productos', 'historial', 'historial-descargas',
                     'solicitudes', 'productos', 'parametros-maestros',
                     'usuarios', 'admin/config-pdf', 'accesos',
-                    'temporal', 'auditoria'
+                    'temporal'
                 ],
                 isSadmin: true,
                 roleName: 'sadmin'

@@ -15,7 +15,6 @@ const PATH_TO_MODULE: Record<string, string> = {
     '/admin/config-pdf': 'admin/config-pdf',
     '/accesos': 'accesos',
     '/temporal': 'temporal',
-    '/auditoria': 'auditoria',
 };
 
 interface RouteGuardProps {

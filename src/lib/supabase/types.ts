@@ -153,6 +153,8 @@ export type Database = {
                     pdf_aprobado_por: string | null;
                     lote_producto: string | null;
                     marca: string | null;
+                    es_offline: boolean | null;
+                    fecha_sincronizacion: string | null;
                 };
                 Insert: {
                     id?: number;
@@ -172,6 +174,8 @@ export type Database = {
                     pdf_aprobado_por?: string | null;
                     lote_producto?: string | null;
                     marca?: string | null;
+                    es_offline?: boolean | null;
+                    fecha_sincronizacion?: string | null;
                 };
                 Update: {
                     id?: number;
@@ -191,6 +195,8 @@ export type Database = {
                     pdf_aprobado_por?: string | null;
                     lote_producto?: string | null;
                     marca?: string | null;
+                    es_offline?: boolean | null;
+                    fecha_sincronizacion?: string | null;
                 };
             };
             controles: {

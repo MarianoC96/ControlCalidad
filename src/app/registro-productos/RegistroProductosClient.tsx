@@ -100,28 +100,22 @@ export default function RegistroProductosClient() {
 
             const data = await response.json();
             setProductos(data || []);
+            setLoading(false); // UI is unblocked immediately after products list loads
 
-            // Cache products WITH their parameters for offline use
-            try {
-                const productsWithParams = await Promise.all(
-                    (data || []).map(async (p: Producto) => {
-                        try {
-                            const detailRes = await fetch(`/api/productos?id=${p.id}`);
-                            if (detailRes.ok) {
-                                const detail = await detailRes.json();
-                                return { id: p.id, nombre: p.nombre, parametros: detail.parametros || [] };
-                            }
-                        } catch {
-                            // If individual fetch fails, cache without params
-                        }
-                        return { id: p.id, nombre: p.nombre, parametros: [] };
-                    })
-                );
-                await cacheProducts(productsWithParams);
-                console.log('Productos cacheados con parámetros para uso offline');
-            } catch (e) {
-                console.warn('No se pudo cachear productos en IndexedDB:', e);
-            }
+            // Cache products WITH their parameters for offline use (Background Task)
+            setTimeout(async () => {
+                try {
+                    const paramsRes = await fetch('/api/productos?includeParams=true');
+                    if (paramsRes.ok) {
+                        const allData = await paramsRes.json();
+                        await cacheProducts(allData);
+                        console.log('Productos cacheados en masa con parámetros');
+                    }
+                } catch (e) {
+                    console.warn('No se pudo cachear productos básicos en IndexedDB:', e);
+                }
+            }, 100);
+
         } catch (err) {
             // If offline, try to load from IndexedDB cache
             try {
@@ -136,7 +130,6 @@ export default function RegistroProductosClient() {
                 setError('Error al cargar productos: ' + (err instanceof Error ? err.message : ''));
             }
             console.error(err);
-        } finally {
             setLoading(false);
         }
     };
@@ -169,7 +162,23 @@ export default function RegistroProductosClient() {
 
         setLoadingParametros(true);
         try {
-            // Try online API first
+            // First check if product is already cached with parameters IN MEMORY
+            const prodInMemory: any = productos.find(p => p.id === parseInt(productoId));
+            if (prodInMemory && prodInMemory.parametros && prodInMemory.parametros.length > 0) {
+                initializeControles(prodInMemory.parametros);
+                setLoadingParametros(false);
+                return;
+            }
+
+            // Otherwise, check IndexedDB first (since background sync might have populated it)
+            const cachedProd = await getCachedProduct(parseInt(productoId));
+            if (cachedProd && cachedProd.parametros && (cachedProd.parametros as Parametro[]).length > 0) {
+                initializeControles(cachedProd.parametros as Parametro[]);
+                setLoadingParametros(false);
+                return;
+            }
+
+            // Finally, fall back to online API if not cached yet
             const response = await fetch(`/api/productos?id=${productoId}`);
             if (!response.ok) throw new Error('Error al cargar detalles del producto');
 
@@ -177,24 +186,12 @@ export default function RegistroProductosClient() {
             const data = productoDetalle.parametros || [];
             initializeControles(data);
         } catch (err) {
-            // ─── OFFLINE FALLBACK: Load parameters from IndexedDB cache ───
-            try {
-                const cached = await getCachedProduct(parseInt(productoId));
-                if (cached && cached.parametros && (cached.parametros as Parametro[]).length > 0) {
-                    const data = cached.parametros as Parametro[];
-                    initializeControles(data);
-                    console.log('Parámetros cargados desde caché offline');
-                } else {
-                    setError('Sin conexión: no hay parámetros cacheados para este producto. Conecte a internet al menos una vez para cachear los datos.');
-                }
-            } catch {
-                setError('Error al cargar parámetros del producto');
-                console.error(err);
-            }
+            setError('Error al cargar parámetros del producto o sin conexión');
+            console.error(err);
         } finally {
             setLoadingParametros(false);
         }
-    }, []);
+    }, [productos]);
 
     useEffect(() => {
         loadParametros(formData.productoId);

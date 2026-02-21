@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     return handleRequest(request, async (supabase) => {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
+        const includeParams = searchParams.get('includeParams') === 'true';
 
         if (id) {
             // Get detailed product with parameters
@@ -49,10 +50,9 @@ export async function GET(request: Request) {
         }
 
         // List all products
-        const { data, error } = await supabase
-            .from('productos')
-            .select('*')
-            .order('nombre');
+        let query = supabase.from('productos').select(includeParams ? '*, parametros(*)' : '*').order('nombre');
+
+        const { data, error } = await query;
         if (error) throw error;
         return data;
     });

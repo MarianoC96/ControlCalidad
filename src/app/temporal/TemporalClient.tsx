@@ -113,7 +113,8 @@ export default function TemporalClient() {
                         observaciones_generales: record.formData.observacionesGenerales,
                         verificado_por: record.verificadoPor,
                         controles: record.controles,
-                        es_temporal: true,
+                        es_offline: true,
+                        fecha_registro: record.timestamp,
                     }),
                 });
 

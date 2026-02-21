@@ -97,7 +97,12 @@ export async function POST(req: NextRequest) {
                     counter++;
                 }
 
-                zip.file(fileName, pdfBuffer);
+                // Convert record date to Peru Time for the zip file metadata
+                const recordDate = new Date(registro.fecha_registro);
+                const peruDateStr = recordDate.toLocaleString('en-US', { timeZone: 'America/Lima' });
+                const peruDate = new Date(peruDateStr);
+
+                zip.file(fileName, pdfBuffer, { date: peruDate });
             } catch (innerErr) {
                 console.error(`Error processing PDF for registro ${registro.id}`, innerErr);
             }
