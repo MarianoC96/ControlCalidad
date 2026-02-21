@@ -291,7 +291,6 @@ export default function LoginPage() {
           font-size: 0.95rem;
           font-weight: 600;
           color: #1e293b;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease;
           outline: none;
         }
 
@@ -314,7 +313,6 @@ export default function LoginPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: color 0.2s ease;
           z-index: 2;
         }
 
@@ -331,7 +329,7 @@ export default function LoginPage() {
           font-weight: 800;
           font-size: 0.95rem;
           cursor: pointer;
-          transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+          transition: transform 0.2s ease;
           margin-top: 10px;
           display: flex;
           align-items: center;
