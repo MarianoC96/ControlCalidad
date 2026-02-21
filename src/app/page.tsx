@@ -216,7 +216,11 @@ export default function LoginPage() {
           padding: 50px 40px;
           width: 100%;
           max-width: 440px;
+          min-height: 520px;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
         }
 
         .system-logo {
@@ -287,7 +291,7 @@ export default function LoginPage() {
           font-size: 0.95rem;
           font-weight: 600;
           color: #1e293b;
-          transition: 0.2s;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
           outline: none;
         }
 
@@ -310,7 +314,7 @@ export default function LoginPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: color 0.2s;
+          transition: color 0.2s ease;
           z-index: 2;
         }
 
@@ -327,7 +331,7 @@ export default function LoginPage() {
           font-weight: 800;
           font-size: 0.95rem;
           cursor: pointer;
-          transition: 0.2s;
+          transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
           margin-top: 10px;
           display: flex;
           align-items: center;
