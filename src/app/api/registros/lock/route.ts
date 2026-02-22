@@ -78,35 +78,14 @@ export async function POST(request: Request) {
                 .eq('status', 'aprobado')
                 .maybeSingle();
 
-            // If they DON'T have an approved request, apply standard restrictions
             if (!approvedRequest) {
-                // Check if already edited by ANY worker
-                const { count } = await supabase
-                    .from('history_edits')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('registro_id', registro_id)
-                    .eq('role', 'trabajador');
-
-                if (count !== null && count > 0) {
-                    return NextResponse.json(
-                        {
-                            error: 'Este registro ya fue editado por un trabajador. Solo un administrador puede realizar más cambios.',
-                            canRequest: true
-                        },
-                        { status: 403 }
-                    );
-                }
-
-                // Check if previously locked by me but expired
-                if (registro.edit_started_by === user.id && expiresAt && expiresAt <= now) {
-                    return NextResponse.json(
-                        {
-                            error: 'El tiempo de edición ha expirado. Solo un administrador puede reactivar la edición.',
-                            canRequest: true
-                        },
-                        { status: 403 }
-                    );
-                }
+                return NextResponse.json(
+                    {
+                        error: 'Para editar un registro debes solicitar permiso a un administrador.',
+                        canRequest: true
+                    },
+                    { status: 403 }
+                );
             }
         }
 

@@ -97,20 +97,10 @@ export async function POST(request: Request) {
                 .eq('status', 'aprobado')
                 .maybeSingle();
 
-            if (approvedRequest) {
-                approvedRequestId = approvedRequest.id;
-            } else {
-                // No approved request, apply standard One Edit Rule
-                const { count } = await supabase
-                    .from('history_edits')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('registro_id', registro_id)
-                    .eq('role', 'trabajador');
-
-                if (count !== null && count > 0) {
-                    return NextResponse.json({ error: 'Ya realizaste una edición previa en este registro.' }, { status: 403 });
-                }
+            if (!approvedRequest) {
+                return NextResponse.json({ error: 'No tienes una solicitud aprobada para editar este registro.' }, { status: 403 });
             }
+            approvedRequestId = approvedRequest.id;
         }
 
         // Validate Max Photos

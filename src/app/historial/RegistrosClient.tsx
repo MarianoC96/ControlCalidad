@@ -992,15 +992,14 @@ export default function RegistrosClient() {
                                 </div>
                                 <div className="modal-body p-4">
                                     <div className="alert alert-warning small mb-3">
-                                        Este registro ya fue editado por un trabajador o el tiempo expiró.
-                                        Puedes enviar una solicitud a los administradores para que te habiliten un intento extra.
+                                        Para editar este registro, debes enviar una solicitud a los administradores para que la autoricen.
                                     </div>
 
                                     <label className="form-label fw-bold small">Motivo de la solicitud (Opcional)</label>
                                     <textarea
                                         className="form-control"
                                         rows={3}
-                                        placeholder="Explica brevemente por qué necesitas realizar cambios adicionales..."
+                                        placeholder="Explica brevemente por qué necesitas realizar cambios..."
                                         value={requestMotivo}
                                         onChange={(e) => setRequestMotivo(e.target.value)}
                                     ></textarea>
