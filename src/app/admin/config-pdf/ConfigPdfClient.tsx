@@ -19,8 +19,8 @@ export default function ConfigPdfClient() {
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
     useEffect(() => {
-        checkAuth();
-        loadConfig();
+        // Run auth check and config load in PARALLEL
+        Promise.all([checkAuth(), loadConfig()]);
     }, []);
 
     const checkAuth = async () => {

@@ -400,6 +400,13 @@ body {
   --primary-color: #10b981;
 }
 
+/* Mobile: top padding for mobile header (only when sidebar present) */
+@media (max-width: 992px) {
+  body:has(.sidebar) {
+    padding-top: 60px;
+  }
+}
+
 @media (min-width: 993px) {
   :root {
     --sidebar-width: 260px;

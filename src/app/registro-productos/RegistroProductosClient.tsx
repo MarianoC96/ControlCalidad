@@ -559,15 +559,42 @@ export default function RegistroProductosClient() {
 
     if (loading) {
         return (
-            <>
-
-                <div className="container mt-4">
-                    <div className="text-center">
-                        <div className="spinner"></div>
-                        <p>Cargando...</p>
+            <div className="page-wrapper">
+                <main className="main-content">
+                    {/* Skeleton Header */}
+                    <div className="header-container shadow-sm border" style={{ minHeight: '100px' }}>
+                        <div className="header-info" style={{ width: '60%' }}>
+                            <div className="skeleton" style={{ width: '100px', height: '14px', marginBottom: '10px' }}></div>
+                            <div className="skeleton" style={{ width: '250px', height: '28px', marginBottom: '8px' }}></div>
+                            <div className="skeleton" style={{ width: '320px', height: '14px' }}></div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div className="skeleton" style={{ width: '80px', height: '12px', marginBottom: '6px', marginLeft: 'auto' }}></div>
+                            <div className="skeleton" style={{ width: '120px', height: '20px', marginLeft: 'auto' }}></div>
+                        </div>
                     </div>
-                </div>
-            </>
+                    {/* Skeleton Form Grid */}
+                    <div className="form-grid">
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className="form-group">
+                                <div className="skeleton" style={{ width: '100px', height: '14px', marginBottom: '8px' }}></div>
+                                <div className="skeleton" style={{ width: '100%', height: '40px', borderRadius: '6px' }}></div>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Skeleton Button */}
+                    <div className="text-center mt-4">
+                        <div className="skeleton" style={{ width: '200px', height: '48px', borderRadius: '8px', margin: '0 auto' }}></div>
+                    </div>
+                </main>
+                <style jsx>{`
+                    .page-wrapper { min-height: 100vh; background-color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
+                    .main-content { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+                    .header-container { background: white; border-radius: 24px; padding: 25px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+                    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+                    @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .header-container { flex-direction: column; text-align: center; gap: 15px; } }
+                `}</style>
+            </div>
         );
     }
 
