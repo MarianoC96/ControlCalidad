@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+
 import { createClient } from '@/lib/supabase/client';
 import { normalizeString } from '@/lib/utils';
 import type { Producto, ParametroMaestro, Parametro } from '@/lib/supabase/types';
@@ -255,7 +255,7 @@ export default function ProductosClient() {
     if (loading) {
         return (
             <>
-                <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+
                 <div className="container mt-4">
                     <div className="text-center">
                         <div className="spinner"></div>
@@ -268,7 +268,7 @@ export default function ProductosClient() {
 
     return (
         <div className="page-wrapper">
-            <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+
 
             <main className="main-content">
                 {/* Header Premium */}

@@ -63,13 +63,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if 2FA is enabled
-        if (user.two_factor_secret) {
-            return NextResponse.json({
-                requires2FA: true,
-                userId: user.id,
-            });
-        }
 
         // Create session
         const sessionId = crypto.randomUUID();

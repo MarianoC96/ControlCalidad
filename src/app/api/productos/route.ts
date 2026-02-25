@@ -30,23 +30,15 @@ export async function GET(request: Request) {
         const includeParams = searchParams.get('includeParams') === 'true';
 
         if (id) {
-            // Get detailed product with parameters
+            // Get product with parameters in a single join query
             const { data: producto, error: prodError } = await supabase
                 .from('productos')
-                .select('*')
+                .select('*, parametros(*)')
                 .eq('id', id)
                 .single();
 
             if (prodError) throw prodError;
-
-            const { data: params, error: paramError } = await supabase
-                .from('parametros')
-                .select('*')
-                .eq('producto_id', id);
-
-            if (paramError) throw paramError;
-
-            return { ...producto, parametros: params };
+            return producto;
         }
 
         // List all products

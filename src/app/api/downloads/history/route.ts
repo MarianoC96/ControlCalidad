@@ -16,27 +16,31 @@ export async function GET(req: NextRequest) {
             process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Check user role
-        const { data: user } = await supabase
-            .from('usuarios')
-            .select('roles')
-            .eq('id', parseInt(userId))
-            .single();
+        // Fetch user role and download history IN PARALLEL
+        const [userResult, historyResult] = await Promise.all([
+            supabase
+                .from('usuarios')
+                .select('roles')
+                .eq('id', parseInt(userId))
+                .single(),
+            // Pre-fetch all - we'll filter below if needed
+            supabase
+                .from('download_history')
+                .select('id, user_id, start_date, end_date, total_files, status, error_message, created_at, zip_path, usuarios (nombre_completo)')
+                .order('created_at', { ascending: false })
+                .limit(200)
+        ]);
 
-        let query = supabase
-            .from('download_history')
-            .select('*, usuarios (nombre_completo)')
-            .order('created_at', { ascending: false });
+        const user = userResult.data;
+        let data = historyResult.data || [];
 
-        // If not admin, only show own downloads
+        // If not admin, filter to own downloads only
         if (user?.roles !== 'administrador') {
-            query = query.eq('user_id', parseInt(userId));
+            data = data.filter((d: any) => d.user_id === parseInt(userId));
         }
 
-        const { data, error } = await query;
-
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
+        if (historyResult.error) {
+            return NextResponse.json({ error: historyResult.error.message }, { status: 500 });
         }
 
         return NextResponse.json(data);

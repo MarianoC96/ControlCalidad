@@ -50,12 +50,19 @@ export default function DownloadHistory() {
         }
     };
 
+    // Smart polling: only poll when there are pending/processing items
+    const hasActiveDownloads = downloads.some(d => d.status === 'pending' || d.status === 'processing');
+
     useEffect(() => {
         fetchDownloads();
-        // Polling
-        const interval = setInterval(fetchDownloads, 5000);
-        return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (!hasActiveDownloads) return;
+        // Only poll when there are active downloads
+        const interval = setInterval(fetchDownloads, 3000);
+        return () => clearInterval(interval);
+    }, [hasActiveDownloads]);
 
     // Derived Data for Filters
     const availableYears = useMemo(() => {
@@ -118,11 +125,29 @@ export default function DownloadHistory() {
 
         if (debouncedSearch) {
             const search = normalizeString(debouncedSearch);
-            filtered = filtered.filter(d =>
-                normalizeString(d.usuarios?.nombre_completo || '').includes(search) ||
-                normalizeString(d.start_date).includes(search) ||
-                normalizeString(d.end_date).includes(search)
-            );
+            filtered = filtered.filter(d => {
+                const date = new Date(d.created_at);
+                const monthStr = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'][date.getMonth()];
+                const displayId = `M-${monthStr}${String(d.id).padStart(4, '0')}`;
+
+                // Las fechas en UI se ven DD-MM-YYYY
+                const formattedStartDate = d.start_date ? d.start_date.split('-').reverse().join('-') : '';
+                const formattedStartDateSlash = d.start_date ? d.start_date.split('-').reverse().join('/') : '';
+                const formattedEndDate = d.end_date ? d.end_date.split('-').reverse().join('-') : '';
+                const formattedEndDateSlash = d.end_date ? d.end_date.split('-').reverse().join('/') : '';
+                const formattedCreatedAt = date.toLocaleString('es-PE');
+
+                return normalizeString(d.usuarios?.nombre_completo || '').includes(search) ||
+                    normalizeString(d.start_date).includes(search) ||
+                    normalizeString(formattedStartDate).includes(search) ||
+                    normalizeString(formattedStartDateSlash).includes(search) ||
+                    normalizeString(d.end_date).includes(search) ||
+                    normalizeString(formattedEndDate).includes(search) ||
+                    normalizeString(formattedEndDateSlash).includes(search) ||
+                    normalizeString(formattedCreatedAt).includes(search) ||
+                    d.id.toString().includes(search) ||
+                    normalizeString(displayId).includes(search);
+            });
         }
 
         return filtered.slice(0, limit);

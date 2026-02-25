@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { getPendingCount } from '@/lib/temporal-db';
 
 interface NavbarProps {
   userName?: string;
@@ -16,18 +17,34 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  // Start with server-safe defaults to avoid hydration mismatch
   const [allowedModules, setAllowedModules] = useState<string[]>([]);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
+  // Hydrate from sessionStorage on client mount (after first render)
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem('nav_permisos');
+      if (cached) {
+        setAllowedModules(JSON.parse(cached));
+        setPermissionsLoaded(true);
+      }
+    } catch { }
+  }, []);
+  const [pendingSolicitudes, setPendingSolicitudes] = useState(0);
+  const [pendingTemporales, setPendingTemporales] = useState(0);
+
   const isActive = (path: string) => pathname === path;
 
-  // Fetch permissions on mount
+  // Fetch permissions on mount and update cache
   const fetchPermissions = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/permisos');
       if (res.ok) {
         const data = await res.json();
-        setAllowedModules(data.allowedModules || []);
+        const modules = data.allowedModules || [];
+        setAllowedModules(modules);
+        try { sessionStorage.setItem('nav_permisos', JSON.stringify(modules)); } catch { }
       }
     } catch (e) {
       console.error('Error fetching permissions:', e);
@@ -36,9 +53,38 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
     }
   }, []);
 
+  // Fetch pending counts for notification badges
+  const fetchPendingCounts = useCallback(async () => {
+    try {
+      // Solicitudes pendientes (from API, only meaningful for admins)
+      const res = await fetch('/api/admin/pending-counts');
+      if (res.ok) {
+        const data = await res.json();
+        setPendingSolicitudes(data.pendingSolicitudes || 0);
+      }
+    } catch (e) {
+      // Silently fail if offline or not admin
+    }
+
+    try {
+      // Temporales pendientes (from IndexedDB)
+      const count = await getPendingCount();
+      setPendingTemporales(count);
+    } catch (e) {
+      // IndexedDB not available
+    }
+  }, []);
+
+  // On mount: fetch permissions and pending counts IN PARALLEL
   useEffect(() => {
-    fetchPermissions();
-  }, [fetchPermissions]);
+    Promise.all([fetchPermissions(), fetchPendingCounts()]);
+  }, [fetchPermissions, fetchPendingCounts]);
+
+  // Poll pending counts every 30 seconds (permissions don't change during session)
+  useEffect(() => {
+    const interval = setInterval(fetchPendingCounts, 30000);
+    return () => clearInterval(interval);
+  }, [fetchPendingCounts]);
 
   // Ajustar el margen del contenido principal según el estado del sidebar
   useEffect(() => {
@@ -131,6 +177,12 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
     }
   ];
 
+  // Map of moduleKey -> pending count for badge display
+  const pendingBadges: Record<string, number> = {
+    'solicitudes': pendingSolicitudes,
+    'temporal': pendingTemporales,
+  };
+
   const filteredLinks = permissionsLoaded
     ? navLinks.filter(link => allowedModules.includes(link.moduleKey) || link.moduleKey === 'temporal')
     : [];
@@ -197,20 +249,31 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
         <div className="sidebar-content">
           <nav className="sidebar-nav">
             <ul className="nav-list">
-              {filteredLinks.map((link) => (
-                <li key={link.href} className="nav-item">
-                  <Link
-                    href={link.href}
-                    className={`nav-link ${isActive(link.href) ? 'active' : ''}`}
-                    title={isCollapsed ? link.label : ''}
-                    onClick={() => setIsMobileOpen(false)}
-                  >
-                    <span className="nav-icon">{link.icon}</span>
-                    {!isCollapsed && <span className="nav-text">{link.label}</span>}
-                    {isCollapsed && isActive(link.href) && <div className="active-dot" />}
-                  </Link>
-                </li>
-              ))}
+              {filteredLinks.map((link) => {
+                const badgeCount = pendingBadges[link.moduleKey] || 0;
+                return (
+                  <li key={link.href} className="nav-item">
+                    <Link
+                      href={link.href}
+                      className={`nav-link ${isActive(link.href) ? 'active' : ''}`}
+                      title={isCollapsed ? link.label : ''}
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <span className="nav-icon">
+                        {link.icon}
+                        {badgeCount > 0 && isCollapsed && (
+                          <span className="nav-badge-collapsed">{badgeCount > 99 ? '99+' : badgeCount}</span>
+                        )}
+                      </span>
+                      {!isCollapsed && <span className="nav-text">{link.label}</span>}
+                      {!isCollapsed && badgeCount > 0 && (
+                        <span className="nav-badge">{badgeCount > 99 ? '99+' : badgeCount}</span>
+                      )}
+                      {isCollapsed && isActive(link.href) && <div className="active-dot" />}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </nav>
         </div>
@@ -453,6 +516,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                     flex-shrink: 0;
                     width: 24px;
                     height: 24px;
+                    position: relative;
                 }
                 
                 .nav-icon svg { 
@@ -467,6 +531,52 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                     opacity: 1;
                     line-height: 1.2;
                     letter-spacing: 0.01em;
+                }
+
+                /* Notification Badge (expanded sidebar) */
+                .nav-badge {
+                    margin-left: auto;
+                    background: linear-gradient(135deg, #ef4444, #dc2626);
+                    color: white;
+                    font-size: 0.7rem;
+                    font-weight: 800;
+                    min-width: 22px;
+                    height: 22px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50px;
+                    padding: 0 6px;
+                    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+                    animation: badge-pulse 2s infinite;
+                    flex-shrink: 0;
+                }
+
+                /* Notification Badge (collapsed sidebar) */
+                .nav-badge-collapsed {
+                    position: absolute;
+                    top: -4px;
+                    right: -6px;
+                    background: linear-gradient(135deg, #ef4444, #dc2626);
+                    color: white;
+                    font-size: 0.6rem;
+                    font-weight: 800;
+                    min-width: 18px;
+                    height: 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50px;
+                    padding: 0 4px;
+                    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+                    animation: badge-pulse 2s infinite;
+                    z-index: 5;
+                }
+
+                @keyframes badge-pulse {
+                    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+                    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
                 }
 
                 .active-dot {

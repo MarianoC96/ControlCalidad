@@ -23,10 +23,14 @@ export async function GET(request: NextRequest) {
             process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Consultar controles y fotos en paralelo
+        // Fetch controles and fotos in parallel (already was, but now with specific columns)
         const [controlesRes, fotosRes] = await Promise.all([
-            supabase.from('controles').select('*').eq('registro_id', registroId),
-            supabase.from('fotos').select('*').eq('registro_id', registroId),
+            supabase.from('controles')
+                .select('id,registro_id,parametro_nombre,rango_completo,valor_control,texto_control,parametro_tipo,observacion,fuera_de_rango')
+                .eq('registro_id', registroId),
+            supabase.from('fotos')
+                .select('id,registro_id,datos_base64,descripcion')
+                .eq('registro_id', registroId),
         ]);
 
         return NextResponse.json({

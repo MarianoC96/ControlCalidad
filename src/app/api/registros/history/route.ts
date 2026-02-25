@@ -33,10 +33,12 @@ export async function GET(request: Request) {
                 action,
                 photos_added,
                 photos_deleted,
+                field_changes,
                 created_at,
                 usuarios:edited_by (
                     id,
-                    nombre_completo
+                    nombre_completo,
+                    usuario
                 )
             `)
             .eq('registro_id', parseInt(registroId))

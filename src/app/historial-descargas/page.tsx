@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
+
 import DownloadHistory from '@/components/DownloadHistory';
 import BulkDownloadModal from '@/components/BulkDownloadModal';
 import RouteGuard from '@/components/RouteGuard';
@@ -55,7 +55,7 @@ export default function HistorialDescargasPage() {
     return (
         <RouteGuard>
             <div className="page-wrapper">
-                <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+
 
                 <main className="main-content">
                     {/* Header Premium */}

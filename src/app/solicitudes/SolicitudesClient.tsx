@@ -4,7 +4,7 @@ import Head from 'next/head';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+
 
 interface EditRequest {
     id: number;
@@ -23,6 +23,10 @@ interface EditRequest {
         nombre_completo: string;
         usuario: string;
     };
+    resuelto_por: {
+        nombre_completo: string;
+        usuario: string;
+    } | null;
 }
 
 export default function SolicitudesClient() {
@@ -56,7 +60,12 @@ export default function SolicitudesClient() {
             req.usuarios.usuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
             req.registros.producto_nombre.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
-        const matchesDate = !dateFilter || req.created_at.startsWith(dateFilter);
+        // Convert created_at to Peru time (GMT-5) before comparing with date filter
+        let matchesDate = true;
+        if (dateFilter) {
+            const peruDate = new Date(req.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Lima' }); // returns YYYY-MM-DD
+            matchesDate = peruDate === dateFilter;
+        }
         return matchesSearch && matchesStatus && matchesDate;
     });
 
@@ -140,7 +149,7 @@ export default function SolicitudesClient() {
 
     return (
         <div className="admin-page-wrapper">
-            <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+
 
             <main className="main-content">
                 {/* Header Premium */}
@@ -196,13 +205,41 @@ export default function SolicitudesClient() {
                                     <option value="aprobado">Aprobados</option>
                                     <option value="rechazado">Rechazados</option>
                                 </select>
-                                <input
-                                    type="date"
-                                    className="form-control form-control-sm rounded-pill border-secondary-subtle bg-light text-secondary shadow-none"
-                                    value={dateFilter}
-                                    onChange={(e) => setDateFilter(e.target.value)}
-                                    style={{ width: 'auto' }}
-                                />
+                                <div style={{ position: 'relative', width: 'auto', display: 'inline-flex', alignItems: 'center' }}>
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        className="form-control form-control-sm rounded-pill border-secondary-subtle bg-light text-secondary shadow-none"
+                                        value={dateFilter ? dateFilter.split('-').reverse().join('/') : ''}
+                                        placeholder="DD/MM/AAAA"
+                                        onClick={(e) => {
+                                            const hiddenInput = (e.target as HTMLElement).parentElement?.querySelector('input[type="date"]') as HTMLInputElement;
+                                            hiddenInput?.showPicker?.();
+                                        }}
+                                        style={{ width: '145px', cursor: 'pointer', paddingRight: dateFilter ? '30px' : '12px' }}
+                                    />
+                                    <input
+                                        type="date"
+                                        value={dateFilter}
+                                        onChange={(e) => setDateFilter(e.target.value)}
+                                        style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
+                                        tabIndex={-1}
+                                    />
+                                    {dateFilter && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setDateFilter('')}
+                                            style={{
+                                                position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                                                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                                                fontSize: '1rem', color: '#6c757d', lineHeight: 1
+                                            }}
+                                            title="Limpiar fecha"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -217,14 +254,15 @@ export default function SolicitudesClient() {
                                             <th className="fw-semibold text-secondary">Producto</th>
                                             <th className="fw-semibold text-secondary">Lote</th>
                                             <th className="fw-semibold text-secondary">Fecha</th>
-                                            <th className="fw-semibold text-secondary">Estado</th>
+                                            <th className="fw-semibold text-secondary">Motivo</th>
+                                            <th className="fw-semibold text-secondary">Aprobado por</th>
                                             <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {loading ? (
                                             <tr>
-                                                <td colSpan={6} className="text-center py-5">
+                                                <td colSpan={7} className="text-center py-5">
                                                     <div className="spinner-border text-primary" role="status">
                                                         <span className="visually-hidden">Cargando...</span>
                                                     </div>
@@ -232,7 +270,7 @@ export default function SolicitudesClient() {
                                             </tr>
                                         ) : filteredRequests.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="text-center py-5 text-muted">
+                                                <td colSpan={7} className="text-center py-5 text-muted">
                                                     No hay solicitudes que coincidan con los filtros.
                                                 </td>
                                             </tr>
@@ -252,8 +290,24 @@ export default function SolicitudesClient() {
                                                     </td>
                                                     <td className="text-dark" style={{ fontSize: '0.9rem' }}>{req.registros.producto_nombre}</td>
                                                     <td className="fw-bold text-dark">{req.registros.lote_interno}</td>
-                                                    <td className="text-muted small">{new Date(req.created_at).toLocaleDateString('es-PE')}</td>
-                                                    <td>{getStatusBadge(req.status)}</td>
+                                                    <td className="text-muted small">{new Date(req.created_at).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}</td>
+                                                    <td className="text-dark" style={{ fontSize: '0.85rem', maxWidth: '200px' }}>
+                                                        {req.motivo ? (
+                                                            <span style={{ lineHeight: '1.4' }}>{req.motivo}</span>
+                                                        ) : (
+                                                            <span className="text-muted small">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        {req.resuelto_por ? (
+                                                            <div>
+                                                                <div className="fw-semibold text-dark" style={{ fontSize: '0.85rem' }}>{req.resuelto_por.nombre_completo}</div>
+                                                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>@{req.resuelto_por.usuario}</div>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted small">—</span>
+                                                        )}
+                                                    </td>
                                                     <td className="text-end pe-3">
                                                         {req.status === 'pendiente' ? (
                                                             <div className="d-flex justify-content-end gap-2">
@@ -276,6 +330,10 @@ export default function SolicitudesClient() {
                                                                     Rechazar
                                                                 </button>
                                                             </div>
+                                                        ) : req.status === 'aprobado' || req.status === 'usado' ? (
+                                                            <span className="fw-bold" style={{ color: '#198754', fontSize: '0.85rem' }}>✓ Aprobado</span>
+                                                        ) : req.status === 'rechazado' ? (
+                                                            <span className="fw-bold" style={{ color: '#dc3545', fontSize: '0.85rem' }}>✗ Rechazado</span>
                                                         ) : (
                                                             <span className="text-muted small">—</span>
                                                         )}
@@ -310,9 +368,12 @@ export default function SolicitudesClient() {
                                                 </div>
                                                 <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
                                             </div>
-                                            {getStatusBadge(req.status)}
                                         </div>
                                         <div className="mobile-card-body">
+                                            <div className="mobile-card-row">
+                                                <span className="label">Motivo:</span>
+                                                <span className="value" style={{ fontSize: '0.8rem' }}>{req.motivo || '—'}</span>
+                                            </div>
                                             <div className="mobile-card-row">
                                                 <span className="label">Producto:</span>
                                                 <span className="value">{req.registros.producto_nombre}</span>
@@ -323,10 +384,16 @@ export default function SolicitudesClient() {
                                             </div>
                                             <div className="mobile-card-row">
                                                 <span className="label">Fecha:</span>
-                                                <span className="value">{new Date(req.created_at).toLocaleDateString('es-PE')}</span>
+                                                <span className="value">{new Date(req.created_at).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}</span>
                                             </div>
+                                            {req.resuelto_por && (
+                                                <div className="mobile-card-row">
+                                                    <span className="label">Aprobado por:</span>
+                                                    <span className="value">{req.resuelto_por.nombre_completo} - @{req.resuelto_por.usuario}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        {req.status === 'pendiente' && (
+                                        {req.status === 'pendiente' ? (
                                             <div className="mobile-card-actions">
                                                 <button
                                                     className="mobile-action-btn approve"
@@ -342,6 +409,15 @@ export default function SolicitudesClient() {
                                                 >
                                                     Rechazar
                                                 </button>
+                                            </div>
+                                        ) : (
+                                            <div className="mobile-card-actions">
+                                                {(req.status === 'aprobado' || req.status === 'usado') && (
+                                                    <span className="fw-bold" style={{ color: '#198754', fontSize: '0.85rem', padding: '6px 0' }}>✓ Aprobado</span>
+                                                )}
+                                                {req.status === 'rechazado' && (
+                                                    <span className="fw-bold" style={{ color: '#dc3545', fontSize: '0.85rem', padding: '6px 0' }}>✗ Rechazado</span>
+                                                )}
                                             </div>
                                         )}
                                     </div>

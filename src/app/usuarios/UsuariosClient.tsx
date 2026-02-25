@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+
 import { createClient } from '@/lib/supabase/client';
 import type { Usuario } from '@/lib/supabase/types';
 
@@ -124,22 +124,6 @@ export default function UsuariosClient() {
         }
     };
 
-    const executeReset2FA = async (id: number) => {
-        try {
-            const user = usuarios.find(u => u.id === id);
-            if (!user) return;
-            await fetch('/api/usuarios', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...user, two_factor_secret: null }),
-            });
-            loadUsuarios();
-            setConfirmModal({ ...confirmModal, show: false });
-        } catch (err) {
-            alert('Error al resetear');
-        }
-    };
-
     const openDisableConfirm = (user: Usuario) => {
         setConfirmModal({
             show: true,
@@ -150,15 +134,6 @@ export default function UsuariosClient() {
         });
     };
 
-    const openReset2FAConfirm = (user: Usuario) => {
-        setConfirmModal({
-            show: true,
-            title: '¿Resetear Seguridad 2FA?',
-            message: `Se eliminará la llave de seguridad de ${user.nombre_completo}. Deberá volver a configurarla en su próximo login.`,
-            type: 'warning',
-            action: () => executeReset2FA(user.id)
-        });
-    };
 
     const filteredUsuarios = usuarios.filter(user => {
         const matchesSearch =
@@ -172,7 +147,7 @@ export default function UsuariosClient() {
 
     return (
         <div className="admin-page-wrapper">
-            <Navbar userName={userName} userRole={userRole} onLogout={() => router.push('/')} />
+
 
             <main className="main-content">
                 {/* Header Section */}
@@ -219,11 +194,7 @@ export default function UsuariosClient() {
                                             <span>@{user.usuario}</span>
                                             {user.email && <span className="u-email">• {user.email}</span>}
                                         </div>
-                                        {user.two_factor_secret && (
-                                            <div className="status-2fa-badge mt-1">
-                                                <i className="bi bi-shield-fill-check"></i> PROTECCIÓN 2FA ACTIVA
-                                            </div>
-                                        )}
+
                                     </div>
                                 </div>
                                 <div className="user-tags">
@@ -248,9 +219,8 @@ export default function UsuariosClient() {
                                             setShowModal(true);
                                         }} title="Editar Perfil"><i className="bi bi-pencil-fill"></i> Editar</button>
 
-                                        {user.two_factor_secret && (
-                                            <button className="btn-c btn-warn" onClick={() => openReset2FAConfirm(user)}><i className="bi bi-shield-slash"></i> 2FA</button>
-                                        )}
+
+
 
                                         <button className="btn-c btn-danger-solid" onClick={() => openDisableConfirm(user)} title="Eliminar Usuario">
                                             <i className="bi bi-trash3-fill me-1"></i> Eliminar
@@ -510,18 +480,7 @@ export default function UsuariosClient() {
                 .u-handle span { color: #3b82f6; font-weight: 700; font-size: 0.8rem; }
                 .u-email { color: #94a3b8; font-size: 0.8rem; }
                 
-                .status-2fa-badge {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 5px;
-                    color: #10b981;
-                    font-size: 0.65rem;
-                    font-weight: 900;
-                    letter-spacing: 0.5px;
-                    background: #ecfdf5;
-                    padding: 2px 8px;
-                    border-radius: 6px;
-                }
+
                 
                 .user-tags { display: flex; gap: 6px; }
                 .chip { padding: 4px 10px; border-radius: 50px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; border: 1px solid rgba(0,0,0,0.05); }

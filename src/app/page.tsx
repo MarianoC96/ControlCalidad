@@ -14,12 +14,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [show2FAModal, setShow2FAModal] = useState(false);
-  const [pendingUserId, setPendingUserId] = useState<number | null>(null);
-  const [twoFactorCode, setTwoFactorCode] = useState('');
-  const [verifying2FA, setVerifying2FA] = useState(false);
-  const [error2FA, setError2FA] = useState('');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -38,46 +32,10 @@ export default function LoginPage() {
         throw new Error(data.error || 'Error al iniciar sesión');
       }
 
-      // Check if 2FA is required
-      if (data.requires2FA) {
-        setPendingUserId(data.userId);
-        setShow2FAModal(true);
-        setLoading(false);
-        return;
-      }
-
-      // Redirect to main page only if no 2FA is required
       router.push('/registro-productos');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
       setLoading(false);
-    }
-  };
-
-  const handleVerify2FA = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError2FA('');
-    setVerifying2FA(true);
-
-    try {
-      const response = await fetch('/api/auth/verify-2fa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: pendingUserId, code: twoFactorCode }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Código de seguridad incorrecto');
-      }
-
-      // Success! Now redirect
-      router.push('/registro-productos');
-    } catch (err) {
-      setError2FA(err instanceof Error ? err.message : 'Error de verificación');
-    } finally {
-      setVerifying2FA(false);
     }
   };
 
@@ -102,6 +60,7 @@ export default function LoginPage() {
                 onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
                 required
                 placeholder="Ingresa tu ID"
+                suppressHydrationWarning
               />
             </div>
           </div>
@@ -117,6 +76,7 @@ export default function LoginPage() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value.replace(/\s/g, '') })}
                 required
                 placeholder="••••••••"
+                suppressHydrationWarning
               />
               <button
                 type="button"
@@ -156,50 +116,6 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
-
-      {/* 2FA MODAL PREMIUM */}
-      {show2FAModal && (
-        <div className="modal-overlay-2fa">
-          <div className="modal-content-2fa shadow-2xl">
-            <div className="modal-header-2fa">
-              <div className="shield-icon">
-                <i className="bi bi-shield-lock-fill"></i>
-              </div>
-              <h2>Verificación de Seguridad</h2>
-              <p>Tu cuenta tiene activo el Doble Factor. Ingresa el código de 6 dígitos de tu aplicación.</p>
-            </div>
-
-            <form onSubmit={handleVerify2FA} className="modal-form-2fa">
-              <div className="code-input-wrapper">
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={twoFactorCode}
-                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="000 000"
-                  autoFocus
-                  required
-                />
-              </div>
-
-              {error2FA && (
-                <div className="error-2fa-msg">
-                  <i className="bi bi-x-circle-fill"></i> {error2FA}
-                </div>
-              )}
-
-              <button type="submit" className="btn-verify-2fa" disabled={verifying2FA || twoFactorCode.length !== 6}>
-                {verifying2FA ? 'Verificando...' : 'Confirmar Identidad'}
-              </button>
-
-              <button type="button" className="btn-cancel-2fa" onClick={() => setShow2FAModal(false)}>
-                Cancelar y volver
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

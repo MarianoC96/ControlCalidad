@@ -15,7 +15,7 @@ const PATH_TO_MODULE: Record<string, string> = {
 };
 
 // Public paths that don't need auth
-const PUBLIC_PATHS = ['/', '/olvide-password', '/restablecer-password', '/verificar-2fa'];
+const PUBLIC_PATHS = ['/', '/olvide-password', '/restablecer-password'];
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;

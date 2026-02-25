@@ -21,37 +21,42 @@ export async function GET() {
 
         const supabase = createAdminClient();
 
-        // Verify if user is admin
-        const { data: user } = await supabase
-            .from('usuarios')
-            .select('roles')
-            .eq('id', parseInt(userId))
-            .single();
+        // Run user check and data fetch in parallel
+        const [userResult, requestsResult] = await Promise.all([
+            supabase
+                .from('usuarios')
+                .select('roles')
+                .eq('id', parseInt(userId))
+                .single(),
+            supabase
+                .from('edit_requests')
+                .select(`
+                    id, status, motivo, created_at, resolved_at,
+                    registros (
+                        lote_interno,
+                        producto_nombre,
+                        fecha_registro
+                    ),
+                    usuarios!usuario_id (
+                        nombre_completo,
+                        usuario
+                    ),
+                    resuelto_por:usuarios!resolved_by (
+                        nombre_completo,
+                        usuario
+                    )
+                `)
+                .order('created_at', { ascending: false })
+        ]);
 
+        const user = userResult.data;
         if (!user || user.roles !== 'administrador') {
             return NextResponse.json({ error: 'No tienes permisos de administrador' }, { status: 403 });
         }
 
-        // Fetch requests with record and user details
-        const { data, error } = await supabase
-            .from('edit_requests')
-            .select(`
-                *,
-                registros (
-                    lote_interno,
-                    producto_nombre,
-                    fecha_registro
-                ),
-                usuarios!usuario_id (
-                    nombre_completo,
-                    usuario
-                )
-            `)
-            .order('created_at', { ascending: false });
+        if (requestsResult.error) throw requestsResult.error;
 
-        if (error) throw error;
-
-        return NextResponse.json(data);
+        return NextResponse.json(requestsResult.data);
 
     } catch (error: any) {
         console.error('Error fetching edit requests:', error);
@@ -77,15 +82,35 @@ export async function PUT(request: Request) {
 
         const supabase = createAdminClient();
 
-        // Verify if user is admin
+        // Verify if user has access to solicitudes module
         const { data: user } = await supabase
             .from('usuarios')
-            .select('roles')
+            .select('id, usuario, roles, role_id')
             .eq('id', parseInt(userId))
             .single();
 
-        if (!user || user.roles !== 'administrador') {
-            return NextResponse.json({ error: 'No tienes permisos de administrador' }, { status: 403 });
+        if (!user) {
+            return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 403 });
+        }
+
+        // Check access to solicitudes
+        let hasAccess = false;
+        if (user.usuario === 'sadmin') {
+            hasAccess = true;
+        } else if (!user.role_id) {
+            hasAccess = user.roles === 'administrador';
+        } else {
+            const { data: permisos } = await supabase
+                .from('role_permisos')
+                .select('modulo_key')
+                .eq('role_id', user.role_id)
+                .eq('habilitado', true)
+                .eq('modulo_key', 'solicitudes');
+            hasAccess = !!(permisos && permisos.length > 0);
+        }
+
+        if (!hasAccess) {
+            return NextResponse.json({ error: 'No tienes permisos para gestionar solicitudes' }, { status: 403 });
         }
 
         const { error } = await supabase

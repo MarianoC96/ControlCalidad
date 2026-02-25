@@ -4,6 +4,54 @@ import { createClient } from '@supabase/supabase-js';
 import JSZip from 'jszip';
 import { generateServerPDF } from '@/lib/server-pdf-generator';
 
+// Process PDFs in batches for parallelism without overwhelming the server
+const BATCH_SIZE = 5;
+
+async function processBatch(registros: any[], zip: JSZip): Promise<number> {
+    let successCount = 0;
+
+    for (let i = 0; i < registros.length; i += BATCH_SIZE) {
+        const batch = registros.slice(i, i + BATCH_SIZE);
+
+        const results = await Promise.allSettled(
+            batch.map(async (registro) => {
+                const pdfBuffer = await generateServerPDF(registro);
+
+                const dateStr = new Date(registro.fecha_registro).toISOString().split('T')[0];
+                const sanitize = (str: string) => (str || 'Unknown').replace(/[^a-z0-9]/gi, '_');
+                const product = sanitize(registro.producto_nombre);
+                const verifiedBy = sanitize(registro.verificado_por || registro.usuario_nombre);
+
+                return { pdfBuffer, dateStr, product, verifiedBy };
+            })
+        );
+
+        for (const result of results) {
+            if (result.status === 'fulfilled') {
+                const { pdfBuffer, dateStr, product, verifiedBy } = result.value;
+
+                let fileName = `${dateStr}__${product}__${verifiedBy}.pdf`;
+                let counter = 1;
+                while (zip.file(fileName)) {
+                    fileName = `${dateStr}__${product}__${verifiedBy}_(${counter}).pdf`;
+                    counter++;
+                }
+
+                const recordDate = new Date();
+                const peruDateStr = recordDate.toLocaleString('en-US', { timeZone: 'America/Lima' });
+                const peruDate = new Date(peruDateStr);
+
+                zip.file(fileName, pdfBuffer, { date: peruDate });
+                successCount++;
+            } else {
+                console.error('Error processing PDF in batch:', result.reason);
+            }
+        }
+    }
+
+    return successCount;
+}
+
 export async function POST(req: NextRequest) {
     let downloadId: number | null = null;
     let userId: string | undefined;
@@ -31,7 +79,7 @@ export async function POST(req: NextRequest) {
         // 1. Fetch Request
         const { data: downloadRecord, error: fetchError } = await supabase
             .from('download_history')
-            .select('*')
+            .select('id, user_id, start_date, end_date, status')
             .eq('id', downloadId)
             .single();
 
@@ -46,27 +94,20 @@ export async function POST(req: NextRequest) {
         // Start processing
         await supabase.from('download_history').update({ status: 'processing', error_message: null }).eq('id', downloadId);
 
-        // 2. Fetch Data
+        // 2. Fetch Data - only select needed columns
         const startDate = new Date(downloadRecord.start_date);
         startDate.setHours(0, 0, 0, 0);
         const endDate = new Date(downloadRecord.end_date);
         endDate.setHours(23, 59, 59, 999);
 
-        const { data: registrosRaw, error: regError } = await supabase
+        // First get registros count to handle pagination for large datasets
+        const { count: totalCount } = await supabase
             .from('registros')
-            .select(`
-                *,
-                controles (*),
-                fotos (*)
-            `)
+            .select('id', { count: 'exact', head: true })
             .gte('fecha_registro', startDate.toISOString())
             .lte('fecha_registro', endDate.toISOString());
 
-        if (regError) throw new Error(regError.message);
-
-        const registros = registrosRaw as any[] || [];
-
-        if (registros.length === 0) {
+        if (!totalCount || totalCount === 0) {
             await supabase.from('download_history').update({
                 status: 'ready',
                 total_files: 0,
@@ -75,41 +116,40 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, message: 'No records found' });
         }
 
-        // 3. Generate Content
-        const zip = new JSZip();
+        // Fetch all registros with controles and fotos - paginate if over 1000
+        let allRegistros: any[] = [];
+        const PAGE_SIZE = 500;
 
-        for (const registro of registros) {
-            try {
-                // Generate PDF
-                const pdfBuffer = await generateServerPDF(registro);
+        for (let offset = 0; offset < totalCount; offset += PAGE_SIZE) {
+            const { data: batch, error: batchError } = await supabase
+                .from('registros')
+                .select(`
+                    id, lote_interno, lote_producto, guia, marca, cantidad,
+                    producto_id, producto_nombre, usuario_id, usuario_nombre,
+                    observaciones_generales, verificado_por, fecha_registro,
+                    pdf_titulo, pdf_codigo, pdf_edicion, pdf_aprobado_por,
+                    controles (id, parametro_nombre, rango_completo, valor_control, texto_control, parametro_tipo, observacion, fuera_de_rango),
+                    fotos (id, datos_base64, descripcion)
+                `)
+                .gte('fecha_registro', startDate.toISOString())
+                .lte('fecha_registro', endDate.toISOString())
+                .order('fecha_registro', { ascending: true })
+                .range(offset, offset + PAGE_SIZE - 1);
 
-                const dateStr = new Date(registro.fecha_registro).toISOString().split('T')[0];
-                const sanitize = (str: string) => (str || 'Unknown').replace(/[^a-z0-9]/gi, '_');
-                const product = sanitize(registro.producto_nombre);
-                let verifiedBy = sanitize(registro.verificado_por || registro.usuario_nombre);
-
-                let fileName = `${dateStr}__${product}__${verifiedBy}.pdf`;
-
-                // Collision handling
-                let counter = 1;
-                while (zip.file(fileName)) {
-                    fileName = `${dateStr}__${product}__${verifiedBy}_(${counter}).pdf`;
-                    counter++;
-                }
-
-                // Convert record date to Peru Time for the zip file metadata
-                const recordDate = new Date(registro.fecha_registro);
-                const peruDateStr = recordDate.toLocaleString('en-US', { timeZone: 'America/Lima' });
-                const peruDate = new Date(peruDateStr);
-
-                zip.file(fileName, pdfBuffer, { date: peruDate });
-            } catch (innerErr) {
-                console.error(`Error processing PDF for registro ${registro.id}`, innerErr);
-            }
+            if (batchError) throw new Error(batchError.message);
+            if (batch) allRegistros = allRegistros.concat(batch);
         }
 
-        // 4. Generate ZIP
-        const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
+        // 3. Generate PDFs in parallel batches
+        const zip = new JSZip();
+        const successCount = await processBatch(allRegistros, zip);
+
+        // 4. Generate ZIP with compression
+        const zipContent = await zip.generateAsync({
+            type: 'nodebuffer',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
 
         // 5. Upload to Storage
         const zipName = `Descarga_${downloadRecord.start_date}_a_${downloadRecord.end_date}.zip`;
@@ -128,12 +168,12 @@ export async function POST(req: NextRequest) {
         // 6. Update History
         await supabase.from('download_history').update({
             status: 'ready',
-            total_files: registros.length,
+            total_files: successCount,
             zip_name: zipName,
             zip_path: filePath,
         }).eq('id', downloadId);
 
-        return NextResponse.json({ success: true, count: registros.length });
+        return NextResponse.json({ success: true, count: successCount });
 
     } catch (err: any) {
         console.error("Processing error:", err);

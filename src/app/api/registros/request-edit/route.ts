@@ -17,6 +17,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'ID de registro requerido' }, { status: 400 });
         }
 
+        if (!motivo || !motivo.trim()) {
+            return NextResponse.json({ error: 'El motivo de la solicitud es obligatorio' }, { status: 400 });
+        }
+
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
@@ -25,7 +29,7 @@ export async function POST(request: Request) {
         // Check if there is already a pending request for this user and record
         const { data: existing, error: checkError } = await supabase
             .from('edit_requests')
-            .select('*')
+            .select('id')
             .eq('registro_id', registro_id)
             .eq('usuario_id', parseInt(userId))
             .eq('status', 'pendiente')
@@ -42,7 +46,7 @@ export async function POST(request: Request) {
                 registro_id,
                 usuario_id: parseInt(userId),
                 status: 'pendiente',
-                motivo: motivo || null
+                motivo: motivo.trim()
             });
 
         if (insertError) {

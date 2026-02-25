@@ -17,6 +17,32 @@ const createAdminClient = () => {
     );
 };
 
+// Cache for available dates (refreshed every 60 seconds)
+let cachedDates: { years: number[]; monthsByYear: Record<string, number[]> } | null = null;
+let cachedDatesTimestamp = 0;
+const CACHE_TTL = 60_000; // 60 seconds
+
+async function getAvailableDates(supabase: ReturnType<typeof createAdminClient>) {
+    const now = Date.now();
+    if (cachedDates && (now - cachedDatesTimestamp) < CACHE_TTL) {
+        return cachedDates;
+    }
+
+    const { data, error } = await supabase.rpc('get_available_dates');
+
+    if (error || !data) {
+        console.error('Error fetching available dates via RPC:', error);
+        return cachedDates || { years: [], monthsByYear: {} };
+    }
+
+    cachedDates = {
+        years: data.years || [],
+        monthsByYear: data.months_by_year || {}
+    };
+    cachedDatesTimestamp = now;
+    return cachedDates;
+}
+
 export async function GET(request: Request) {
     try {
         const cookieStore = await cookies();
@@ -37,66 +63,100 @@ export async function GET(request: Request) {
 
         const offset = (page - 1) * limit;
 
+        // Only select the columns we need for the list view (no heavy data)
+        const selectColumns = 'id,lote_interno,lote_producto,guia,marca,cantidad,producto_id,producto_nombre,usuario_id,usuario_nombre,observaciones_generales,verificado_por,fecha_registro,pdf_titulo,pdf_codigo,pdf_edicion,pdf_aprobado_por,es_offline,fecha_sincronizacion,edit_started_at,edit_expires_at,edit_started_by';
+
         let query = supabase
             .from('registros')
-            .select('*', { count: 'exact' });
+            .select(selectColumns, { count: 'exact' });
 
         if (year) {
-            query = query.gte('fecha_registro', `${year}-01-01T00:00:00Z`)
-                .lt('fecha_registro', `${parseInt(year) + 1}-01-01T00:00:00Z`);
+            // Use Peru timezone offset (GMT-5) so filter boundaries align with local calendar
+            query = query.gte('fecha_registro', `${year}-01-01T00:00:00-05:00`)
+                .lt('fecha_registro', `${parseInt(year) + 1}-01-01T00:00:00-05:00`);
         }
 
         if (month && year) {
-            // Note: If both year and month are provided, we refine the date range.
-            // Month is 0-indexed in JS but let's assume month passed is 0-11 as string
             const m = parseInt(month);
-            const startStr = `${year}-${String(m + 1).padStart(2, '0')}-01T00:00:00Z`;
-            // Calculate next month
+            const startStr = `${year}-${String(m + 1).padStart(2, '0')}-01T00:00:00-05:00`;
             const nextMonth = m === 11 ? 0 : m + 1;
             const nextYear = m === 11 ? parseInt(year) + 1 : parseInt(year);
-            const endStr = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01T00:00:00Z`;
+            const endStr = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01T00:00:00-05:00`;
 
-            // Re-apply specific month range instead of year range
-            query = supabase.from('registros').select('*', { count: 'exact' })
+            query = supabase.from('registros').select(selectColumns, { count: 'exact' })
                 .gte('fecha_registro', startStr)
                 .lt('fecha_registro', endStr);
         }
 
         if (search) {
-            query = query.or(`lote_interno.ilike.%${search}%,producto_nombre.ilike.%${search}%,guia.ilike.%${search}%`);
+            const isNumeric = /^\d+$/.test(search);
+            const matchFormatId = search.toUpperCase().match(/^[A-Z]{3}(\d+)$/);
+
+            let idSearchCondition = '';
+            if (isNumeric) {
+                idSearchCondition = `id.eq.${search},`;
+            } else if (matchFormatId) {
+                const num = parseInt(matchFormatId[1], 10);
+                idSearchCondition = `id.eq.${num},`;
+            }
+
+            let dateSearchCondition = '';
+            const cleanSearch = search.trim();
+            const datePatternDDMMYYYY = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/;
+            const datePatternYYYYMMDD = /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/;
+            const datePatternMMYYYY = /^(\d{1,2})[\/\-](\d{4})$/;
+            const datePatternDDMM = /^(\d{1,2})[\/\-](\d{1,2})$/;
+
+            let startDate: Date | null = null;
+            let endDate: Date | null = null;
+
+            if (datePatternDDMMYYYY.test(cleanSearch)) {
+                const [, d, m, y] = cleanSearch.match(datePatternDDMMYYYY)!;
+                startDate = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00.000-05:00`);
+                endDate = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T23:59:59.999-05:00`);
+            } else if (datePatternYYYYMMDD.test(cleanSearch)) {
+                const [, y, m, d] = cleanSearch.match(datePatternYYYYMMDD)!;
+                startDate = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00.000-05:00`);
+                endDate = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T23:59:59.999-05:00`);
+            } else if (datePatternMMYYYY.test(cleanSearch)) {
+                const [, m, y] = cleanSearch.match(datePatternMMYYYY)!;
+                startDate = new Date(`${y}-${m.padStart(2, '0')}-01T00:00:00.000-05:00`);
+                const endDoc = new Date(parseInt(y), parseInt(m), 0);
+                endDate = new Date(`${y}-${m.padStart(2, '0')}-${String(endDoc.getDate()).padStart(2, '0')}T23:59:59.999-05:00`);
+            } else if (datePatternDDMM.test(cleanSearch)) {
+                const [, d, m] = cleanSearch.match(datePatternDDMM)!;
+                const y = new Date().getFullYear();
+                startDate = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00.000-05:00`);
+                endDate = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T23:59:59.999-05:00`);
+            }
+
+            if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                dateSearchCondition = `and(fecha_registro.gte.${startDate.toISOString()},fecha_registro.lte.${endDate.toISOString()}),`;
+            }
+
+            query = query.or(
+                `${idSearchCondition}${dateSearchCondition}lote_interno.ilike.%${search}%,producto_nombre.ilike.%${search}%,guia.ilike.%${search}%,verificado_por.ilike.%${search}%,usuario_nombre.ilike.%${search}%`
+            );
         }
 
-        const { data, error, count } = await query
-            .order('fecha_registro', { ascending: false })
-            .range(offset, offset + limit - 1);
+        // Run both queries in parallel for speed
+        const [registrosResult, datesResult] = await Promise.all([
+            query
+                .order('fecha_registro', { ascending: false })
+                .range(offset, offset + limit - 1),
+            getAvailableDates(supabase)
+        ]);
+
+        const { data, error, count } = registrosResult;
 
         if (error) {
             console.error('Error fetching registros:', error);
             throw error;
         }
 
-        // Lightweight query to get unique years and months
-        // Since we don't have an RPC, we fetch only the `fecha_registro` column for all items.
-        // Supabase limits to 1000 rows by default, so we need to bypass or paginate if huge, but let's try a simple fetch.
-        // A better approach is caching this, but for now we fetch it.
-        const { data: dateData } = await supabase.from('registros').select('fecha_registro').limit(100000);
-        const availableYears = new Set<number>();
-        const availableMonthsByYear: Record<number, Set<number>> = {};
-
-        if (dateData) {
-            dateData.forEach(d => {
-                const date = new Date(d.fecha_registro);
-                const y = date.getFullYear();
-                const m = date.getMonth();
-                availableYears.add(y);
-                if (!availableMonthsByYear[y]) availableMonthsByYear[y] = new Set();
-                availableMonthsByYear[y].add(m);
-            });
-        }
-
-        const yearsOut = Array.from(availableYears).sort((a, b) => b - a);
-        const monthsOut = year && availableMonthsByYear[parseInt(year)]
-            ? Array.from(availableMonthsByYear[parseInt(year)]).sort((a, b) => a - b)
+        const yearsOut = datesResult.years;
+        const monthsOut = year && datesResult.monthsByYear[year]
+            ? datesResult.monthsByYear[year]
             : [];
 
         return NextResponse.json({
@@ -165,14 +225,12 @@ export async function POST(request: Request) {
                 producto_nombre,
                 observaciones_generales,
                 verificado_por,
-                usuario_nombre: verificado_por, // Required by DB
-                usuario_id: parseInt(userId), // Asociar con el usuario logueado
-                // Snapshot PDF Config
+                usuario_nombre: verificado_por,
+                usuario_id: parseInt(userId),
                 pdf_titulo: pdfConfig.titulo,
                 pdf_codigo: pdfConfig.codigo,
                 pdf_edicion: pdfConfig.edicion,
                 pdf_aprobado_por: pdfConfig.aprobado_por,
-                // Offline support
                 es_offline: es_offline ? true : false,
                 fecha_registro: fecha_registro ? fecha_registro : new Date().toISOString(),
                 fecha_sincronizacion: es_offline ? new Date().toISOString() : null
@@ -181,6 +239,9 @@ export async function POST(request: Request) {
             .single();
 
         if (regError) throw regError;
+
+        // Invalidate dates cache when new record is created
+        cachedDates = null;
 
         // 2. Crear los Controles asociados
         if (controles && controles.length > 0) {
@@ -193,7 +254,6 @@ export async function POST(request: Request) {
                 parametro_tipo: c.parametroTipo,
                 observacion: c.observacion,
                 fuera_de_rango: c.fueraDeRango,
-                // Nota: mensajeAlerta no se suele guardar en BD a menos que haya col.
             }));
 
             const { error: controlError } = await supabase
@@ -201,9 +261,7 @@ export async function POST(request: Request) {
                 .insert(controlesToInsert);
 
             if (controlError) {
-                // Idealmente rollback de registro, pero por ahora lanzamos error
                 console.error('Error guardando controles:', controlError);
-                // No borramos el registro para no perder datos parciales, pero avisamos.
                 throw controlError;
             }
         }

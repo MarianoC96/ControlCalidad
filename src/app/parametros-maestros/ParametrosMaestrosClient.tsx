@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+
 import { createClient } from '@/lib/supabase/client';
 import type { ParametroMaestro } from '@/lib/supabase/types';
 
@@ -163,7 +163,7 @@ export default function ParametrosMaestrosClient() {
     if (loading) {
         return (
             <>
-                <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+
                 <div className="container mt-4">
                     <div className="text-center">
                         <div className="spinner"></div>
@@ -176,7 +176,7 @@ export default function ParametrosMaestrosClient() {
 
     return (
         <div className="page-wrapper">
-            <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+
 
             <main className="main-content">
                 {/* Header Premium */}

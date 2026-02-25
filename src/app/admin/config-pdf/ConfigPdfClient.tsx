@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
 
 export default function ConfigPdfClient() {
@@ -86,10 +85,6 @@ export default function ConfigPdfClient() {
 
     return (
         <div className="page-wrapper">
-            <Navbar userName={userName} userRole={userRole as any} onLogout={async () => {
-                await fetch('/api/auth/logout', { method: 'POST' });
-                router.push('/');
-            }} />
 
             <main className="main-content">
                 {/* Header Premium */}

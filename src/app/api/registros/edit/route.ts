@@ -13,14 +13,29 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { registro_id, photos = [], photosToDelete = [], password } = body;
+        const {
+            registro_id,
+            photos = [],
+            photosToDelete = [],
+            password,
+            // New field changes
+            lote_interno,
+            lote_producto,
+            guia,
+            marca,
+            cantidad
+        } = body;
 
         if (!registro_id) {
             return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
         }
 
+        // Check if there are field changes
+        const hasFieldChanges = lote_interno !== undefined || lote_producto !== undefined ||
+            guia !== undefined || marca !== undefined || cantidad !== undefined;
+
         // Validate that there's something to do
-        if (photos.length === 0 && photosToDelete.length === 0) {
+        if (photos.length === 0 && photosToDelete.length === 0 && !hasFieldChanges) {
             return NextResponse.json({ error: 'No hay cambios para guardar' }, { status: 400 });
         }
 
@@ -32,7 +47,7 @@ export async function POST(request: Request) {
         // Fetch User
         const { data: user } = await supabase
             .from('usuarios')
-            .select('*')
+            .select('id, roles, password')
             .eq('id', parseInt(userId))
             .single();
 
@@ -57,7 +72,7 @@ export async function POST(request: Request) {
         // Fetch Registro Details (Lock & Existing Photos)
         const { data: registro, error: regError } = await supabase
             .from('registros')
-            .select('*, fotos(*)')
+            .select('id, lote_interno, lote_producto, guia, marca, cantidad, edit_started_by, edit_expires_at, fotos(id)')
             .eq('id', registro_id)
             .single();
 
@@ -66,13 +81,6 @@ export async function POST(request: Request) {
         }
 
         // Validate Lock
-        // Must be locked by current user (unless admin overrides, but admin still needs to "Start Edit/Lock" first, theoretically)
-        // User flow: Click Edit -> Request Lock -> Success -> Open Modal -> Save.
-        // So at Save time, it SHOULD be locked by user.
-        // If expired?
-        // Worker: Fail.
-        // Admin: Allow (override).
-
         if (registro.edit_started_by !== user.id) {
             return NextResponse.json({ error: 'No tienes el bloqueo de edición de este registro.' }, { status: 403 });
         }
@@ -88,23 +96,30 @@ export async function POST(request: Request) {
         // Validate Worker Logic (One Edit Rule)
         let approvedRequestId = null;
         if (isWorker) {
-            // Check if they have an APPROVED request for this record
-            const { data: approvedRequest } = await supabase
-                .from('edit_requests')
-                .select('*')
-                .eq('registro_id', registro_id)
-                .eq('usuario_id', user.id)
-                .eq('status', 'aprobado')
-                .maybeSingle();
+            // Run both checks in parallel
+            const [approvedResult, historyResult] = await Promise.all([
+                supabase
+                    .from('edit_requests')
+                    .select('id')
+                    .eq('registro_id', registro_id)
+                    .eq('usuario_id', user.id)
+                    .eq('status', 'aprobado')
+                    .maybeSingle(),
+                supabase
+                    .from('history_edits')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('registro_id', registro_id)
+                    .eq('role', 'trabajador')
+            ]);
 
-            if (!approvedRequest) {
-                return NextResponse.json({ error: 'No tienes una solicitud aprobada para editar este registro.' }, { status: 403 });
+            if (approvedResult.data) {
+                approvedRequestId = approvedResult.data.id;
+            } else if (historyResult.count !== null && historyResult.count > 0) {
+                return NextResponse.json({ error: 'Ya realizaste una edición previa en este registro.' }, { status: 403 });
             }
-            approvedRequestId = approvedRequest.id;
         }
 
         // Validate Max Photos
-        // "Máximo 2 fotos por registro" -> Total photos for registry <= 2.
         const currentPhotosCount = registro.fotos ? registro.fotos.length : 0;
         const deletingCount = photosToDelete.length;
         const newPhotosCount = photos.length;
@@ -117,77 +132,101 @@ export async function POST(request: Request) {
             );
         }
 
-        // Perform Save
+        // === Track field changes (old vs new) ===
+        const fieldChanges: Record<string, { old: any; new: any }> = {};
+        const updateFields: Record<string, any> = {};
 
-        // 1. Delete Photos marked for deletion
-        if (photosToDelete.length > 0) {
-            const { error: deleteError } = await supabase
-                .from('fotos')
-                .delete()
-                .in('id', photosToDelete)
-                .eq('registro_id', registro_id); // Safety: only delete from this registro
-
-            if (deleteError) {
-                console.error('Error deleting photos:', deleteError);
-                return NextResponse.json({ error: 'Error al eliminar fotos' }, { status: 500 });
-            }
+        if (lote_interno !== undefined && lote_interno !== registro.lote_interno) {
+            fieldChanges['lote_interno'] = { old: registro.lote_interno, new: lote_interno };
+            updateFields['lote_interno'] = lote_interno;
+        }
+        if (lote_producto !== undefined && lote_producto !== registro.lote_producto) {
+            fieldChanges['lote_producto'] = { old: registro.lote_producto || '', new: lote_producto };
+            updateFields['lote_producto'] = lote_producto;
+        }
+        if (guia !== undefined && guia !== registro.guia) {
+            fieldChanges['guia'] = { old: registro.guia || '', new: guia };
+            updateFields['guia'] = guia;
+        }
+        if (marca !== undefined && marca !== registro.marca) {
+            fieldChanges['marca'] = { old: registro.marca || '', new: marca };
+            updateFields['marca'] = marca;
+        }
+        if (cantidad !== undefined && parseInt(cantidad) !== registro.cantidad) {
+            fieldChanges['cantidad'] = { old: registro.cantidad, new: parseInt(cantidad) };
+            updateFields['cantidad'] = parseInt(cantidad);
         }
 
-        // 2. Log History
+        // === Perform Save — run independent operations in parallel ===
+
+        // Build all parallel operations
+        const parallelOps: PromiseLike<any>[] = [];
+
+        // 1. Update registro fields if changed
+        if (Object.keys(updateFields).length > 0) {
+            parallelOps.push(
+                supabase.from('registros').update(updateFields).eq('id', registro_id).then()
+            );
+        }
+
+        // 2. Delete Photos marked for deletion
+        if (photosToDelete.length > 0) {
+            parallelOps.push(
+                supabase.from('fotos').delete().in('id', photosToDelete).eq('registro_id', registro_id).then()
+            );
+        }
+
+        // 3. Log History
         const actionParts: string[] = [];
         if (photos.length > 0) actionParts.push(`add_photo:${photos.length}`);
         if (photosToDelete.length > 0) actionParts.push(`delete_photo:${photosToDelete.length}`);
+        if (Object.keys(fieldChanges).length > 0) actionParts.push(`field_edit:${Object.keys(fieldChanges).length}`);
 
-        const { error: historyError } = await supabase
-            .from('history_edits')
-            .insert({
-                registro_id: registro_id,
+        parallelOps.push(
+            supabase.from('history_edits').insert({
+                registro_id,
                 edited_by: user.id,
                 role: user.roles,
                 action: actionParts.join(',') || 'edit',
                 photos_added: photos.length > 0 ? photos : null,
-                photos_deleted: photosToDelete.length > 0 ? photosToDelete : null
-            });
+                photos_deleted: photosToDelete.length > 0 ? photosToDelete : null,
+                field_changes: Object.keys(fieldChanges).length > 0 ? fieldChanges : null
+            }).then()
+        );
 
-        if (historyError) {
-            console.error('History error:', historyError);
-            // Don't fail completely, photos were already modified
+        // 4. Insert New Photos (batch insert instead of one-by-one)
+        if (photos.length > 0) {
+            const photoRecords = photos.map((photo: any) => ({
+                registro_id,
+                datos_base64: photo.data,
+                descripcion: photo.description || 'Foto agregada en edición'
+            }));
+            parallelOps.push(
+                supabase.from('fotos').insert(photoRecords).then()
+            );
         }
 
-        // 3. Insert New Photos
-        for (const photo of photos) {
-            const { error: photoError } = await supabase
-                .from('fotos')
-                .insert({
-                    registro_id: registro_id,
-                    datos_base64: photo.data, // content
-                    descripcion: photo.description || 'Foto agregada en edición'
-                });
-
-            if (photoError) {
-                console.error('Error saving photo', photoError);
-                // Should probably rollback or partial fail?
-                // For now continue
-            }
-        }
-
-        // 4. Clear Lock
-        await supabase
-            .from('registros')
-            .update({
+        // 5. Clear Lock
+        parallelOps.push(
+            supabase.from('registros').update({
                 edit_started_at: null,
                 edit_expires_at: null,
                 edit_started_by: null
-            })
-            .eq('id', registro_id);
+            }).eq('id', registro_id).then()
+        );
 
-        // 5. Mark approved request as used
+        // 6. Mark approved request as used
         if (approvedRequestId) {
-            await supabase
-                .from('edit_requests')
-                .update({ status: 'usado', resolved_at: new Date().toISOString() })
-                .eq('id', approvedRequestId);
+            parallelOps.push(
+                supabase.from('edit_requests').update({
+                    status: 'usado',
+                    resolved_at: new Date().toISOString()
+                }).eq('id', approvedRequestId).then()
+            );
         }
+
+        // Execute all operations in parallel
+        await Promise.all(parallelOps);
 
         return NextResponse.json({ success: true });
 
@@ -196,4 +235,3 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
     }
 }
-

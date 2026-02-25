@@ -39,7 +39,7 @@ async function getAuthUser(supabase: ReturnType<typeof createAdminClient>) {
 }
 
 
-// GET - List all roles with their permissions
+// GET - List all roles with their permissions (OPTIMIZED: single query with join)
 export async function GET() {
     try {
         const supabase = createAdminClient();
@@ -52,25 +52,22 @@ export async function GET() {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
+        // Single query: fetch roles WITH their permissions using Supabase join
         const { data: roles, error } = await supabase
             .from('roles')
-            .select('*')
+            .select('id, nombre, descripcion, is_system, jerarquia, role_permisos (id, role_id, modulo_key, habilitado)')
             .order('is_system', { ascending: false })
             .order('jerarquia', { ascending: true })
             .order('nombre', { ascending: true });
 
         if (error) throw error;
 
-        // Get permissions for each role
-        const rolesWithPerms = await Promise.all(
-            (roles || []).map(async (role) => {
-                const { data: permisos } = await supabase
-                    .from('role_permisos')
-                    .select('*')
-                    .eq('role_id', role.id);
-                return { ...role, permisos: permisos || [] };
-            })
-        );
+        // Map the joined data to the expected format
+        const rolesWithPerms = (roles || []).map(role => ({
+            ...role,
+            permisos: role.role_permisos || [],
+            role_permisos: undefined, // remove the raw join field
+        }));
 
         return NextResponse.json({
             roles: rolesWithPerms,
@@ -103,8 +100,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'El nombre del rol es obligatorio' }, { status: 400 });
         }
 
-
-
         // Can't use reserved names
         if (nombre.toLowerCase() === 'sadmin') {
             return NextResponse.json({ error: 'No puedes usar el nombre "sadmin"' }, { status: 400 });
@@ -114,7 +109,7 @@ export async function POST(request: NextRequest) {
         const { data: newRole, error } = await supabase
             .from('roles')
             .insert({ nombre: nombre.trim(), descripcion, is_system: false })
-            .select()
+            .select('id, nombre, descripcion, is_system')
             .single();
 
         if (error) {
@@ -124,15 +119,13 @@ export async function POST(request: NextRequest) {
             throw error;
         }
 
-        // Insert permissions
-        if (permisos && Array.isArray(permisos)) {
-            const permRecords = ALL_MODULES.map(mod => ({
-                role_id: newRole.id,
-                modulo_key: mod,
-                habilitado: permisos.includes(mod),
-            }));
-            await supabase.from('role_permisos').insert(permRecords);
-        }
+        // Insert ALL permissions in a single batch
+        const permRecords = ALL_MODULES.map(mod => ({
+            role_id: newRole.id,
+            modulo_key: mod,
+            habilitado: Array.isArray(permisos) && permisos.includes(mod),
+        }));
+        await supabase.from('role_permisos').insert(permRecords);
 
         return NextResponse.json(newRole);
 
@@ -142,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// PUT - Update a role and its permissions
+// PUT - Update a role and its permissions (OPTIMIZED: batch upsert)
 export async function PUT(request: NextRequest) {
     try {
         const supabase = createAdminClient();
@@ -162,7 +155,7 @@ export async function PUT(request: NextRequest) {
         // Get the role being edited
         const { data: targetRole } = await supabase
             .from('roles')
-            .select('*')
+            .select('id, is_system')
             .eq('id', id)
             .single();
 
@@ -173,7 +166,6 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'El rol del sistema no puede ser modificado' }, { status: 403 });
         }
 
-
         if (nombre?.toLowerCase() === 'sadmin') {
             return NextResponse.json({ error: 'No puedes usar el nombre "sadmin"' }, { status: 400 });
         }
@@ -183,33 +175,27 @@ export async function PUT(request: NextRequest) {
         if (nombre) updateData.nombre = nombre.trim();
         if (descripcion !== undefined) updateData.descripcion = descripcion;
 
+        // Run role update and permissions upsert in parallel
+        const filteredPermisos = isSadmin ? permisos : (permisos || []).filter((p: string) => p !== 'accesos');
 
-        const { error: updateError } = await supabase
-            .from('roles')
-            .update(updateData)
-            .eq('id', id);
+        const permRecords = ALL_MODULES.map(mod => ({
+            role_id: id,
+            modulo_key: mod,
+            habilitado: Array.isArray(filteredPermisos) && filteredPermisos.includes(mod),
+        }));
 
-        if (updateError) {
-            if (updateError.code === '23505') {
+        const [updateResult, permsResult] = await Promise.all([
+            supabase.from('roles').update(updateData).eq('id', id),
+            permisos && Array.isArray(permisos)
+                ? supabase.from('role_permisos').upsert(permRecords, { onConflict: 'role_id,modulo_key' })
+                : Promise.resolve(null)
+        ]);
+
+        if (updateResult.error) {
+            if (updateResult.error.code === '23505') {
                 return NextResponse.json({ error: 'Ya existe un rol con ese nombre' }, { status: 400 });
             }
-            throw updateError;
-        }
-
-        // Update permissions
-        if (permisos && Array.isArray(permisos)) {
-            // Don't allow accesos module for non-sadmin roles
-            const filteredPermisos = isSadmin ? permisos : permisos.filter((p: string) => p !== 'accesos');
-
-            for (const mod of ALL_MODULES) {
-                await supabase
-                    .from('role_permisos')
-                    .upsert({
-                        role_id: id,
-                        modulo_key: mod,
-                        habilitado: filteredPermisos.includes(mod),
-                    }, { onConflict: 'role_id,modulo_key' });
-            }
+            throw updateResult.error;
         }
 
         return NextResponse.json({ success: true });
@@ -220,7 +206,7 @@ export async function PUT(request: NextRequest) {
     }
 }
 
-// PATCH - Reorder roles
+// PATCH - Reorder roles (OPTIMIZED: batch update)
 export async function PATCH(request: NextRequest) {
     try {
         const supabase = createAdminClient();
@@ -239,16 +225,16 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: 'Orden requerido' }, { status: 400 });
         }
 
-        for (const item of order) {
-            // Don't allow reordering system roles
-            const { data: role } = await supabase.from('roles').select('is_system').eq('id', item.id).single();
-            if (role?.is_system) continue;
-
-            await supabase
-                .from('roles')
-                .update({ jerarquia: item.posicion })
-                .eq('id', item.id);
-        }
+        // Update all non-system roles in parallel
+        await Promise.all(
+            order.map(item =>
+                supabase
+                    .from('roles')
+                    .update({ jerarquia: item.posicion })
+                    .eq('id', item.id)
+                    .eq('is_system', false) // safety: only update non-system roles
+            )
+        );
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -273,31 +259,29 @@ export async function DELETE(request: NextRequest) {
         const id = searchParams.get('id');
         if (!id) return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
 
-        const { data: targetRole } = await supabase
-            .from('roles')
-            .select('*')
-            .eq('id', parseInt(id))
-            .single();
+        // Fetch role and users in parallel
+        const [roleResult, usersResult] = await Promise.all([
+            supabase.from('roles').select('id, is_system').eq('id', parseInt(id)).single(),
+            supabase.from('usuarios').select('id', { count: 'exact', head: true }).eq('role_id', parseInt(id)).eq('is_deleted', false)
+        ]);
 
+        const targetRole = roleResult.data;
         if (!targetRole) return NextResponse.json({ error: 'Rol no encontrado' }, { status: 404 });
 
         if (targetRole.is_system) {
             return NextResponse.json({ error: 'No se puede eliminar un rol del sistema' }, { status: 403 });
         }
 
-        // Check no users are assigned to this role
-        const { data: usersWithRole } = await supabase
-            .from('usuarios')
-            .select('id')
-            .eq('role_id', parseInt(id))
-            .eq('is_deleted', false);
-
-        if (usersWithRole && usersWithRole.length > 0) {
-            return NextResponse.json({ error: `No se puede eliminar: ${usersWithRole.length} usuario(s) tienen este rol asignado` }, { status: 400 });
+        const userCount = usersResult.count || 0;
+        if (userCount > 0) {
+            return NextResponse.json({ error: `No se puede eliminar: ${userCount} usuario(s) tienen este rol asignado` }, { status: 400 });
         }
 
-        await supabase.from('role_permisos').delete().eq('role_id', parseInt(id));
-        await supabase.from('roles').delete().eq('id', parseInt(id));
+        // Delete permissions and role in parallel
+        await Promise.all([
+            supabase.from('role_permisos').delete().eq('role_id', parseInt(id)),
+            supabase.from('roles').delete().eq('id', parseInt(id))
+        ]);
 
         return NextResponse.json({ success: true });
 

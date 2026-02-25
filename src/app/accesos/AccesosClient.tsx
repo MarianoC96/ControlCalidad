@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Sidebar from '@/components/Navbar';
+
 
 interface Permission {
     id: number;
@@ -225,7 +225,7 @@ export default function AccesosClient() {
 
     return (
         <div>
-            <Sidebar userName={userName} userRole={userRole} />
+
             <div className="page-wrapper">
                 <div className="main-content">
                     {/* Header */}

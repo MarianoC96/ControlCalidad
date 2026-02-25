@@ -21,7 +21,7 @@ export type Database = {
                     created_at: string;
                     updated_at: string;
                     roles: 'administrador' | 'trabajador';
-                    two_factor_secret: string | null;
+
                     is_deleted: boolean;
                 };
                 Insert: {
@@ -35,7 +35,7 @@ export type Database = {
                     created_at?: string;
                     updated_at?: string;
                     roles?: 'administrador' | 'trabajador';
-                    two_factor_secret?: string | null;
+
                     is_deleted?: boolean;
                 };
                 Update: {
@@ -49,7 +49,7 @@ export type Database = {
                     created_at?: string;
                     updated_at?: string;
                     roles?: 'administrador' | 'trabajador';
-                    two_factor_secret?: string | null;
+
                     is_deleted?: boolean;
                 };
             };

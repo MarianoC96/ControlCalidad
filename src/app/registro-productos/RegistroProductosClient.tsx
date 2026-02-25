@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+
 import AutocompleteSelect from '@/components/AutocompleteSelect';
 import { createClient } from '@/lib/supabase/client';
 import { getCurrentDate, formatRange, validateRange, validateText } from '@/lib/utils';
@@ -560,7 +560,7 @@ export default function RegistroProductosClient() {
     if (loading) {
         return (
             <>
-                <Navbar userName={userName} userRole={userRole} />
+
                 <div className="container mt-4">
                     <div className="text-center">
                         <div className="spinner"></div>
@@ -573,7 +573,7 @@ export default function RegistroProductosClient() {
 
     return (
         <div className="page-wrapper">
-            <Navbar userName={userName} userRole={userRole} />
+
 
             <main className="main-content">
                 {/* Header Premium */}
@@ -886,16 +886,39 @@ export default function RegistroProductosClient() {
                     {error && <div className="alert alert-danger mt-3">{error}</div>}
                     {success && <div className="alert alert-success mt-3">{success}</div>}
 
-                    <div className="text-center mt-4 mb-4">
-                        <button
-                            type="submit"
-                            className={`btn ${isOnline ? 'btn-success' : 'btn-warning'} btn-lg`}
-                            disabled={saving}
-                            aria-label="Guardar Registro"
-                        >
-                            {saving ? 'Guardando...' : (isOnline ? 'Guardar Registro' : '⏱️ Guardar Temporalmente')}
-                        </button>
-                    </div>
+                    {!isOnline ? (
+                        <div className="offline-submit-container mt-4 mb-4">
+                            <div className="offline-submit-content">
+                                <div className="offline-icon-wrapper">
+                                    <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <div className="offline-submit-text text-start">
+                                    <h5 className="mb-1 fw-bold text-dark">Guardado Temporal</h5>
+                                    <p className="mb-0 text-muted" style={{ fontSize: '0.85rem' }}>
+                                        Sin conexión. Este registro se guardará localmente.
+                                    </p>
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="btn btn-warning-offline btn-lg submit-offline-btn"
+                                    disabled={saving}
+                                >
+                                    {saving ? 'Guardando...' : '⏱️ Guardar Temporalmente'}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center mt-4 mb-4">
+                            <button
+                                type="submit"
+                                className="btn btn-success btn-lg px-5"
+                                disabled={saving}
+                                aria-label="Guardar Registro"
+                            >
+                                {saving ? 'Guardando...' : 'Guardar Registro'}
+                            </button>
+                        </div>
+                    )}
                 </form>
             </main>
 
@@ -927,13 +950,32 @@ export default function RegistroProductosClient() {
             {showPreviewModal && (
                 <div className="preview-modal-overlay">
                     <div className="preview-modal-content shadow-lg">
-                        <div className="preview-header">
+                        <div className={`preview-header ${!isOnline ? 'offline-header' : ''}`}>
                             <h4 className="m-0 d-flex align-items-center gap-2">
-                                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Resumen del Registro
+                                {!isOnline ? (
+                                    <svg className="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                ) : (
+                                    <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                )}
+                                {isOnline ? 'Resumen del Registro' : 'Modo Offline: Guardado Temporal'}
                             </h4>
                         </div>
                         <div className="preview-body p-4">
+                            {!isOnline && (
+                                <div className="offline-notice-box mb-4">
+                                    <div className="offline-notice-icon">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    </div>
+                                    <div className="offline-notice-text">
+                                        <h5 className="m-0 mb-1 fw-bold text-dark">Alerta de conexión</h5>
+                                        <p className="m-0 text-muted" style={{ fontSize: '0.85rem' }}>
+                                            Actualmente no tienes conexión a internet. Este registro será guardado
+                                            <strong> localmente (temporal) </strong> en este dispositivo.
+                                            Recuerda sincronizarlo manualmente desde el panel de "Temporal" cuando recuperes la conexión.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                             <div className="summary-grid">
                                 <div className="summary-card product-card">
                                     <div className="summary-content">
@@ -1057,11 +1099,16 @@ export default function RegistroProductosClient() {
                             <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPreviewModal(false)} disabled={saving}>
                                 Editar y Corregir
                             </button>
-                            <button type="button" className={`btn ${isOnline ? 'btn-primary' : 'btn-warning'}`} onClick={confirmAndSave} disabled={saving}>
+                            <button type="button" className={`btn ${isOnline ? 'btn-primary' : 'btn-warning-offline'}`} onClick={confirmAndSave} disabled={saving}>
                                 {saving ? (
                                     <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...</span>
                                 ) : (
-                                    isOnline ? 'Confirmar y Guardar' : 'Confirmar y Guardar (Offline)'
+                                    isOnline ? 'Confirmar y Guardar' : (
+                                        <span className="d-flex align-items-center gap-2">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                                            Guardar Registro Temporal
+                                        </span>
+                                    )
                                 )}
                             </button>
                         </div>
@@ -1468,6 +1515,114 @@ export default function RegistroProductosClient() {
         .preview-body {
             overflow-y: auto;
             flex: 1;
+        }
+
+        /* Offline Notice UI */
+        .offline-header {
+            background-color: #fef3c7 !important;
+            border-bottom-color: #fde68a !important;
+        }
+
+        .offline-notice-box {
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border: 1px solid #fde68a;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);
+        }
+
+        /* Offline Submit Box (Bottom of Form) */
+        .offline-submit-container {
+            background: #ffffff;
+            border: 2px dashed #f59e0b;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.1), 0 8px 10px -6px rgba(245, 158, 11, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .offline-submit-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .offline-submit-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .offline-icon-wrapper {
+            background: #fffbeb;
+            border-radius: 12px;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(245, 158, 11, 0.1);
+        }
+
+        .submit-offline-btn {
+            margin-left: auto;
+            white-space: nowrap;
+            padding: 0.75rem 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .offline-submit-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            .offline-submit-content .text-start {
+                text-align: center !important;
+            }
+            .submit-offline-btn {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+        
+        .offline-notice-icon {
+            background: #f59e0b;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-warning-offline {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-warning-offline:hover {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            box-shadow: 0 6px 8px -1px rgba(245, 158, 11, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-warning-offline:disabled {
+            background: #fcd34d;
+            box-shadow: none;
+            transform: none;
+            color: #78350f;
         }
 
         /* Modal Enhanced Styles */

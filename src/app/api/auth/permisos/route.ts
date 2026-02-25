@@ -63,21 +63,15 @@ export async function GET() {
             }
         }
 
-        // Get role info
+        // Get role info WITH permissions in a single query
         const { data: role } = await supabase
             .from('roles')
-            .select('nombre')
+            .select('nombre, role_permisos(modulo_key)')
             .eq('id', user.role_id)
+            .eq('role_permisos.habilitado', true)
             .single();
 
-        // Get enabled permissions for role
-        const { data: permisos } = await supabase
-            .from('role_permisos')
-            .select('modulo_key')
-            .eq('role_id', user.role_id)
-            .eq('habilitado', true);
-
-        const allowedModules = (permisos || []).map(p => p.modulo_key);
+        const allowedModules = (role?.role_permisos || []).map((p: any) => p.modulo_key);
 
         // 'temporal' is always available for all users (contingency module)
         if (!allowedModules.includes('temporal')) {

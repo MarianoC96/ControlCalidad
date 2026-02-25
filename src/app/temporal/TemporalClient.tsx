@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Sidebar from '@/components/Navbar';
+
 import { getAllOfflineRecords, getPendingRecords, markRecordSynced, deleteOfflineRecord } from '@/lib/temporal-db';
 import type { OfflineRecord } from '@/lib/temporal-db';
 
@@ -196,7 +196,7 @@ export default function TemporalClient() {
 
     return (
         <div className="page-wrapper">
-            <Sidebar userName={userName} userRole={userRole} />
+
             <main className="main-content">
 
                 {/* Offline Banner */}

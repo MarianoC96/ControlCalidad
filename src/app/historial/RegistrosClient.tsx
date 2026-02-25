@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+
 import { createClient } from '@/lib/supabase/client';
 import { formatDate, normalizeString } from '@/lib/utils';
 import type { Registro, Control, Foto } from '@/lib/supabase/types';
@@ -43,6 +43,15 @@ export default function RegistrosClient() {
     const [editSuccess, setEditSuccess] = useState('');
     const [timeLeft, setTimeLeft] = useState('');
 
+    // Edit field state
+    const [editFields, setEditFields] = useState<{
+        lote_interno: string;
+        lote_producto: string;
+        guia: string;
+        marca: string;
+        cantidad: string;
+    }>({ lote_interno: '', lote_producto: '', guia: '', marca: '', cantidad: '' });
+
     // Request Edit Permission State
     const [requestModalOpen, setRequestModalOpen] = useState(false);
     const [requestRegistroId, setRequestRegistroId] = useState<number | null>(null);
@@ -70,11 +79,20 @@ export default function RegistrosClient() {
         ...(debouncedSearch && { search: debouncedSearch })
     }).toString();
 
-    const { data: swrResponse, error: swrError, isLoading: swrIsLoading, mutate } = useSWR(`/api/registros?${queryParams}`, fetcher);
+    const { data: swrResponse, error: swrError, isLoading: swrIsLoading, isValidating, mutate } = useSWR(
+        `/api/registros?${queryParams}`,
+        fetcher,
+        {
+            keepPreviousData: true,
+            dedupingInterval: 5000,       // Don't re-fetch same URL within 5s
+            revalidateOnFocus: false,      // Don't refetch when tab gains focus
+            revalidateOnReconnect: false,  // Don't refetch on reconnect
+        }
+    );
 
     const registros = swrResponse?.data || [];
     const meta = swrResponse?.meta || {};
-    const loading = swrIsLoading;
+    const loading = swrIsLoading && !swrResponse; // Solo usar loading pantalla completa si no hay datos previos
     const totalPages = meta.totalPages || 0;
     // For auto-selection we use the available years/months from our backend
     const availableYears: number[] = meta.availableYears || [];
@@ -205,17 +223,23 @@ export default function RegistrosClient() {
             setEditLockInfo({ expiresAt: data.expiresAt, startedAt: data.startedAt });
             if (password) setEditPassword(password);
 
-            // Fetch History
-            const histRes = await fetch(`/api/registros/history?id=${registro.id}`);
-            if (histRes.ok) {
-                setEditHistory(await histRes.json());
-            }
+            // Fetch History and Details in PARALLEL (not sequential)
+            const [histRes, details] = await Promise.all([
+                fetch(`/api/registros/history?id=${registro.id}`).then(r => r.ok ? r.json() : []),
+                fetchDetails(registro.id)
+            ]);
 
-            // Fetch details
-            const details = await fetchDetails(registro.id);
+            setEditHistory(histRes);
             setEditingRegistro({ ...registro, ...details });
             setEditPhotos([]);
             setPhotosToDelete([]);
+            setEditFields({
+                lote_interno: registro.lote_interno || '',
+                lote_producto: registro.lote_producto || '',
+                guia: registro.guia || '',
+                marca: registro.marca || '',
+                cantidad: String(registro.cantidad || ''),
+            });
             setEditModalOpen(true);
 
         } catch (err: any) {
@@ -281,7 +305,12 @@ export default function RegistrosClient() {
                     registro_id: editingRegistro.id,
                     photos: editPhotos,
                     photosToDelete: photosToDelete,
-                    password: editPassword
+                    password: editPassword,
+                    lote_interno: editFields.lote_interno,
+                    lote_producto: editFields.lote_producto,
+                    guia: editFields.guia,
+                    marca: editFields.marca,
+                    cantidad: editFields.cantidad,
                 })
             });
 
@@ -403,7 +432,7 @@ export default function RegistrosClient() {
     if (loading) {
         return (
             <>
-                <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+
                 <div className="container mt-4">
                     <div className="text-center">
                         <div className="spinner"></div>
@@ -416,7 +445,7 @@ export default function RegistrosClient() {
 
     return (
         <>
-            <Navbar userName={userName} userRole={userRole} onLogout={handleLogout} />
+
 
             <main className="historial-page-container">
                 {/* Header Premium */}
@@ -995,13 +1024,14 @@ export default function RegistrosClient() {
                                         Para editar este registro, debes enviar una solicitud a los administradores para que la autoricen.
                                     </div>
 
-                                    <label className="form-label fw-bold small">Motivo de la solicitud (Opcional)</label>
+                                    <label className="form-label fw-bold small">Motivo de la solicitud <span className="text-danger">*</span></label>
                                     <textarea
                                         className="form-control"
                                         rows={3}
                                         placeholder="Explica brevemente por qué necesitas realizar cambios..."
                                         value={requestMotivo}
                                         onChange={(e) => setRequestMotivo(e.target.value)}
+                                        required
                                     ></textarea>
                                     <p className="text-muted small mt-2">
                                         Los administradores revisarán tu solicitud para decidir si la aprueban.
@@ -1012,7 +1042,7 @@ export default function RegistrosClient() {
                                     <button
                                         className="btn btn-sm btn-primary px-3 shadow-sm"
                                         onClick={handleRequestSubmit}
-                                        disabled={isRequesting}
+                                        disabled={isRequesting || !requestMotivo.trim()}
                                     >
                                         {isRequesting ? 'Enviando...' : 'Enviar Solicitud'}
                                     </button>
@@ -1101,11 +1131,79 @@ export default function RegistrosClient() {
                                     <div className="mb-4">
                                         <h5 className="border-bottom pb-2 text-secondary">Reglas de Edición</h5>
                                         <ul className="small text-muted">
-                                            <li>Solo puede agregar fotos (Máximo 2 por registro).</li>
-                                            <li>No puede modificar la fecha de origen ni otros datos.</li>
+                                            <li>Puede modificar: Lote Interno, Lote Producto, Guía, Marca, Cantidad y Fotos.</li>
+                                            <li>Máximo 2 fotos por registro.</li>
                                             <li>Tiene 1 hora para completar la edición desde el inicio.</li>
-                                            <li>Al guardar, se registrará una auditoría permanente.</li>
+                                            <li>Al guardar, se registrará una auditoría permanente con los cambios realizados.</li>
                                         </ul>
+                                    </div>
+
+                                    {/* Editable Fields Section */}
+                                    <div className="mb-4 bg-white rounded-3 overflow-hidden shadow-sm" style={{ border: '1px solid #e2e8f0' }}>
+                                        <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light bg-opacity-50">
+                                            <label className="form-label fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-secondary" viewBox="0 0 16 16">
+                                                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                                    <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
+                                                </svg>
+                                                Editar Datos del Registro
+                                            </label>
+                                        </div>
+                                        <div className="p-3">
+                                            <div className="row g-3">
+                                                <div className="col-md-6">
+                                                    <label className="form-label small fw-bold text-muted">Lote Interno</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-sm"
+                                                        value={editFields.lote_interno}
+                                                        onChange={(e) => setEditFields(prev => ({ ...prev, lote_interno: e.target.value }))}
+                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small fw-bold text-muted">Lote de Producto</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-sm"
+                                                        value={editFields.lote_producto}
+                                                        onChange={(e) => setEditFields(prev => ({ ...prev, lote_producto: e.target.value }))}
+                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small fw-bold text-muted">Guía</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-sm"
+                                                        value={editFields.guia}
+                                                        onChange={(e) => setEditFields(prev => ({ ...prev, guia: e.target.value }))}
+                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small fw-bold text-muted">Marca</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-sm"
+                                                        value={editFields.marca}
+                                                        onChange={(e) => setEditFields(prev => ({ ...prev, marca: e.target.value }))}
+                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label small fw-bold text-muted">Cantidad</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control form-control-sm"
+                                                        value={editFields.cantidad}
+                                                        onChange={(e) => setEditFields(prev => ({ ...prev, cantidad: e.target.value }))}
+                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                        min="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Photo Upload Premium Container */}
@@ -1375,20 +1473,34 @@ export default function RegistrosClient() {
                                                                 </div>
                                                                 <div className="d-flex flex-wrap gap-2 ms-1">
                                                                     {addCount > 0 && (
-                                                                        <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-medium px-2 py-1" style={{ fontSize: '0.75rem' }}>
+                                                                        <span className="badge fw-medium px-2 py-1" style={{ fontSize: '0.75rem', background: '#d1e7dd', color: '#0f5132', border: '1px solid #a3cfbb' }}>
                                                                             + Agregó {addCount} foto{addCount > 1 ? 's' : ''}
                                                                         </span>
                                                                     )}
                                                                     {delCount > 0 && (
-                                                                        <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fw-medium px-2 py-1" style={{ fontSize: '0.75rem' }}>
+                                                                        <span className="badge fw-medium px-2 py-1" style={{ fontSize: '0.75rem', background: '#f8d7da', color: '#842029', border: '1px solid #f1aeb5' }}>
                                                                             − Eliminó {delCount} foto{delCount > 1 ? 's' : ''}
                                                                         </span>
                                                                     )}
-                                                                    {addCount === 0 && delCount === 0 && (
-                                                                        <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 fw-medium px-2 py-1" style={{ fontSize: '0.75rem' }}>
+                                                                    {addCount === 0 && delCount === 0 && !hist.field_changes && (
+                                                                        <span className="badge fw-medium px-2 py-1" style={{ fontSize: '0.75rem', background: '#e2e3e5', color: '#41464b', border: '1px solid #c4c8cb' }}>
                                                                             ✎ Editó registro
                                                                         </span>
                                                                     )}
+                                                                    {hist.field_changes && Object.entries(hist.field_changes).map(([field, change]: [string, any]) => {
+                                                                        const fieldLabels: Record<string, string> = {
+                                                                            lote_interno: 'Lote Interno',
+                                                                            lote_producto: 'Lote Producto',
+                                                                            guia: 'Guía',
+                                                                            marca: 'Marca',
+                                                                            cantidad: 'Cantidad',
+                                                                        };
+                                                                        return (
+                                                                            <span key={field} className="badge fw-medium px-2 py-1" style={{ fontSize: '0.75rem', background: '#fff3cd', color: '#664d03', border: '1px solid #ffda6a' }}>
+                                                                                ✏ {fieldLabels[field] || field}: <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>{change.old || '(vacío)'}</span> → <strong>{change.new || '(vacío)'}</strong>
+                                                                            </span>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                         );
@@ -1405,7 +1517,19 @@ export default function RegistrosClient() {
                                     <button
                                         className="btn btn-warning fw-bold px-4"
                                         onClick={handleSaveEdit}
-                                        disabled={(editPhotos.length === 0 && photosToDelete.length === 0) || !!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                        disabled={
+                                            (
+                                                editPhotos.length === 0 &&
+                                                photosToDelete.length === 0 &&
+                                                editFields.lote_interno === (editingRegistro.lote_interno || '') &&
+                                                editFields.lote_producto === (editingRegistro.lote_producto || '') &&
+                                                editFields.guia === (editingRegistro.guia || '') &&
+                                                editFields.marca === (editingRegistro.marca || '') &&
+                                                editFields.cantidad === String(editingRegistro.cantidad || '')
+                                            ) ||
+                                            !!editError ||
+                                            (timeLeft === 'Expirado' && userRole !== 'administrador')
+                                        }
                                     >
                                         Guardar Cambios
                                     </button>
