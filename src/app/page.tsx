@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import './login.css';
 
 export default function LoginPage() {
@@ -112,7 +113,7 @@ export default function LoginPage() {
           </button>
 
           <div className="login-footer-links">
-            <a href="/olvide-password">¿Problemas con el acceso?</a>
+            <Link href="/olvide-password">¿Problemas con el acceso?</Link>
           </div>
         </form>
       </div>
