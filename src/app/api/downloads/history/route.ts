@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 export async function GET(req: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = createServiceClient();
 
         // Fetch user role and download history IN PARALLEL
         const [userResult, historyResult] = await Promise.all([

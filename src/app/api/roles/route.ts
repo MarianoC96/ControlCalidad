@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-
-const createAdminClient = () => {
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-};
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+const createAdminClient = () => createServiceClient();
 
 // All system modules
 const ALL_MODULES = [
@@ -25,8 +17,8 @@ const ALL_MODULES = [
 ];
 
 async function getAuthUser(supabase: ReturnType<typeof createAdminClient>) {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const auth = await getAuthUserId();
+        const userId = auth?.userId;
     if (!userId) return null;
 
     const { data: user } = await supabase

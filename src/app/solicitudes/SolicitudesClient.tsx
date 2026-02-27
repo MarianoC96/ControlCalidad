@@ -49,16 +49,27 @@ export default function SolicitudesClient() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [dateFilter, setDateFilter] = useState('');
 
+    const MONTH_ABBREVIATIONS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'] as const;
+
+    const buildDisplayId = (req: EditRequest): string => {
+        const monthIndex = new Date(req.created_at).getMonth();
+        const monthAbbr = MONTH_ABBREVIATIONS[monthIndex];
+        return `S-${monthAbbr}${String(req.id).padStart(4, '0')}`;
+    };
+
     useEffect(() => {
         checkAuth();
         loadRequests();
     }, []);
 
     const filteredRequests = requests.filter(req => {
+        const displayId = buildDisplayId(req);
+        const normalizedSearch = searchTerm.toLowerCase();
         const matchesSearch =
-            req.usuarios.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            req.usuarios.usuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            req.registros.producto_nombre.toLowerCase().includes(searchTerm.toLowerCase());
+            req.usuarios.nombre_completo.toLowerCase().includes(normalizedSearch) ||
+            req.usuarios.usuario.toLowerCase().includes(normalizedSearch) ||
+            req.registros.producto_nombre.toLowerCase().includes(normalizedSearch) ||
+            displayId.toLowerCase().includes(normalizedSearch);
         const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
         // Convert created_at to Peru time (GMT-5) before comparing with date filter
         let matchesDate = true;
@@ -250,7 +261,8 @@ export default function SolicitudesClient() {
                                 <table className="table table-hover mb-0 align-middle">
                                     <thead className="table-light text-secondary text-uppercase small">
                                         <tr>
-                                            <th className="ps-3 fw-semibold text-secondary">Usuario</th>
+                                            <th className="ps-3 fw-semibold text-secondary">ID</th>
+                                            <th className="fw-semibold text-secondary">Usuario</th>
                                             <th className="fw-semibold text-secondary">Producto</th>
                                             <th className="fw-semibold text-secondary">Lote</th>
                                             <th className="fw-semibold text-secondary">Fecha</th>
@@ -262,7 +274,7 @@ export default function SolicitudesClient() {
                                     <tbody>
                                         {loading ? (
                                             <tr>
-                                                <td colSpan={7} className="text-center py-5">
+                                                <td colSpan={8} className="text-center py-5">
                                                     <div className="spinner-border text-primary" role="status">
                                                         <span className="visually-hidden">Cargando...</span>
                                                     </div>
@@ -270,13 +282,14 @@ export default function SolicitudesClient() {
                                             </tr>
                                         ) : filteredRequests.length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="text-center py-5 text-muted">
+                                                <td colSpan={8} className="text-center py-5 text-muted">
                                                     No hay solicitudes que coincidan con los filtros.
                                                 </td>
                                             </tr>
                                         ) : (
                                             filteredRequests.map((req) => (
                                                 <tr key={req.id} className={req.status === 'pendiente' ? 'table-warning' : ''}>
+                                                    <td className="ps-3 fw-bold text-primary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{buildDisplayId(req)}</td>
                                                     <td className="ps-3">
                                                         <div className="d-flex align-items-center gap-2">
                                                             <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -366,7 +379,10 @@ export default function SolicitudesClient() {
                                                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
                                                     {req.usuarios.nombre_completo.charAt(0)}
                                                 </div>
-                                                <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
+                                                <div>
+                                                    <div className="fw-bold text-primary" style={{ fontSize: '0.8rem' }}>{buildDisplayId(req)}</div>
+                                                    <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="mobile-card-body">

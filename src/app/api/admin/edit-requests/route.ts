@@ -1,19 +1,12 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 // Helper Service Role Client
-const createAdminClient = () => {
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-    );
-};
+const createAdminClient = () => createServiceClient();
 
 export async function GET() {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -66,8 +59,8 @@ export async function GET() {
 
 export async function PUT(request: Request) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

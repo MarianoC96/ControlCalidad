@@ -3,6 +3,7 @@ import "./globals.css";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import AppShell from "@/components/AppShell";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
   title: "Control de Calidad",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#607d8b",
+  themeColor: "#1e40af",
 };
 
 export default function RootLayout({
@@ -30,6 +31,7 @@ export default function RootLayout({
       </head>
       <body>
         <AppShell>{children}</AppShell>
+        <ServiceWorkerRegistration />
         <SpeedInsights />
       </body>
     </html>

@@ -1,40 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 import bcrypt from 'bcryptjs';
 
 // Helper para crear cliente Admin (Service Role)
-const createAdminClient = () => {
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
-        }
-    );
-};
+const createAdminClient = () => createServiceClient();
 
 export async function GET() {
     try {
-        const cookieStore = await cookies();
-
-        const userId = cookieStore.get('user_id')?.value;
-        const userRoleCookie = cookieStore.get('user_role')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         // Cliente con permisos totales
         const supabase = createAdminClient();
 
         let isAdmin = false;
 
-        // 1. Verificación rápida por cookie
-        if (userRoleCookie === 'administrador') {
-            isAdmin = true;
-        }
-        // 2. Verificación robusta en DB si hay session
-        else if (userId) {
+        // Verificación en DB
+        if (userId) {
             const { data: userCheck } = await supabase
                 .from('usuarios')
                 .select('roles')
@@ -47,7 +29,7 @@ export async function GET() {
         }
 
         if (!isAdmin) {
-            console.log('API Usuarios/GET: Acceso denegado.', { userRoleCookie, userId });
+            console.log('API Usuarios/GET: Acceso denegado.', { userId });
             return NextResponse.json(
                 { error: 'No autorizado. Se requiere rol de administrador.' },
                 { status: 403 }
@@ -75,15 +57,13 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
         const supabase = createAdminClient();
 
-        // Validar Admin (simplificado, reusar lógica sería ideal pero duplicamos por claridad ahora)
+        // Validar Admin
         let isAdmin = false;
-        if (cookieStore.get('user_role')?.value === 'administrador') {
-            isAdmin = true;
-        } else if (userId) {
+        if (userId) {
             const { data: u } = await supabase.from('usuarios').select('roles').eq('id', parseInt(userId)).single();
             if (u?.roles === 'administrador') isAdmin = true;
         }
@@ -140,15 +120,13 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
         const supabase = createAdminClient();
 
         // Validar Admin
         let isAdmin = false;
-        if (cookieStore.get('user_role')?.value === 'administrador') {
-            isAdmin = true;
-        } else if (userId) {
+        if (userId) {
             const { data: u } = await supabase.from('usuarios').select('roles').eq('id', parseInt(userId)).single();
             if (u?.roles === 'administrador') isAdmin = true;
         }

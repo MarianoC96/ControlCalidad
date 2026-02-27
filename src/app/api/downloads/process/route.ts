@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 import JSZip from 'jszip';
 import { generateServerPDF } from '@/lib/server-pdf-generator';
 
@@ -57,17 +56,14 @@ export async function POST(req: NextRequest) {
     let userId: string | undefined;
 
     try {
-        const cookieStore = await cookies();
-        userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = createServiceClient();
 
         const body = await req.json();
         downloadId = body.downloadId;
@@ -179,10 +175,7 @@ export async function POST(req: NextRequest) {
         console.error("Processing error:", err);
 
         if (downloadId) {
-            const supabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-            );
+            const supabase = createServiceClient();
             await supabase.from('download_history').update({
                 status: 'error',
                 error_message: err.message

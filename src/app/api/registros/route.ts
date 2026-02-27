@@ -1,21 +1,9 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 import { getPdfConfig } from '@/lib/config-helper';
 
 // Helper Service Role Client
-const createAdminClient = () => {
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
-        }
-    );
-};
+const createAdminClient = () => createServiceClient();
 
 // Cache for available dates (refreshed every 60 seconds)
 let cachedDates: { years: number[]; monthsByYear: Record<string, number[]> } | null = null;
@@ -45,8 +33,8 @@ async function getAvailableDates(supabase: ReturnType<typeof createAdminClient>)
 
 export async function GET(request: Request) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -178,8 +166,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

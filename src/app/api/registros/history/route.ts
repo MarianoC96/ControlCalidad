@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 export async function GET(request: Request) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
@@ -18,10 +16,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'ID de registro requerido' }, { status: 400 });
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = createServiceClient();
 
         const { data, error } = await supabase
             .from('history_edits')

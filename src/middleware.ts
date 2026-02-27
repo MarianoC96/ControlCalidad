@@ -1,64 +1,81 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
-// Map URL paths to module keys
-const PATH_TO_MODULE: Record<string, string> = {
-    '/registro-productos': 'registro-productos',
-    '/historial': 'historial',
-    '/historial-descargas': 'historial-descargas',
-    '/solicitudes': 'solicitudes',
-    '/productos': 'productos',
-    '/parametros-maestros': 'parametros-maestros',
-    '/usuarios': 'usuarios',
-    '/admin/config-pdf': 'admin/config-pdf',
-    '/accesos': 'accesos',
-    '/temporal': 'temporal',
-};
+/**
+ * Supabase Auth middleware.
+ *
+ * Chesterton's Fence: the previous middleware checked for a `user_id` cookie
+ * set manually during login. Now it validates the Supabase Auth session JWT
+ * and refreshes the session automatically via updateSession pattern.
+ */
 
-// Public paths that don't need auth
-const PUBLIC_PATHS = ['/', '/olvide-password', '/restablecer-password'];
+const PUBLIC_PATHS = new Set(['/', '/olvide-password', '/restablecer-password']);
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Skip API routes, static files, and public paths  
+    // Skip static files and public paths
     if (
-        pathname.startsWith('/api/') ||
         pathname.startsWith('/_next/') ||
         pathname.startsWith('/favicon') ||
         pathname.includes('.') ||
-        PUBLIC_PATHS.includes(pathname)
+        PUBLIC_PATHS.has(pathname)
     ) {
         return NextResponse.next();
     }
 
-    // Check authentication
-    const userId = request.cookies.get('user_id')?.value;
-    if (!userId) {
-        return NextResponse.redirect(new URL('/', request.url));
-    }
-
-    // The /perfil page is always accessible to authenticated users
-    if (pathname === '/perfil') {
+    // Skip API routes — they handle auth themselves via withAuth
+    if (pathname.startsWith('/api/')) {
         return NextResponse.next();
     }
 
-    // For module paths, we only do a server-side redirect for unauthenticated users.
-    // The actual module permission check happens client-side via the permisos API
-    // and in each API route's backend validation.
-    // This middleware ensures basic auth and prevents non-logged-in access.
+    // Create a response to modify cookies on
+    let supabaseResponse = NextResponse.next({
+        request,
+    });
 
-    return NextResponse.next();
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() {
+                    return request.cookies.getAll();
+                },
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        request.cookies.set(name, value)
+                    );
+                    supabaseResponse = NextResponse.next({
+                        request,
+                    });
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        supabaseResponse.cookies.set(name, value, options)
+                    );
+                },
+            },
+        }
+    );
+
+    // Refresh the session — this is the recommended Supabase SSR pattern
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    // No valid session → redirect to login
+    if (!user) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/';
+        return NextResponse.redirect(url);
+    }
+
+    // The /perfil page is always accessible to authenticated users
+    // Module-level permissions are checked client-side via RouteGuard
+    return supabaseResponse;
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except:
-         * - api routes
-         * - _next/static (static files)
-         * - _next/image (image optimization)
-         * - favicon.ico
-         */
         '/((?!api|_next/static|_next/image|favicon.ico).*)',
     ],
 };

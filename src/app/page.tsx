@@ -2,9 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 import './login.css';
 
+/**
+ * Login Page — Supabase Auth.
+ *
+ * Chesterton's Fence: previous version called `fetch('/api/auth/login')` which
+ * manually set cookies. Now uses `supabase.auth.signInWithPassword()` directly
+ * from the client. Supabase SSR (@supabase/ssr) handles cookie management
+ * automatically. The username is converted to email format for Supabase Auth.
+ */
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -21,19 +29,24 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      const supabase = createClient();
+
+      // Convert username to email format
+      const email = formData.usuario.trim().toLowerCase().includes('@')
+        ? formData.usuario.trim().toLowerCase()
+        : `${formData.usuario.trim().toLowerCase()}@controlcalidad.local`;
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al iniciar sesión');
+      if (authError) {
+        throw new Error('Usuario o contraseña incorrectos');
       }
 
       router.push('/registro-productos');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
       setLoading(false);
@@ -51,7 +64,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group-p">
-            <label htmlFor="usuario">Usuario o Correo</label>
+            <label htmlFor="usuario">Usuario</label>
             <div className="input-with-icon">
               <i className="bi bi-person-fill"></i>
               <input
@@ -60,7 +73,7 @@ export default function LoginPage() {
                 value={formData.usuario}
                 onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
                 required
-                placeholder="Ingresa tu ID"
+                placeholder="Ingresa tu usuario"
                 suppressHydrationWarning
               />
             </div>
@@ -111,10 +124,6 @@ export default function LoginPage() {
           <button type="submit" className="btn-login-premium" disabled={loading}>
             {loading ? <span className="loader-btn"></span> : 'Ingresar al Sistema'}
           </button>
-
-          <div className="login-footer-links">
-            <Link href="/olvide-password">¿Problemas con el acceso?</Link>
-          </div>
         </form>
       </div>
     </div>

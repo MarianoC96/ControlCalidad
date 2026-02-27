@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js'; // Use admin client directly
-import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 
+/**
+ * POST /api/auth/login
+ *
+ * Chesterton's Fence: the previous implementation used a custom login flow
+ * with bcrypt, manual cookie management, and session table inserts.
+ * Now delegates entirely to Supabase Auth which handles JWT generation,
+ * cookie management via @supabase/ssr, and password hashing internally.
+ */
 export async function POST(request: NextRequest) {
     try {
         const { usuario, password } = await request.json();
@@ -14,10 +20,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Trim username (case-insensitive login)
-        const usuarioTrimmed = usuario.trim().toLowerCase();
-
-        // Password cannot contain spaces
         if (password.includes(' ')) {
             return NextResponse.json(
                 { error: 'La contraseña no puede contener espacios' },
@@ -25,91 +27,56 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Use SERVICE_ROLE_KEY to bypass RLS for authentication check
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
-        );
+        const supabase = await createClient();
 
-        // Get user from database (case-insensitive search for username/email)
-        const { data: user, error } = await supabase
+        // Build email from username convention
+        // sadmin → sadmin@controlcalidad.local
+        const email = usuario.trim().toLowerCase().includes('@')
+            ? usuario.trim().toLowerCase()
+            : `${usuario.trim().toLowerCase()}@controlcalidad.local`;
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error || !data.user) {
+            return NextResponse.json(
+                { error: 'Usuario o contraseña incorrectos' },
+                { status: 401 }
+            );
+        }
+
+        // Fetch app-level user profile
+        const { createServiceClient } = await import('@/lib/api/withAuth');
+        const adminClient = createServiceClient();
+
+        const { data: appUser } = await adminClient
             .from('usuarios')
-            .select('*')
-            .or(`usuario.ilike.${usuarioTrimmed},email.ilike.${usuarioTrimmed}`)
+            .select('id, nombre_completo, usuario, roles')
+            .eq('auth_uid', data.user.id)
             .eq('activo', true)
             .eq('is_deleted', false)
             .single();
 
-        if (error || !user) {
+        if (!appUser) {
+            // Auth user exists but no app profile — sign out and reject
+            await supabase.auth.signOut();
             return NextResponse.json(
-                { error: 'Usuario o contraseña incorrectos' },
+                { error: 'Usuario no encontrado en el sistema' },
                 { status: 401 }
             );
         }
-
-        // Verify password
-        const isValidPassword = await bcrypt.compare(password, user.password);
-
-        if (!isValidPassword) {
-            return NextResponse.json(
-                { error: 'Usuario o contraseña incorrectos' },
-                { status: 401 }
-            );
-        }
-
-
-        // Create session
-        const sessionId = crypto.randomUUID();
-        const cookieStore = await cookies();
-
-        cookieStore.set('session_id', sessionId, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24,
-            path: '/',
-        });
-
-        cookieStore.set('user_id', user.id.toString(), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24,
-            path: '/',
-        });
-
-        cookieStore.set('user_name', user.nombre_completo, {
-            httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24,
-            path: '/',
-        });
-
-        cookieStore.set('user_role', user.roles, {
-            httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24,
-            path: '/',
-        });
 
         return NextResponse.json({
             success: true,
             user: {
-                id: user.id,
-                nombre_completo: user.nombre_completo,
-                usuario: user.usuario,
-                roles: user.roles,
+                id: appUser.id,
+                nombre_completo: appUser.nombre_completo,
+                usuario: appUser.usuario,
+                roles: appUser.roles,
             },
         });
-
     } catch (error) {
         console.error('Login error:', error);
         return NextResponse.json(

@@ -1,20 +1,15 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 
 // Helper to handle auth and service client creation
 async function handleRequest(request: Request, action: (supabase: any, body: any) => Promise<any>) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
-        if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        const auth = await getAuthUserId();
+        if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const body = request.method !== 'GET' ? await request.json().catch(() => ({})) : {};
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = createServiceClient();
 
         const result = await action(supabase, body);
         return NextResponse.json(result);

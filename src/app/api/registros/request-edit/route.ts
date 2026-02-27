@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 export async function POST(request: Request) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
@@ -21,10 +19,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'El motivo de la solicitud es obligatorio' }, { status: 400 });
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = createServiceClient();
 
         // Check if there is already a pending request for this user and record
         const { data: existing, error: checkError } = await supabase

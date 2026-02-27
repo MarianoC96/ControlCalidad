@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-
-const createAdminClient = () => {
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-};
+import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+const createAdminClient = () => createServiceClient();
 
 interface OfflineRecordPayload {
     localUuid: string;
@@ -25,13 +17,21 @@ interface OfflineRecordPayload {
 // POST - Sync offline records to the central database
 export async function POST(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get('user_id')?.value;
-        const userName = cookieStore.get('user_name')?.value;
+        const auth = await getAuthUserId();
+        const userId = auth?.userId;
 
         if (!userId) {
             return NextResponse.json({ error: 'No autorizado. Debe iniciar sesión para sincronizar.' }, { status: 401 });
         }
+
+        // Fetch user name for audit logging
+        const adminClient = createServiceClient();
+        const { data: currentUser } = await adminClient
+            .from('usuarios')
+            .select('nombre_completo')
+            .eq('id', parseInt(userId))
+            .single();
+        const userName = currentUser?.nombre_completo || 'Desconocido';
 
         const currentUserId = parseInt(userId);
         const { records } = await request.json() as { records: OfflineRecordPayload[] };
