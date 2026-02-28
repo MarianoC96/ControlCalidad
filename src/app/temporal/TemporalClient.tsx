@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 import { getAllOfflineRecords, getPendingRecords, markRecordSynced, deleteOfflineRecord } from '@/lib/temporal-db';
 import type { OfflineRecord } from '@/lib/temporal-db';
@@ -267,10 +268,7 @@ export default function TemporalClient() {
                 {/* Records List */}
                 <div className="records-container">
                     {loading ? (
-                        <div className="empty-state">
-                            <div className="spinner-lg"></div>
-                            <p>Cargando registros...</p>
-                        </div>
+                        <LoadingOverlay message="Cargando Registros Offline..." />
                     ) : records.length === 0 ? (
                         <div className="empty-state">
                             <div className="empty-icon">📋</div>

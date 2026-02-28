@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 
 interface Permission {
@@ -28,7 +29,6 @@ const MODULE_LABELS: Record<string, string> = {
     'usuarios': 'Usuarios',
     'admin/config-pdf': 'Edición de PDF',
     'accesos': 'Accesos a Sistema',
-    'temporal': 'Temporal (Contingencia)',
 };
 
 export default function AccesosClient() {
@@ -220,7 +220,7 @@ export default function AccesosClient() {
     };
 
     if (loading) {
-        return <div className="loader-screen">CARGANDO...</div>;
+        return <LoadingOverlay message="Cargando Permisos..." />;
     }
 
     return (
@@ -294,7 +294,7 @@ export default function AccesosClient() {
                                                     <div className="role-desc">{role.descripcion || 'Sin descripción'}</div>
                                                     <div className="role-meta">
                                                         <span className="meta-item">
-                                                            Módulos: <strong>{role.permisos.filter(p => p.habilitado).length}/{modules.length}</strong>
+                                                            Módulos: <strong>{role.permisos.filter(p => p.habilitado && modules.includes(p.modulo_key)).length}/{modules.length}</strong>
                                                         </span>
                                                     </div>
                                                 </div>

@@ -12,6 +12,7 @@ export type Database = {
             usuarios: {
                 Row: {
                     id: number;
+                    auth_uid: string | null;
                     nombre_completo: string;
                     usuario: string;
                     email: string | null;
@@ -21,11 +22,13 @@ export type Database = {
                     created_at: string;
                     updated_at: string;
                     roles: 'administrador' | 'trabajador';
-
                     is_deleted: boolean;
+                    two_factor_secret: string | null;
+                    role_id: number | null;
                 };
                 Insert: {
                     id?: number;
+                    auth_uid?: string | null;
                     nombre_completo: string;
                     usuario: string;
                     email?: string | null;
@@ -35,11 +38,13 @@ export type Database = {
                     created_at?: string;
                     updated_at?: string;
                     roles?: 'administrador' | 'trabajador';
-
                     is_deleted?: boolean;
+                    two_factor_secret?: string | null;
+                    role_id?: number | null;
                 };
                 Update: {
                     id?: number;
+                    auth_uid?: string | null;
                     nombre_completo?: string;
                     usuario?: string;
                     email?: string | null;
@@ -49,8 +54,9 @@ export type Database = {
                     created_at?: string;
                     updated_at?: string;
                     roles?: 'administrador' | 'trabajador';
-
                     is_deleted?: boolean;
+                    two_factor_secret?: string | null;
+                    role_id?: number | null;
                 };
             };
             productos: {

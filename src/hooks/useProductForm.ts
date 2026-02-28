@@ -51,20 +51,40 @@ interface UseProductFormReturn {
  * Pure function — no side effects.
  */
 function buildInitialControles(params: Parametro[]): ControlValue[] {
-    return params.map((param) => ({
-        parametroNombre: param.nombre,
-        rangoCompleto: param.rango_completo
-            ? param.rango_completo
-            : param.tipo === 'rango'
-                ? formatRange(param.rango_min, param.rango_max, param.unidad)
-                : param.valor_texto || param.valor || '',
-        valorControl: null,
-        textoControl: null,
-        parametroTipo: param.tipo,
-        observacion: '',
-        fueraDeRango: false,
-        mensajeAlerta: '',
-    }));
+    return params.map((param) => {
+        const isRango = param.tipo === 'rango' || param.es_rango;
+        let initialFueraDeRango = false;
+        let initialMensajeAlerta = '';
+
+        if (isRango && param.rango_min !== null && param.rango_max !== null) {
+            // Null initial value is technically "Out of range" because it's required
+            const validation = validateRange(null, param.rango_min, param.rango_max);
+            initialFueraDeRango = !validation.isValid;
+            initialMensajeAlerta = validation.message;
+        } else if (!isRango && param.tipo === 'texto') {
+            const targetText = param.valor_texto || param.valor;
+            if (targetText && typeof targetText === 'string' && targetText.trim() !== '') {
+                const validation = validateText('', targetText);
+                initialFueraDeRango = !validation.isValid;
+                initialMensajeAlerta = validation.message;
+            }
+        }
+
+        return {
+            parametroNombre: param.nombre,
+            rangoCompleto: param.rango_completo
+                ? param.rango_completo
+                : param.tipo === 'rango'
+                    ? formatRange(param.rango_min, param.rango_max, param.unidad)
+                    : param.valor_texto || param.valor || '',
+            valorControl: null,
+            textoControl: null,
+            parametroTipo: param.tipo,
+            observacion: '',
+            fueraDeRango: initialFueraDeRango,
+            mensajeAlerta: initialMensajeAlerta,
+        };
+    });
 }
 
 /**

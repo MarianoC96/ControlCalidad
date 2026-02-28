@@ -5,111 +5,87 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import './login.css';
 
-/**
- * Login Page — Supabase Auth.
- *
- * Chesterton's Fence: previous version called `fetch('/api/auth/login')` which
- * manually set cookies. Now uses `supabase.auth.signInWithPassword()` directly
- * from the client. Supabase SSR (@supabase/ssr) handles cookie management
- * automatically. The username is converted to email format for Supabase Auth.
- */
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    usuario: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ usuario: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError('');
 
     try {
       const supabase = createClient();
+      const identifier = formData.usuario.trim().toLowerCase();
 
-      // Convert username to email format
-      const email = formData.usuario.trim().toLowerCase().includes('@')
-        ? formData.usuario.trim().toLowerCase()
-        : `${formData.usuario.trim().toLowerCase()}@controlcalidad.local`;
+      // Atajo administrativo: sadmin puede usar su nombre
+      const emailForAuth = identifier === 'sadmin'
+        ? 'sadmin@controlcalidad.local'
+        : identifier;
 
       const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailForAuth,
         password: formData.password,
       });
 
-      if (authError) {
-        throw new Error('Usuario o contraseña incorrectos');
-      }
+      if (authError) throw new Error('Usuario o contraseña incorrectos');
 
       router.push('/registro-productos');
       router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+
+    } catch (err: any) {
+      setError(err.message);
       setLoading(false);
     }
   };
 
   return (
     <div className="login-container">
-      <div className="login-card shadow-lg">
+      <div className="login-card">
+        <div className="system-logo">
+          <i className="bi bi-shield-lock-fill"></i>
+        </div>
+
         <div className="login-header">
-          <div className="system-logo">CC</div>
-          <h1>Control de Calidad</h1>
-          <p>Gestión y Registro Profesional</p>
+          <h1>Control Calidad</h1>
+          <p>Inicia sesión con tu cuenta</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group-p">
-            <label htmlFor="usuario">Usuario</label>
+            <label>CORREO</label>
             <div className="input-with-icon">
-              <i className="bi bi-person-fill"></i>
+              <i className="bi bi-person"></i>
               <input
                 type="text"
-                id="usuario"
+                placeholder=""
+                required
                 value={formData.usuario}
                 onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
-                required
-                placeholder="Ingresa tu usuario"
-                suppressHydrationWarning
               />
             </div>
           </div>
 
           <div className="form-group-p">
-            <label htmlFor="password">Contraseña</label>
+            <label>CONTRASEÑA</label>
             <div className="input-with-icon">
-              <i className="bi bi-lock-fill"></i>
+              <i className="bi bi-lock"></i>
               <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value.replace(/\s/g, '') })}
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••"
                 required
-                placeholder="••••••••"
-                suppressHydrationWarning
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
               <button
                 type="button"
                 className="toggle-password-btn"
                 onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1}
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
-                {showPassword ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z" />
-                    <path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z" />
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0" />
-                    <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7" />
-                  </svg>
-                )}
+                <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
               </button>
             </div>
           </div>
@@ -117,12 +93,12 @@ export default function LoginPage() {
           {error && (
             <div className="login-error-alert">
               <i className="bi bi-exclamation-circle-fill"></i>
-              {error}
+              <span>{error}</span>
             </div>
           )}
 
           <button type="submit" className="btn-login-premium" disabled={loading}>
-            {loading ? <span className="loader-btn"></span> : 'Ingresar al Sistema'}
+            {loading ? <span className="loader-btn"></span> : 'INGRESAR AL SISTEMA'}
           </button>
         </form>
       </div>

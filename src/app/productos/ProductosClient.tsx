@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { useRouter } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/client';
@@ -15,6 +16,8 @@ interface ParametroForm {
     rango_min: string;
     rango_max: string;
     unidad: string;
+    tempSearch?: string; // Para el buscador inteligente local
+    showDropdown?: boolean; // Para controlar visibilidad local
 }
 
 export default function ProductosClient() {
@@ -35,6 +38,11 @@ export default function ProductosClient() {
     const [parametrosForm, setParametrosForm] = useState<ParametroForm[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [currentParamIndex, setCurrentParamIndex] = useState(0); // Pestaña activa
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     useEffect(() => {
         checkAuth();
@@ -131,16 +139,23 @@ export default function ProductosClient() {
     });
 
     const addParametro = () => {
+        const newIndex = parametrosForm.length;
         setParametrosForm([...parametrosForm, createEmptyParametro()]);
+        setCurrentParamIndex(newIndex); // Saltar a la nueva pestaña automáticamente
     };
 
     const removeParametro = (index: number) => {
         if (parametrosForm.length > 1) {
-            setParametrosForm(parametrosForm.filter((_, i) => i !== index));
+            const updated = parametrosForm.filter((_, i) => i !== index);
+            setParametrosForm(updated);
+            // Ajustar índice de pestaña si la actual fue eliminada o quedó fuera de rango
+            if (currentParamIndex >= updated.length) {
+                setCurrentParamIndex(updated.length - 1);
+            }
         }
     };
 
-    const handleParametroChange = (index: number, field: keyof ParametroForm, value: string | number | null) => {
+    const handleParametroChange = (index: number, field: keyof ParametroForm, value: string | number | null | boolean) => {
         setParametrosForm((prev) => {
             const updated = [...prev];
 
@@ -252,18 +267,19 @@ export default function ProductosClient() {
         normalizeString(p.nombre).includes(normalizeString(searchTerm))
     );
 
-    if (loading) {
-        return (
-            <>
+    // Get current items for pagination
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
 
-                <div className="container mt-4">
-                    <div className="text-center">
-                        <div className="spinner"></div>
-                        <p>Cargando...</p>
-                    </div>
-                </div>
-            </>
-        );
+    // Reset page when searching
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    if (loading) {
+        return <LoadingOverlay message="Cargando Productos..." />;
     }
 
     return (
@@ -292,49 +308,124 @@ export default function ProductosClient() {
                     </div>
                 </div>
 
-                {/* Search Bar */}
-                <div className="search-bar shadow-sm border">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="search-icon" viewBox="0 0 16 16">
-                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-                    </svg>
-                    <input
-                        type="text"
-                        className="search-input"
-                        placeholder="Buscar producto..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                {/* Unified Toolbar */}
+                <div className="toolbar-section shadow-sm border">
+                    <div className="search-group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input
+                            type="text"
+                            className="toolbar-input"
+                            placeholder="Buscar por nombre de producto..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
 
-                {filteredProducts.length === 0 ? (
-                    <div className="empty-state">
-                        <p>No se encontraron productos</p>
+                <div className="table-container-card shadow-sm border">
+                    <div className="table-responsive">
+                        <table className="table-premium">
+                            <thead>
+                                <tr>
+                                    <th style={{ width: '50%' }}>PRODUCTO</th>
+                                    <th className="text-center" style={{ width: '25%' }}>PARÁMETROS</th>
+                                    <th className="text-end" style={{ width: '25%', paddingRight: '24px' }}>ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {currentItems.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={3} className="text-center py-5">
+                                            <div className="empty-state-table">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                                                    <circle cx="11" cy="11" r="8"></circle>
+                                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                                </svg>
+                                                <p>No se encontraron productos coincidentes</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    currentItems.map((producto) => (
+                                        <tr key={producto.id} className="row-hover">
+                                            <td>
+                                                <div className="product-info-cell">
+                                                    <div className="product-icon">
+                                                        {producto.nombre.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div className="product-details">
+                                                        <span className="product-name-txt text-truncate" style={{ maxWidth: '300px' }}>{producto.nombre}</span>
+                                                        <span className="product-id-txt">ID: #{String(producto.id).padStart(4, '0')}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="text-center">
+                                                <span className="params-badge">
+                                                    {parametrosMaestros.length > 0 ? 'Configurado' : 'Sin parámetros'}
+                                                </span>
+                                            </td>
+                                            <td className="text-end" style={{ paddingRight: '24px' }}>
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <button
+                                                        className="btn-action edit"
+                                                        onClick={() => openEditModal(producto)}
+                                                        title="Editar"
+                                                    >
+                                                        <i className="bi bi-pencil-fill"></i>
+                                                    </button>
+                                                    <button
+                                                        className="btn-action delete"
+                                                        onClick={() => handleDelete(producto.id)}
+                                                        title="Eliminar"
+                                                    >
+                                                        <i className="bi bi-trash3-fill"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                ) : (
-                    <div className="products-grid">
-                        {filteredProducts.map((producto) => (
-                            <div key={producto.id} className="card product-card">
-                                <div className="card-body">
-                                    <h3>{producto.nombre}</h3>
-                                    <div className="card-actions">
-                                        <button
-                                            className="btn btn-primary btn-sm"
-                                            onClick={() => openEditModal(producto)}
-                                        >
-                                            Editar
-                                        </button>
-                                        <button
-                                            className="btn btn-danger btn-sm"
-                                            onClick={() => handleDelete(producto.id)}
-                                        >
-                                            Eliminar
-                                        </button>
-                                    </div>
-                                </div>
+
+                    {/* Pagination Bar */}
+                    {totalPages > 1 && (
+                        <div className="pagination-bar border-top">
+                            <span className="pagination-info">
+                                Mostrando <b>{indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredProducts.length)}</b> de {filteredProducts.length}
+                            </span>
+                            <div className="pagination-controls">
+                                <button
+                                    className="page-btn"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => prev - 1)}
+                                >
+                                    <i className="bi bi-chevron-left"></i>
+                                </button>
+                                {[...Array(totalPages)].map((_, i) => (
+                                    <button
+                                        key={i + 1}
+                                        className={`page-btn ${currentPage === i + 1 ? 'active' : ''}`}
+                                        onClick={() => setCurrentPage(i + 1)}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                                <button
+                                    className="page-btn"
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(prev => prev + 1)}
+                                >
+                                    <i className="bi bi-chevron-right"></i>
+                                </button>
                             </div>
-                        ))}
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
             </main>
 
             {/* Premium Modal */}
@@ -344,25 +435,25 @@ export default function ProductosClient() {
                         <div className="modal-content premium-modal" onClick={(e) => e.stopPropagation()}>
                             {/* Sticky Header */}
                             {/* Fixed Header */}
-                            <div className="modal-header border-bottom shadow-sm d-flex align-items-center position-relative" style={{ flexShrink: 0, padding: '1.25rem 1.75rem', backgroundColor: '#f8fafc' }}>
-                                <div className="d-flex flex-column" style={{ maxWidth: '90%', paddingRight: '2rem' }}>
-                                    <span className="text-uppercase small fw-bold text-muted mb-1" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
-                                        {editingProduct ? 'Editando Producto' : 'Nuevo Registro'}
-                                    </span>
-                                    <h3 className="mb-0 fw-bold text-dark text-truncate" style={{ fontSize: '1.5rem', letterSpacing: '-0.5px' }}>
-                                        {productName || (editingProduct ? 'Sin nombre' : 'Nuevo Producto')}
+                            <div className="modal-header-premium">
+                                <div className="header-content-left">
+                                    <div className="status-indicator">
+                                        <span className="pulse-dot"></span>
+                                        {editingProduct ? 'MODO EDICIÓN' : 'NUEVO TRÁMITE'}
+                                    </div>
+                                    <h3 className="modal-main-title">
+                                        {editingProduct ? 'Editar Producto' : 'Registrar Nuevo Producto'}
                                     </h3>
+                                    <p className="modal-sub-title">
+                                        {productName || (editingProduct ? 'Sin nombre asignado' : 'Configure los detalles y parámetros del producto')}
+                                    </p>
                                 </div>
                                 <button
-                                    className="btn-close-custom position-absolute"
+                                    className="btn-close-modal"
                                     onClick={() => setShowModal(false)}
-                                    title="Cerrar modal"
-                                    style={{ top: '1.25rem', right: '1.25rem' }}
+                                    title="Cerrar"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                    </svg>
+                                    <i className="bi bi-x-lg"></i>
                                 </button>
                             </div>
 
@@ -394,189 +485,266 @@ export default function ProductosClient() {
                                     </span>
                                 </div>
 
-                                <div className="d-flex flex-column gap-3">
-                                    {parametrosForm.map((param, index) => (
-                                        <div key={index} className="card border-0 shadow-sm rounded-4 parameter-card">
-                                            <div className="card-body p-3">
-                                                <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                                    <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2">
-                                                        #{index + 1}
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center p-0 remove-btn-hover"
-                                                        style={{ width: '28px', height: '28px', transition: 'all 0.2s' }}
-                                                        onClick={() => removeParametro(index)}
-                                                        title="Eliminar parámetro"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
-                                                        </svg>
-                                                    </button>
+                                {/* Master-Detail Layout Container */}
+                                <div className="split-view-container mt-4">
+                                    {/* Left Sidebar: Parameter Navigation */}
+                                    <div className="parameter-sidebar">
+                                        <div className="sidebar-header">
+                                            <span className="sidebar-title">PARÁMETROS</span>
+                                            <span className="sidebar-count">{parametrosForm.length}</span>
+                                        </div>
+                                        <div className="parameter-nav-list">
+                                            {parametrosForm.map((p, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    className={`nav-item-btn ${currentParamIndex === idx ? 'active' : ''}`}
+                                                    onClick={() => setCurrentParamIndex(idx)}
+                                                >
+                                                    <div className="nav-item-info">
+                                                        <span className="nav-number">{idx + 1}</span>
+                                                        <div className="nav-texts">
+                                                            <span className="nav-label text-truncate">{p.nombre || 'Sin nombre'}</span>
+                                                            <span className="nav-type">{p.tipo.toUpperCase()}</span>
+                                                        </div>
+                                                    </div>
+                                                    {parametrosForm.length > 1 && (
+                                                        <span
+                                                            className="nav-item-remove"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                removeParametro(idx);
+                                                            }}
+                                                        >
+                                                            <i className="bi bi-x"></i>
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn-add-parameter-sidebar"
+                                            onClick={addParametro}
+                                        >
+                                            <i className="bi bi-plus-circle-fill me-2"></i>
+                                            <span>Nuevo Parámetro</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Right Content: Active Parameter Configuration */}
+                                    <div className="parameter-content-area">
+                                        {parametrosForm[currentParamIndex] ? (
+                                            <div className="active-tab-animation">
+                                                <div className="content-area-header mb-4">
+                                                    <h5 className="fw-bold text-dark-emphasis mb-0">
+                                                        Configuración del Parámetro {currentParamIndex + 1}
+                                                    </h5>
+                                                    <hr className="my-3 opacity-10" />
                                                 </div>
 
-                                                <div className="param-grid-premium">
-                                                    <div className="form-group mb-0">
-                                                        <label className="form-label small fw-bold text-muted">Parámetro Maestro</label>
-                                                        <select
-                                                            className="form-select border-0 bg-light"
-                                                            value={param.parametro_maestro_id || ''}
-                                                            onChange={(e) =>
-                                                                handleParametroChange(index, 'parametro_maestro_id',
-                                                                    e.target.value ? parseInt(e.target.value) : null)
-                                                            }
-                                                        >
-                                                            <option value="">-- Personalizado --</option>
-                                                            {parametrosMaestros.map((m) => (
-                                                                <option key={m.id} value={m.id}>{m.nombre}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
+                                                <div className="row g-4">
+                                                    {/* Origen del Parámetro con Buscador Inteligente */}
+                                                    <div className="col-md-12">
+                                                        <label className="form-label-custom">Origen del Parámetro</label>
+                                                        <div className="smart-selector-container">
+                                                            <div className="input-group-custom">
+                                                                <i className="bi bi-search input-icon" style={{ zIndex: 10 }}></i>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-control-premium searchable"
+                                                                    placeholder="Buscar parámetro maestro..."
+                                                                    value={parametrosForm[currentParamIndex].tempSearch !== undefined ? parametrosForm[currentParamIndex].tempSearch : (parametrosForm[currentParamIndex].parametro_maestro_id ? parametrosForm[currentParamIndex].nombre : '')}
+                                                                    onFocus={() => handleParametroChange(currentParamIndex, 'showDropdown', true)}
+                                                                    onChange={(e) => {
+                                                                        handleParametroChange(currentParamIndex, 'tempSearch', e.target.value);
+                                                                        handleParametroChange(currentParamIndex, 'showDropdown', true);
+                                                                    }}
+                                                                />
+                                                                {parametrosForm[currentParamIndex].parametro_maestro_id && (
+                                                                    <button
+                                                                        className="btn-clear-selection"
+                                                                        onClick={() => {
+                                                                            handleParametroChange(currentParamIndex, 'parametro_maestro_id', null);
+                                                                            handleParametroChange(currentParamIndex, 'tempSearch', '');
+                                                                        }}
+                                                                    >
+                                                                        <i className="bi bi-x"></i>
+                                                                    </button>
+                                                                )}
+                                                            </div>
 
-                                                    <div className="form-group mb-0">
-                                                        <label className="form-label small fw-bold text-muted">Nombre Parámetro</label>
-                                                        <div className="position-relative">
-                                                            <input
-                                                                type="text"
-                                                                className={`form-control border-0 ${param.parametro_maestro_id ? 'bg-secondary bg-opacity-10 text-muted fst-italic' : 'bg-light'}`}
-                                                                style={param.parametro_maestro_id ? { cursor: 'not-allowed', paddingRight: '25px' } : {}}
-                                                                value={param.nombre}
-                                                                onChange={(e) => handleParametroChange(index, 'nombre', e.target.value)}
-                                                                placeholder="Nombre del parámetro"
-                                                                readOnly={!!param.parametro_maestro_id}
-                                                            />
-                                                            {param.parametro_maestro_id && (
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="text-muted position-absolute" style={{ top: '50%', right: '10px', transform: 'translateY(-50%)' }} viewBox="0 0 16 16">
-                                                                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-                                                                </svg>
+                                                            {parametrosForm[currentParamIndex].showDropdown && (
+                                                                <div className="smart-dropdown shadow-lg">
+                                                                    <div className="dropdown-section-title">OPCIONES</div>
+                                                                    <div
+                                                                        className={`dropdown-item-custom ${!parametrosForm[currentParamIndex].parametro_maestro_id ? 'active' : ''}`}
+                                                                        onClick={() => {
+                                                                            handleParametroChange(currentParamIndex, 'parametro_maestro_id', null);
+                                                                            handleParametroChange(currentParamIndex, 'showDropdown', false);
+                                                                            handleParametroChange(currentParamIndex, 'tempSearch', '');
+                                                                        }}
+                                                                    >
+                                                                        <i className="bi bi-plus-circle-dotted me-2 text-primary"></i>
+                                                                        Personalizado / Único
+                                                                    </div>
+
+                                                                    <div className="dropdown-section-title">CATÁLOGO MAESTRO</div>
+                                                                    {parametrosMaestros
+                                                                        .filter(m => !parametrosForm[currentParamIndex].tempSearch || normalizeString(m.nombre).includes(normalizeString(parametrosForm[currentParamIndex].tempSearch)))
+                                                                        .map(m => (
+                                                                            <div
+                                                                                key={m.id}
+                                                                                className={`dropdown-item-custom ${parametrosForm[currentParamIndex].parametro_maestro_id === m.id ? 'active' : ''}`}
+                                                                                onClick={() => {
+                                                                                    handleParametroChange(currentParamIndex, 'parametro_maestro_id', m.id);
+                                                                                    handleParametroChange(currentParamIndex, 'showDropdown', false);
+                                                                                    handleParametroChange(currentParamIndex, 'tempSearch', m.nombre);
+                                                                                }}
+                                                                            >
+                                                                                <div className="d-flex justify-content-between align-items-center w-100">
+                                                                                    <span>{m.nombre}</span>
+                                                                                    <span className="badge-type-mini">{m.tipo}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))
+                                                                    }
+                                                                    {parametrosMaestros.filter(m => !parametrosForm[currentParamIndex].tempSearch || normalizeString(m.nombre).includes(normalizeString(parametrosForm[currentParamIndex].tempSearch))).length === 0 && (
+                                                                        <div className="p-3 text-center text-muted small">No se encontraron resultados</div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {parametrosForm[currentParamIndex].showDropdown && (
+                                                                <div className="dropdown-backdrop" onClick={() => handleParametroChange(currentParamIndex, 'showDropdown', false)}></div>
                                                             )}
                                                         </div>
                                                     </div>
 
-                                                    {/* Mostrar selector de tipo solo si NO es parámetro maestro */}
-                                                    {!param.parametro_maestro_id && (
-                                                        <div className="form-group mb-0">
-                                                            <label className="form-label small fw-bold text-muted">Tipo de Dato</label>
-                                                            <select
-                                                                className="form-select border-0 bg-light"
-                                                                value={param.tipo}
-                                                                onChange={(e) =>
-                                                                    handleParametroChange(index, 'tipo', e.target.value as 'texto' | 'numero' | 'rango')
-                                                                }
-                                                            >
-                                                                <option value="texto">Texto Libre</option>
-                                                                <option value="numero">Numérico</option>
-                                                                <option value="rango">Rango (Mín-Máx)</option>
-                                                            </select>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Badges informatvos del tipo si es maestro (opcional, para contexto) */}
-                                                    {param.parametro_maestro_id && (
-                                                        <div className="form-group mb-0 d-flex align-items-end pb-2">
-                                                            <span className="badge bg-light text-secondary border fw-normal py-2 px-3 w-100 text-start">
-                                                                Tipo: {param.tipo === 'texto' ? 'Texto' : param.tipo === 'numero' ? 'Numérico' : 'Rango'}
-                                                            </span>
-                                                        </div>
-                                                    )}
-
-                                                    {param.tipo === 'texto' && (
-                                                        <div className="form-group mb-0 col-span-2">
-                                                            <label className="form-label small fw-bold text-muted">Valor Esperado (Opcional)</label>
+                                                    <div className="col-md-12">
+                                                        <label className="form-label-custom">Nombre del Parámetro</label>
+                                                        <div className="input-group-custom">
+                                                            <i className={`bi ${parametrosForm[currentParamIndex].parametro_maestro_id ? 'bi-lock-fill text-primary' : 'bi-pencil'} input-icon`}></i>
                                                             <input
                                                                 type="text"
-                                                                className="form-control border-0 bg-light"
-                                                                value={param.valor}
-                                                                onChange={(e) => handleParametroChange(index, 'valor', e.target.value)}
-                                                                placeholder="Ej: Cumple / No Cumple"
+                                                                className={`form-control-premium ${parametrosForm[currentParamIndex].parametro_maestro_id ? 'bg-disabled' : ''}`}
+                                                                value={parametrosForm[currentParamIndex].nombre}
+                                                                onChange={(e) => handleParametroChange(currentParamIndex, 'nombre', e.target.value)}
+                                                                placeholder="Ej: Humedad"
+                                                                readOnly={!!parametrosForm[currentParamIndex].parametro_maestro_id}
                                                             />
                                                         </div>
-                                                    )}
+                                                    </div>
 
-                                                    {param.tipo === 'numero' && (
-                                                        <div className="form-group mb-0 col-span-2">
-                                                            <label className="form-label small fw-bold text-muted">Valor Numérico Esperado</label>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
-                                                                }}
-                                                                className="form-control border-0 bg-light"
-                                                                value={param.valor}
-                                                                onChange={(e) => handleParametroChange(index, 'valor', e.target.value)}
-                                                                placeholder="0.00"
-                                                            />
-                                                        </div>
-                                                    )}
+                                                    <div className="col-md-6">
+                                                        <label className="form-label-custom">Tipo de Evaluación</label>
+                                                        {!parametrosForm[currentParamIndex].parametro_maestro_id ? (
+                                                            <div className="d-flex gap-2">
+                                                                {(['texto', 'numero', 'rango'] as const).map((t) => (
+                                                                    <button
+                                                                        key={t}
+                                                                        type="button"
+                                                                        className={`btn-type-selector-small ${parametrosForm[currentParamIndex].tipo === t ? 'active' : ''}`}
+                                                                        onClick={() => handleParametroChange(currentParamIndex, 'tipo', t)}
+                                                                    >
+                                                                        {t === 'texto' && <i className="bi bi-fonts"></i>}
+                                                                        {t === 'numero' && <i className="bi bi-123"></i>}
+                                                                        {t === 'rango' && <i className="bi bi-arrows-expand"></i>}
+                                                                        <span className="ms-2">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="data-preview-box">
+                                                                <i className="bi bi-info-circle me-2 text-primary"></i>
+                                                                <strong>{parametrosForm[currentParamIndex].tipo.toUpperCase()}</strong>
+                                                            </div>
+                                                        )}
+                                                    </div>
 
-                                                    {param.tipo === 'rango' && (
-                                                        <>
-                                                            <div className="form-group mb-0">
-                                                                <label className="form-label small fw-bold text-muted">Mínimo</label>
+                                                    {parametrosForm[currentParamIndex].tipo !== 'texto' && (
+                                                        <div className="col-md-6">
+                                                            <label className="form-label-custom">Unidad de Medida</label>
+                                                            <div className="input-group-custom">
+                                                                <i className="bi bi-rulers input-icon"></i>
                                                                 <input
-                                                                    type="number"
-                                                                    step="0.01"
-                                                                    min="0"
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
-                                                                    }}
-                                                                    className="form-control border-0 bg-light"
-                                                                    value={param.rango_min}
-                                                                    onChange={(e) => handleParametroChange(index, 'rango_min', e.target.value)}
-                                                                    placeholder="Mín"
+                                                                    type="text"
+                                                                    className={`form-control-premium ${parametrosForm[currentParamIndex].parametro_maestro_id ? 'bg-disabled' : ''}`}
+                                                                    value={parametrosForm[currentParamIndex].unidad}
+                                                                    onChange={(e) => handleParametroChange(currentParamIndex, 'unidad', e.target.value)}
+                                                                    placeholder="kg, %, °C"
+                                                                    readOnly={!!parametrosForm[currentParamIndex].parametro_maestro_id}
                                                                 />
                                                             </div>
-                                                            <div className="form-group mb-0">
-                                                                <label className="form-label small fw-bold text-muted">Máximo</label>
-                                                                <input
-                                                                    type="number"
-                                                                    step="0.01"
-                                                                    min="0"
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
-                                                                    }}
-                                                                    className="form-control border-0 bg-light"
-                                                                    value={param.rango_max}
-                                                                    onChange={(e) => handleParametroChange(index, 'rango_max', e.target.value)}
-                                                                    placeholder="Máx"
-                                                                />
-                                                            </div>
-                                                        </>
-                                                    )}
-
-                                                    {param.tipo !== 'texto' && (
-                                                        <div className="form-group mb-0">
-                                                            <label className="form-label small fw-bold text-muted">Unidad</label>
-                                                            <input
-                                                                type="text"
-                                                                className={`form-control border-0 ${param.parametro_maestro_id ? 'bg-secondary bg-opacity-10 text-muted' : 'bg-light'}`}
-                                                                style={param.parametro_maestro_id ? { cursor: 'not-allowed' } : {}}
-                                                                value={param.unidad}
-                                                                onChange={(e) => handleParametroChange(index, 'unidad', e.target.value)}
-                                                                placeholder="Ej: kg, %, °C"
-                                                                readOnly={!!param.parametro_maestro_id}
-                                                            />
                                                         </div>
                                                     )}
+
+                                                    <div className="col-12">
+                                                        <div className="value-config-container p-4 rounded-4 bg-light border-0 shadow-sm">
+                                                            {parametrosForm[currentParamIndex].tipo === 'texto' && (
+                                                                <div>
+                                                                    <label className="form-label-custom">Valor Esperado / Etiqueta</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        className="form-control-premium bg-white"
+                                                                        value={parametrosForm[currentParamIndex].valor}
+                                                                        onChange={(e) => handleParametroChange(currentParamIndex, 'valor', e.target.value)}
+                                                                        placeholder="Ej: Cumple / No Cumple"
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                            {parametrosForm[currentParamIndex].tipo === 'numero' && (
+                                                                <div>
+                                                                    <label className="form-label-custom">Valor Numérico Objetivo</label>
+                                                                    <div className="input-group">
+                                                                        <input
+                                                                            type="number"
+                                                                            className="form-control-premium bg-white"
+                                                                            value={parametrosForm[currentParamIndex].valor}
+                                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'valor', e.target.value)}
+                                                                            placeholder="0.00"
+                                                                        />
+                                                                        <span className="input-group-text bg-white border-0 text-muted fw-bold">{parametrosForm[currentParamIndex].unidad}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {parametrosForm[currentParamIndex].tipo === 'rango' && (
+                                                                <div className="row g-3">
+                                                                    <div className="col-6">
+                                                                        <label className="form-label-custom text-primary">Mínimo Aceptable</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="form-control-premium bg-white"
+                                                                            value={parametrosForm[currentParamIndex].rango_min}
+                                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'rango_min', e.target.value)}
+                                                                            placeholder="Mín"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="col-6">
+                                                                        <label className="form-label-custom text-danger">Máximo Aceptable</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="form-control-premium bg-white"
+                                                                            value={parametrosForm[currentParamIndex].rango_max}
+                                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'rango_max', e.target.value)}
+                                                                            placeholder="Máx"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ) : (
+                                            <div className="empty-param-state h-100 d-flex flex-column align-items-center justify-content-center text-muted py-5">
+                                                <i className="bi bi-collection-play mb-3" style={{ fontSize: '3rem', opacity: 0.3 }}></i>
+                                                <p>Seleccione o agregue un parámetro</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-primary dashed-border w-100 py-3 mt-4 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2 hover-scale"
-                                    onClick={addParametro}
-                                    style={{ borderStyle: 'dashed', borderWidth: '2px' }}
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
-                                    </svg>
-                                    Agregar Nuevo Parámetro
-                                </button>
 
                                 {error && (
                                     <div className="alert alert-danger mt-4 d-flex align-items-center gap-3 rounded-3 shadow-sm border-0 bg-danger bg-opacity-10 text-danger">
@@ -808,144 +976,749 @@ export default function ProductosClient() {
           gap: 0.5rem;
         }
 
-        /* Modal Premium Styles Optimized */
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(15, 23, 42, 0.5); /* Sin blur para mejor rendimiento */
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 1rem;
-          animation: fadeIn 0.15s ease-out; /* Más rápido */
+        /* NEW TABLE SYSTEM */
+        .toolbar-section {
+            background: white;
+            border-radius: 16px;
+            padding: 12px 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
         }
 
-        .modal-content.premium-modal {
-          background: #f8fafc;
-          border-radius: 12px;
-          width: 100%;
-          max-width: 800px;
-          height: 90vh; /* Altura fija para forzar estructura vertical */
-          max-height: 90vh;
-          display: flex; /* Estructura Flex Column */
-          flex-direction: column;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); 
-          animation: slideUp 0.2s ease-out;
-          will-change: transform, opacity;
-          overflow: hidden; /* Evitar scroll en el contenedor principal */
-        }
-        
-        .modal-body-scrollable {
-            overflow-y: auto;
-            flex: 1; /* Ocupar el espacio restante */
-            padding: 1.5rem;
-        }
-
-        .btn-close-custom {
-            background: transparent;
-            border: none;
+        .search-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
             color: #94a3b8;
-            padding: 0.5rem;
-            border-radius: 50%;
+        }
+
+        .toolbar-input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .toolbar-input::placeholder {
+            color: #cbd5e1;
+            font-weight: 400;
+        }
+
+        .table-container-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .table-premium {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-premium thead th {
+            background: #f8fafc;
+            padding: 16px 24px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table-premium tbody td {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .row-hover {
+            transition: background 0.2s;
+        }
+
+        .row-hover:hover {
+            background: #f8fafc;
+        }
+
+        .product-info-cell {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .product-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: background 0.15s, color 0.15s;
-            flex-shrink: 0; /* Evitar que se aplaste */
+            font-weight: 900;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
         }
-        
-        .btn-close-custom:hover {
-            background: #e2e8f0;
+
+        .product-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-name-txt {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 0.95rem;
+        }
+
+        .product-id-txt {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+
+        .params-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+            /* Header Premium Redesign */
+            .modal-header-premium {
+                padding: 1.5rem 2rem;
+                background: linear-gradient(to right, #ffffff, #f8fafc);
+                border-bottom: 1px solid #e2e8f0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                position: relative;
+                flex-shrink: 0;
+            }
+            .status-indicator {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.65rem;
+                font-weight: 800;
+                color: #3b82f6;
+                letter-spacing: 1px;
+                margin-bottom: 4px;
+            }
+            .pulse-dot {
+                width: 6px;
+                height: 6px;
+                background: #3b82f6;
+                border-radius: 50%;
+                animation: dot-pulse 2s infinite;
+            }
+            @keyframes dot-pulse {
+                0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+                70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+            }
+            .modal-main-title {
+                margin: 0;
+                font-size: 1.35rem;
+                font-weight: 800;
+                color: #0f172a;
+                letter-spacing: -0.5px;
+            }
+            .modal-sub-title {
+                margin: 2px 0 0 0;
+                font-size: 0.85rem;
+                color: #64748b;
+                font-weight: 500;
+            }
+            .btn-close-modal {
+                width: 40px;
+                height: 40px;
+                background: #f1f5f9;
+                border: none;
+                border-radius: 12px;
+                color: #64748b;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.2rem;
+                transition: all 0.2s;
+                cursor: pointer;
+            }
+            .btn-close-modal:hover {
+                background: #fee2e2;
+                color: #ef4444;
+                transform: rotate(90deg);
+            }
+
+        .btn-action {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-action.edit {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .btn-action.edit:hover {
+            background: #e0f2fe;
+            color: #0284c7;
+        }
+
+        .btn-action.delete {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .btn-action.delete:hover {
+            background: #fee2e2;
             color: #ef4444;
         }
 
-        .param-grid-premium {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: 1rem;
-          align-items: flex-start; /* Cambiado de end a flex-start para mejor alineación */
-        }
-        
-        /* Eliminar transiciones complejas en móviles o listas largas */
-        .parameter-card {
-            border: 1px solid transparent;
-        }
-        .parameter-card:hover {
-            border-color: #cbd5e1;
+        .pagination-bar {
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
         }
 
-        .remove-btn-hover:hover {
-            background-color: #ef4444 !important;
-            color: white !important;
+        .pagination-info {
+            font-size: 0.85rem;
+            color: #64748b;
         }
 
-        .hover-scale {
-            transition: transform 0.1s;
-        }
-        .hover-scale:hover {
-            transform: scale(1.005);
-            background-color: rgba(13, 110, 253, 0.05);
-        }
-        
-        /* Sombras simples al hover */
-        .hover-shadow {
-            transition: box-shadow 0.15s;
-        }
-        .hover-shadow:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        .pagination-controls {
+            display: flex;
+            gap: 6px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+            cursor: pointer;
         }
 
-        .col-span-2 { grid-column: span 2; }
+        .page-btn:hover:not(:disabled) {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
 
-        @media (max-width: 768px) {
-            .header-container {
-                flex-direction: column;
-                text-align: center;
-                gap: 20px;
-            }
-            .header-stats {
-                flex-direction: column;
-                width: 100%;
-            }
-            .btn-add-premium {
-                width: 100%;
+        .page-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-state-table {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            color: #94a3b8;
+        }
+            /* Modal Positioning & Overlay */
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(15, 23, 42, 0.65);
+                backdrop-filter: blur(4px);
+                display: flex;
+                align-items: center;
                 justify-content: center;
+                z-index: 9999;
+                padding: 2rem;
+                animation: fadeIn 0.2s ease-out;
+            }
+
+            .modal-content.premium-modal {
+                background: #f8fafc;
+                border-radius: 20px;
+                width: 100%;
+                max-width: 850px;
+                height: 90vh;
+                max-height: 850px;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .modal-body-scrollable {
+                overflow-y: auto;
+                flex: 1;
+                padding: 2rem;
+                background: #f8fafc;
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
             }
             
-            /* Modal Mobile Optimizations */
-            .modal-overlay { padding: 0 !important; alignItems: flex-end; }
-            .modal-content.premium-modal {
-                width: 100%;
-                height: 100vh; /* Fallback */
-                height: 100dvh;
-                max-height: 100dvh;
-                border-radius: 0;
-                border: none;
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
             }
-            .modal-header { padding: 1rem; }
-            .modal-body-scrollable { padding: 1rem; }
 
-            .param-grid-premium {
-                grid-template-columns: 1fr !important;
-                gap: 1rem;
+            /* Modal Modern Redesign */
+            .parameter-card-premium {
+                background: white;
+                border: 1px solid #e2e8f0;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            .col-span-2 { grid-column: auto !important; }
-        }
+            .parameter-card-premium:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 20px -8px rgba(0,0,0,0.1) !important;
+                border-color: #3b82f6;
+            }
+            .param-number-circle {
+                width: 24px;
+                height: 24px;
+                background: #3b82f6;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.75rem;
+                font-weight: 800;
+            }
+            .btn-remove-parameter {
+                background: #fff1f2;
+                color: #e11d48;
+                border: none;
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+                cursor: pointer;
+            }
+            .btn-remove-parameter:hover {
+                background: #e11d48;
+                color: white;
+            }
+            .form-label-custom {
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 800;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 8px;
+            }
+            .input-group-custom {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+            .input-icon {
+                position: absolute;
+                left: 12px;
+                color: #94a3b8;
+                font-size: 1rem;
+            }
+            .form-control-premium, .form-select-premium {
+                width: 100%;
+                padding: 10px 12px 10px 38px;
+                border-radius: 12px;
+                border: 1.5px solid #f1f5f9;
+                background: #f8fafc;
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: #1e293b;
+                transition: all 0.2s;
+                outline: none;
+            }
+            .form-control-premium:focus, .form-select-premium:focus {
+                background: white;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            }
+            .bg-disabled {
+                background: #f1f5f9;
+                color: #94a3b8;
+                cursor: not-allowed;
+            }
+            .btn-type-selector {
+                flex: 1;
+                border: 1.5px solid #f1f5f9;
+                background: white;
+                padding: 10px;
+                border-radius: 12px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                color: #64748b;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+                cursor: pointer;
+            }
+            .btn-type-selector:hover {
+                border-color: #3b82f6;
+                color: #3b82f6;
+            }
+            .btn-type-selector.active {
+                background: #3b82f6;
+                border-color: #3b82f6;
+                color: white;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+            .data-preview-box {
+                background: #eff6ff;
+                padding: 10px 16px;
+                border-radius: 12px;
+                font-size: 0.85rem;
+                color: #1e40af;
+                font-weight: 600;
+                border: 1px dashed #bfdbfe;
+            }
+            .btn-add-parameter-main {
+                background: white;
+                border: 2px dashed #e2e8f0;
+                padding: 16px 32px;
+                border-radius: 16px;
+                font-weight: 800;
+                color: #64748b;
+                display: inline-flex;
+                align-items: center;
+                gap: 12px;
+                transition: all 0.2s;
+                cursor: pointer;
+            }
+            .btn-add-parameter-main:hover {
+                border-color: #3b82f6;
+                color: #3b82f6;
+                background: #f0f7ff;
+                transform: translateY(-2px);
+            }
+            .add-icon-wrapper {
+                width: 28px;
+                height: 28px;
+                background: #f1f5f9;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+            }
+            .btn-add-parameter-main:hover .add-icon-wrapper {
+                background: #3b82f6;
+                color: white;
+            }
+
+            @media (max-width: 768px) {
+                .modal-content.premium-modal {
+                    height: 100vh;
+                    border-radius: 0;
+                }
+                .btn-type-selector {
+                    padding: 8px;
+                    font-size: 0.7rem;
+                }
+            }
+            /* Smart Selector Component */
+            .smart-selector-container {
+                position: relative;
+            }
+            .form-control-premium.searchable {
+                cursor: text;
+            }
+            .smart-dropdown {
+                position: absolute;
+                top: calc(100% + 5px);
+                left: 0;
+                right: 0;
+                background: white;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                z-index: 1000;
+                max-height: 250px;
+                overflow-y: auto;
+                animation: slideDown 0.2s ease-out;
+            }
+            .dropdown-section-title {
+                padding: 10px 16px 5px;
+                font-size: 0.65rem;
+                font-weight: 800;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .dropdown-item-custom {
+                padding: 10px 16px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #1e293b;
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .dropdown-item-custom:hover {
+                background: #f1f5f9;
+                color: #3b82f6;
+            }
+            .dropdown-item-custom.active {
+                background: #eff6ff;
+                color: #3b82f6;
+            }
+            .badge-type-mini {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+                background: #f1f5f9;
+                color: #64748b;
+                border-radius: 6px;
+                text-transform: uppercase;
+                font-weight: 800;
+            }
+            .dropdown-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 999;
+            }
+            .btn-clear-selection {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: #f1f5f9;
+                border: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #64748b;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .btn-clear-selection:hover {
+                background: #cbd5e1;
+                color: #0f172a;
+            }
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-5px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            /* Master-Detail (Split View) Styles */
+            .split-view-container {
+                display: flex;
+                gap: 24px;
+                min-height: 500px;
+                align-items: stretch;
+            }
+            .parameter-sidebar {
+                width: 280px;
+                display: flex;
+                flex-direction: column;
+                background: white;
+                border-radius: 20px;
+                border: 1.5px solid #f1f5f9;
+                padding: 16px;
+                gap: 12px;
+                flex-shrink: 0;
+            }
+            .sidebar-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0 8px 10px;
+                border-bottom: 1px solid #f8fafc;
+            }
+            .sidebar-title {
+                font-size: 0.75rem;
+                font-weight: 800;
+                color: #94a3b8;
+                letter-spacing: 1px;
+            }
+            .sidebar-count {
+                background: #f1f5f9;
+                color: #64748b;
+                font-size: 0.7rem;
+                font-weight: 800;
+                padding: 2px 8px;
+                border-radius: 20px;
+            }
+            .parameter-nav-list {
+                flex: 1;
+                overflow-y: auto;
+                max-height: 400px; /* Manage up to 10+ items easily */
+                padding-right: 4px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .parameter-nav-list::-webkit-scrollbar {
+                width: 4px;
+            }
+            .parameter-nav-list::-webkit-scrollbar-thumb {
+                background: #e2e8f0;
+                border-radius: 10px;
+            }
+            .nav-item-btn {
+                width: 100%;
+                background: transparent;
+                border: 1.5px solid transparent;
+                padding: 12px;
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                transition: all 0.2s;
+                text-align: left;
+            }
+            .nav-item-btn:hover {
+                background: #f8fafc;
+                border-color: #f1f5f9;
+            }
+            .nav-item-btn.active {
+                background: #eff6ff;
+                border-color: #3b82f6;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+            }
+            .nav-item-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                overflow: hidden;
+            }
+            .nav-number {
+                width: 24px;
+                height: 24px;
+                background: #f1f5f9;
+                color: #94a3b8;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.75rem;
+                font-weight: 800;
+                flex-shrink: 0;
+            }
+            .nav-item-btn.active .nav-number {
+                background: #3b82f6;
+                color: white;
+            }
+            .nav-texts {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            .nav-label {
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: #475569;
+            }
+            .nav-item-btn.active .nav-label {
+                color: #1e40af;
+            }
+            .nav-type {
+                font-size: 0.65rem;
+                font-weight: 800;
+                color: #94a3b8;
+            }
+            .nav-item-remove {
+                color: #cbd5e1;
+                transition: all 0.2s;
+                padding: 4px;
+            }
+            .nav-item-remove:hover {
+                color: #ef4444;
+                transform: scale(1.2);
+            }
+            .btn-add-parameter-sidebar {
+                width: 100%;
+                background: #f8fafc;
+                border: 2px dashed #e2e8f0;
+                padding: 12px;
+                border-radius: 14px;
+                color: #64748b;
+                font-size: 0.85rem;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+                margin-top: 8px;
+            }
+            .btn-add-parameter-sidebar:hover {
+                background: #eff6ff;
+                border-color: #3b82f6;
+                color: #3b82f6;
+            }
+            .parameter-content-area {
+                flex: 1;
+                background: white;
+                border-radius: 20px;
+                padding: 32px;
+                border: 1.5px solid #f1f5f9;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+            }
+            .btn-type-selector-small {
+                flex: 1;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                padding: 8px;
+                border-radius: 10px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                color: #64748b;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .btn-type-selector-small.active {
+                background: #3b82f6;
+                color: white;
+                border-color: #2563eb;
+                box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+            }
       `}</style>
         </div>
     );

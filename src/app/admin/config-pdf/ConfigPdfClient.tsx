@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { useRouter } from 'next/navigation';
 
 export default function ConfigPdfClient() {
@@ -97,10 +98,7 @@ export default function ConfigPdfClient() {
                 </div>
 
                 {loading ? (
-                    <div className="card shadow-sm border-0 mb-5 p-5 text-center">
-                        <div className="spinner mx-auto mb-3"></div>
-                        <p className="text-muted">Cargando configuración...</p>
-                    </div>
+                    <LoadingOverlay message="Cargando configuración..." />
                 ) : (
                     <>
                         {/* Card de Configuración */}

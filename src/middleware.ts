@@ -69,8 +69,9 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
-    // The /perfil page is always accessible to authenticated users
-    // Module-level permissions are checked client-side via RouteGuard
+    // Simplified: Any authenticated user can proceed
+    return supabaseResponse;
+
     return supabaseResponse;
 }
 

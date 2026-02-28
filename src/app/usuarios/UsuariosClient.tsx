@@ -1,10 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { useRouter } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/client';
 import type { Usuario } from '@/lib/supabase/types';
+
+interface Role {
+    id: number;
+    nombre: string;
+    is_system: boolean;
+}
 
 export default function UsuariosClient() {
     const router = useRouter();
@@ -22,12 +29,14 @@ export default function UsuariosClient() {
     // Modal states
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState<Usuario | null>(null);
+    const [rolesList, setRolesList] = useState<Role[]>([]);
     const [formData, setFormData] = useState({
         nombre_completo: '',
         usuario: '',
         email: '',
         password: '',
         roles: 'trabajador' as 'administrador' | 'trabajador',
+        role_id: null as number | null,
         activo: true,
     });
 
@@ -45,6 +54,7 @@ export default function UsuariosClient() {
 
     useEffect(() => {
         checkAuth();
+        loadRoles();
         loadUsuarios();
     }, []);
 
@@ -79,6 +89,18 @@ export default function UsuariosClient() {
             setError('Error al conectar con el servidor');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadRoles = async () => {
+        try {
+            const response = await fetch('/api/roles');
+            if (response.ok) {
+                const data = await response.json();
+                setRolesList(data.roles || []);
+            }
+        } catch (err) {
+            console.error('Error cargando roles', err);
         }
     };
 
@@ -139,11 +161,19 @@ export default function UsuariosClient() {
         const matchesSearch =
             user.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.usuario.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === 'all' || user.roles === roleFilter;
+
+        let matchesRole = false;
+        if (roleFilter === 'all') {
+            matchesRole = true;
+        } else {
+            // Filtrar estrictamente por el id numérico del rol asignado
+            matchesRole = user.role_id?.toString() === roleFilter;
+        }
+
         return matchesSearch && matchesRole;
     });
 
-    if (loading) return <div className="loader-screen">Sincronizando Sistema...</div>;
+    if (loading) return <LoadingOverlay message="Sincronizando Usuarios..." />;
 
     return (
         <div className="admin-page-wrapper">
@@ -162,7 +192,7 @@ export default function UsuariosClient() {
                             <span className="val">{usuarios.length}</span>
                             <span className="lab">TOTAL</span>
                         </div>
-                        <button className="btn-add-premium shadow-sm" onClick={() => { setEditingUser(null); setFormData({ nombre_completo: '', usuario: '', email: '', password: '', roles: 'trabajador', activo: true }); setShowModal(true); }}>
+                        <button className="btn-add-premium shadow-sm" onClick={() => { setEditingUser(null); setFormData({ nombre_completo: '', usuario: '', email: '', password: '', roles: 'trabajador', role_id: null, activo: true }); setShowModal(true); }}>
                             <i className="bi bi-person-plus-fill me-2"></i>
                             <span>Nuevo Personal</span>
                         </button>
@@ -174,8 +204,9 @@ export default function UsuariosClient() {
                     <div className="search-group"><i className="bi bi-search"></i><input type="text" placeholder="Buscar personal..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
                     <select className="filter-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
                         <option value="all">Todos los roles</option>
-                        <option value="trabajador">Trabajadores</option>
-                        <option value="administrador">Administradores</option>
+                        {rolesList.map(r => (
+                            <option key={r.id} value={r.id.toString()}>{r.nombre}</option>
+                        ))}
                     </select>
                 </div>
 
@@ -198,7 +229,9 @@ export default function UsuariosClient() {
                                     </div>
                                 </div>
                                 <div className="user-tags">
-                                    <span className={`chip chip-role ${user.roles}`}>{user.roles}</span>
+                                    <span className={`chip chip-role ${user.roles}`}>
+                                        {rolesList.find(r => r.id === user.role_id)?.nombre || user.roles}
+                                    </span>
                                     <span className={`chip chip-status ${user.activo ? 'active' : 'inactive'}`}>{user.activo ? 'Activo' : 'Inactivo'}</span>
                                 </div>
                             </div>
@@ -213,6 +246,7 @@ export default function UsuariosClient() {
                                                 email: user.email || '',
                                                 password: '',
                                                 roles: user.roles,
+                                                role_id: user.role_id,
                                                 activo: user.activo
                                             });
                                             setError('');
@@ -296,9 +330,27 @@ export default function UsuariosClient() {
                                     <div className="input-icon"><i className="bi bi-shield-fill"></i></div>
                                     <div className="input-content">
                                         <label>Rol de Acceso</label>
-                                        <select value={formData.roles} onChange={(e) => setFormData({ ...formData, roles: e.target.value as 'administrador' | 'trabajador' })}>
-                                            <option value="trabajador">👷 Trabajador</option>
-                                            <option value="administrador">👑 Administrador</option>
+                                        <select
+                                            value={formData.role_id || ''}
+                                            onChange={(e) => {
+                                                const selectedRoleId = e.target.value ? parseInt(e.target.value) : null;
+                                                const selectedRole = rolesList.find(r => r.id === selectedRoleId);
+                                                // Asignamos 'administrador' dinámicamente si el rol contiene esa palabra clave o permisos plenos, de resto 'trabajador' para mantener retrocompatibilidad con Supabase ENUM.
+                                                const internalRoleTag = selectedRole?.nombre.toLowerCase().includes('admin') ? 'administrador' : 'trabajador';
+
+                                                setFormData({
+                                                    ...formData,
+                                                    role_id: selectedRoleId,
+                                                    roles: internalRoleTag
+                                                });
+                                            }}
+                                        >
+                                            <option value="" disabled>Seleccione un rol...</option>
+                                            {rolesList.map(r => (
+                                                <option key={r.id} value={r.id}>
+                                                    {r.nombre.toLowerCase().includes('admin') ? '👑' : '👷'} {r.nombre}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>

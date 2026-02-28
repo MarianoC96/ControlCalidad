@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 import AutocompleteSelect from '@/components/AutocompleteSelect';
 import { getCurrentDate, formatRange } from '@/lib/utils';
@@ -177,34 +178,7 @@ export default function RegistroProductosClient() {
 
     // ─── Loading State ─────────────────────────────────────────
     if (loading || authLoading) {
-        return (
-            <div className="page-wrapper">
-                <main className="main-content">
-                    <div className="header-container shadow-sm border" style={{ minHeight: '100px' }}>
-                        <div className="header-info" style={{ width: '60%' }}>
-                            <div className="skeleton" style={{ width: '100px', height: '14px', marginBottom: '10px' }}></div>
-                            <div className="skeleton" style={{ width: '250px', height: '28px', marginBottom: '8px' }}></div>
-                            <div className="skeleton" style={{ width: '320px', height: '14px' }}></div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div className="skeleton" style={{ width: '80px', height: '12px', marginBottom: '6px', marginLeft: 'auto' }}></div>
-                            <div className="skeleton" style={{ width: '120px', height: '20px', marginLeft: 'auto' }}></div>
-                        </div>
-                    </div>
-                    <div className="form-grid">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <div key={i} className="form-group">
-                                <div className="skeleton" style={{ width: '100px', height: '14px', marginBottom: '8px' }}></div>
-                                <div className="skeleton" style={{ width: '100%', height: '40px', borderRadius: '6px' }}></div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="text-center mt-4">
-                        <div className="skeleton" style={{ width: '200px', height: '48px', borderRadius: '8px', margin: '0 auto' }}></div>
-                    </div>
-                </main>
-            </div>
-        );
+        return <LoadingOverlay message="Sincronizando Sistema de Registro..." />;
     }
 
     // ─── Main UI ───────────────────────────────────────────────

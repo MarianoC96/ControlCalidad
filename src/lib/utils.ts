@@ -70,13 +70,20 @@ export function extractRange(rangeText: string): {
  * Validate if a value is within range
  */
 export function validateRange(
-    value: number,
+    value: number | null | undefined,
     rangeMin: number,
     rangeMax: number
 ): {
     isValid: boolean;
     message: string;
 } {
+    if (value === null || value === undefined || isNaN(value)) {
+        return {
+            isValid: false,
+            message: `El valor no puede estar vacío (${rangeMin} - ${rangeMax}).`,
+        };
+    }
+
     if (value < rangeMin) {
         return {
             isValid: false,

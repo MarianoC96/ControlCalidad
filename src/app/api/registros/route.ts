@@ -58,13 +58,13 @@ export async function GET(request: Request) {
             .from('registros')
             .select(selectColumns, { count: 'exact' });
 
-        if (year) {
+        if (year && year !== 'all') {
             // Use Peru timezone offset (GMT-5) so filter boundaries align with local calendar
             query = query.gte('fecha_registro', `${year}-01-01T00:00:00-05:00`)
                 .lt('fecha_registro', `${parseInt(year) + 1}-01-01T00:00:00-05:00`);
         }
 
-        if (month && year) {
+        if (month && year && year !== 'all' && month !== 'all') {
             const m = parseInt(month);
             const startStr = `${year}-${String(m + 1).padStart(2, '0')}-01T00:00:00-05:00`;
             const nextMonth = m === 11 ? 0 : m + 1;

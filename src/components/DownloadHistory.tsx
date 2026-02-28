@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
+import LoadingOverlay from './LoadingOverlay';
 import { normalizeString } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
@@ -153,13 +154,7 @@ export default function DownloadHistory() {
         return filtered.slice(0, limit);
     }, [downloads, selectedYear, selectedMonth, debouncedSearch, limit]);
 
-    if (loading && downloads.length === 0) return (
-        <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Cargando...</span>
-            </div>
-        </div>
-    );
+    if (loading && downloads.length === 0) return <LoadingOverlay message="Cargando Historial..." />;
 
     return (
         <div className="card shadow-sm border-0 bg-white" style={{ borderRadius: '12px', minHeight: '600px' }}>

@@ -2,30 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 import bcrypt from 'bcryptjs';
 
-// Helper para crear cliente Admin (Service Role)
+/**
+ * Cliente Admin (Service Role) para operaciones de sistema
+ */
 const createAdminClient = () => createServiceClient();
 
 export async function GET() {
     try {
         const auth = await getAuthUserId();
         const userId = auth?.userId;
-
-        // Cliente con permisos totales
         const supabase = createAdminClient();
 
         let isAdmin = false;
-
-        // Verificación en DB
         if (userId) {
-            const { data: userCheck } = await supabase
-                .from('usuarios')
-                .select('roles')
-                .eq('id', parseInt(userId))
-                .single();
-
-            if (userCheck?.roles === 'administrador') {
-                isAdmin = true;
-            }
+            const { data: u } = await supabase.from('usuarios').select('roles').eq('id', parseInt(userId)).single();
+            if (u?.roles === 'administrador') isAdmin = true;
         }
 
         if (!isAdmin) {
@@ -38,20 +29,16 @@ export async function GET() {
 
         const { data, error } = await supabase
             .from('usuarios')
-            .select('id, nombre_completo, usuario, email, roles, role_id, activo, is_deleted, created_at')
+            .select('id, auth_uid, nombre_completo, usuario, email, roles, role_id, activo, is_deleted, created_at')
             .eq('is_deleted', false)
             .order('nombre_completo');
 
         if (error) throw error;
-
         return NextResponse.json(data);
 
     } catch (error) {
         console.error('Get usuarios error:', error);
-        return NextResponse.json(
-            { error: 'Error interno al obtener usuarios' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Error interno' }, { status: 500 });
     }
 }
 
@@ -61,49 +48,56 @@ export async function POST(request: NextRequest) {
         const userId = auth?.userId;
         const supabase = createAdminClient();
 
-        // Validar Admin
+        // 1. Validar Admin
         let isAdmin = false;
         if (userId) {
             const { data: u } = await supabase.from('usuarios').select('roles').eq('id', parseInt(userId)).single();
             if (u?.roles === 'administrador') isAdmin = true;
         }
 
-        if (!isAdmin) {
-            return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-        }
+        if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
         const body = await request.json();
-        const { nombre_completo, usuario, email, password, roles } = body;
+        const { nombre_completo, usuario, email, password, roles, role_id } = body;
 
-        if (!nombre_completo || !usuario || !password) {
-            return NextResponse.json(
-                { error: 'Campos requeridos faltantes' },
-                { status: 400 }
-            );
+        // 2. Crear usuario en Supabase Auth
+        // Sintetizamos un email si no viene para que Supabase lo acepte
+        const authEmail = email && email.includes('@')
+            ? email.toLowerCase()
+            : `${usuario.toLowerCase()}@controlcalidad.local`;
+
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email: authEmail,
+            password: password,
+            email_confirm: true,
+            user_metadata: { nombre_completo, usuario, has_2fa: false }
+        });
+
+        if (authError) {
+            return NextResponse.json({ error: `Error en Autenticación: ${authError.message}` }, { status: 400 });
         }
 
+        // 3. Crear perfil en tabla local
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const { data, error } = await supabase
             .from('usuarios')
             .insert({
+                auth_uid: authData.user.id,
                 nombre_completo,
                 usuario,
-                email,
+                email: email || authEmail,
                 password: hashedPassword,
                 roles: roles || 'trabajador',
+                role_id: role_id || null,
                 activo: true,
             })
             .select()
             .single();
 
         if (error) {
-            if (error.code === '23505') {
-                return NextResponse.json(
-                    { error: 'El nombre de usuario ya existe' },
-                    { status: 400 }
-                );
-            }
+            // Rollback en Auth si falla la DB local
+            await supabase.auth.admin.deleteUser(authData.user.id);
+            if (error.code === '23505') return NextResponse.json({ error: 'El usuario ya existe' }, { status: 400 });
             throw error;
         }
 
@@ -111,10 +105,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('Create usuario error:', error);
-        return NextResponse.json(
-            { error: 'Error al crear usuario' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Error al crear usuario' }, { status: 500 });
     }
 }
 
@@ -124,63 +115,41 @@ export async function PUT(request: NextRequest) {
         const userId = auth?.userId;
         const supabase = createAdminClient();
 
-        // Validar Admin
         let isAdmin = false;
         if (userId) {
             const { data: u } = await supabase.from('usuarios').select('roles').eq('id', parseInt(userId)).single();
             if (u?.roles === 'administrador') isAdmin = true;
         }
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-        }
+        if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
         const body = await request.json();
-        const { id, nombre_completo, usuario, email, password, roles, activo, is_deleted } = body;
+        const { id, nombre_completo, usuario, email, password, roles, role_id, activo, is_deleted } = body;
 
-        if (!id) {
-            return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
+        if (id === 1) return NextResponse.json({ error: 'sadmin no modificable' }, { status: 403 });
+
+        // Sincronizar con Supabase Auth si es necesario
+        const { data: currentUser } = await supabase.from('usuarios').select('auth_uid').eq('id', id).single();
+
+        if (currentUser?.auth_uid) {
+            const authUpdate: any = {};
+            if (password) authUpdate.password = password;
+            if (email) authUpdate.email = email;
+            if (is_deleted || activo === false) authUpdate.app_metadata = { disabled: true };
+            else authUpdate.app_metadata = { disabled: false };
+
+            await supabase.auth.admin.updateUserById(currentUser.auth_uid, authUpdate);
         }
 
-        // Proteger al usuario sadmin (id=1) de ser editado o deshabilitado
-        if (id === 1) {
-            return NextResponse.json(
-                { error: 'El usuario del sistema (sadmin) no puede ser modificado' },
-                { status: 403 }
-            );
-        }
+        // Actualizar local
+        const updateData: any = { nombre_completo, usuario, email, roles, role_id, activo, is_deleted };
+        if (password) updateData.password = await bcrypt.hash(password, 10);
 
-        const updateData: Record<string, unknown> = {
-            nombre_completo,
-            usuario,
-            email,
-            roles,
-            activo,
-            is_deleted,
-        };
-
-
-
-        if (password) {
-            updateData.password = await bcrypt.hash(password, 10);
-        }
-
-        const { data, error } = await supabase
-            .from('usuarios')
-            .update(updateData)
-            .eq('id', id)
-            .select()
-            .single();
-
+        const { data, error } = await supabase.from('usuarios').update(updateData).eq('id', id).select().single();
         if (error) throw error;
 
         return NextResponse.json(data);
-
     } catch (error) {
         console.error('Update usuario error:', error);
-        return NextResponse.json(
-            { error: 'Error al actualizar usuario' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Error al actualizar' }, { status: 500 });
     }
 }

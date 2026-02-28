@@ -509,9 +509,6 @@ body {
   width: 100% !important;
   height: 100% !important;
   z-index: 2050 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
   overflow-x: hidden;
   overflow-y: auto;
   outline: 0;

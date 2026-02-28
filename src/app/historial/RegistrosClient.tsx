@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 
 const BulkDownloadModal = dynamic(() => import('@/components/BulkDownloadModal'), { ssr: false });
 const DownloadHistory = dynamic(() => import('@/components/DownloadHistory'), { ssr: false });
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -42,6 +43,7 @@ export default function RegistrosClient() {
     const [editError, setEditError] = useState('');
     const [editSuccess, setEditSuccess] = useState('');
     const [timeLeft, setTimeLeft] = useState('');
+    const [selectedHistoryDetail, setSelectedHistoryDetail] = useState<any>(null);
 
     // Edit field state
     const [editFields, setEditFields] = useState<{
@@ -430,17 +432,7 @@ export default function RegistrosClient() {
     const filteredRegistros: RegistroWithDetails[] = registros;
 
     if (loading) {
-        return (
-            <>
-
-                <div className="container mt-4">
-                    <div className="text-center">
-                        <div className="spinner"></div>
-                        <p>Cargando...</p>
-                    </div>
-                </div>
-            </>
-        );
+        return <LoadingOverlay message="Obteniendo Registros Históricos..." />;
     }
 
     return (
@@ -698,7 +690,7 @@ export default function RegistrosClient() {
 
             {
                 selectedRegistro && (
-                    <div className="modal-overlay" onClick={() => setSelectedRegistro(null)}>
+                    <div className="modal-overlay" style={{ zIndex: 2100 }} onClick={() => setSelectedRegistro(null)}>
                         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                             <div className="modal-header">
                                 <h3>Detalle del Registro</h3>
@@ -901,11 +893,16 @@ export default function RegistrosClient() {
                                                                 : control.texto_control || '-'}
                                                         </td>
                                                         <td>
-                                                            {control.fuera_de_rango ? (
-                                                                <span className="badge badge-danger">Fuera de Rango</span>
-                                                            ) : (
-                                                                <span className="badge badge-success">OK</span>
-                                                            )}
+                                                            {(() => {
+                                                                const isVacio = control.valor_control === null && !control.texto_control;
+                                                                if (control.fuera_de_rango) {
+                                                                    return <span className="badge badge-danger">Fuera de Rango</span>;
+                                                                }
+                                                                if (isVacio && control.rango_completo) {
+                                                                    return <span className="badge badge-warning text-dark">Incompleto</span>;
+                                                                }
+                                                                return <span className="badge badge-success">OK</span>;
+                                                            })()}
                                                         </td>
                                                         <td>{control.observacion || '-'}</td>
                                                     </tr>
@@ -968,7 +965,7 @@ export default function RegistrosClient() {
             {/* Password Verification Modal */}
             {
                 passwordModalOpen && (
-                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 2200 }}>
                         <div className="modal-dialog modal-dialog-centered">
                             <div className="modal-content border-0 shadow-lg">
                                 <div className="modal-header bg-dark text-white">
@@ -1006,7 +1003,7 @@ export default function RegistrosClient() {
             {/* Request Edit Permission Modal */}
             {
                 requestModalOpen && (
-                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 2200 }}>
                         <div className="modal-dialog modal-dialog-centered">
                             <div className="modal-content border-0 shadow-lg">
                                 <div className="modal-header bg-primary text-white">
@@ -1056,152 +1053,159 @@ export default function RegistrosClient() {
             {/* Edit Modal */}
             {
                 editModalOpen && editingRegistro && (
-                    <div className="modal show" tabIndex={-1}>
-                        <div className="modal-dialog modal-lg modal-dialog-scrollable">
-                            <div className="modal-content">
-                                <div className="modal-header border-0 sticky-top shadow-sm" style={{ background: 'white', zIndex: 1020, padding: '1.25rem 1.5rem' }}>
-                                    <div>
-                                        <div className="text-uppercase small fw-bold text-muted mb-1" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
-                                            Editando Registro
+                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)', zIndex: 2300 }}>
+                        <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                            <div className="modal-content border-0 shadow-lg overflow-hidden">
+                                <div className="modal-header bg-white p-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #dee2e6', flexShrink: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                        <div style={{
+                                            width: '56px', height: '56px',
+                                            background: 'linear-gradient(135deg, #0d6efd, #0b5ed7)',
+                                            borderRadius: '16px', display: 'flex', alignItems: 'center',
+                                            justifyContent: 'center', color: 'white', flexShrink: 0,
+                                            boxShadow: '0 4px 10px rgba(13, 110, 253, 0.2)'
+                                        }}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                            </svg>
                                         </div>
-                                        <h4 className="text-dark mb-0 fw-bold d-flex align-items-center gap-2">
-                                            <span className="text-primary truncate-text" style={{ maxWidth: '400px', display: 'inline-block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                {editingRegistro.producto_nombre}
-                                            </span>
-                                            <span className="badge bg-light text-secondary border rounded-pill fw-normal" style={{ fontSize: '0.8rem' }}>
-                                                Lote: {editingRegistro.lote_interno}
-                                            </span>
-                                        </h4>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <h3 className="mb-0 text-dark fw-bold" style={{ fontSize: '1.4rem' }}>Editor de Registro</h3>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                                                {editingRegistro.producto_nombre?.trim() ? (
+                                                    <span style={{
+                                                        backgroundColor: '#f8f9fa', color: '#212529', border: '1px solid #dee2e6',
+                                                        padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, display: 'inline-block'
+                                                    }}>
+                                                        {editingRegistro.producto_nombre}
+                                                    </span>
+                                                ) : null}
+                                                <span style={{
+                                                    backgroundColor: '#e7f1ff', color: '#0d6efd', border: '1px solid #b6d4fe',
+                                                    padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, display: 'inline-block'
+                                                }}>
+                                                    Lote: {editingRegistro.lote_interno}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <button
-                                        className="btn-close-custom"
-                                        onClick={handleCancelEdit}
-                                        style={{
-                                            background: '#f1f5f9',
-                                            border: 'none',
-                                            width: '32px',
-                                            height: '32px',
-                                            borderRadius: '50%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            cursor: 'pointer',
-                                            color: '#64748b',
-                                            fontSize: '1.2rem',
-                                            transition: 'all 0.2s'
-                                        }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#1e293b'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
-                                    >
-                                        &times;
-                                    </button>
+                                    <button type="button" className="btn-close shadow-none" onClick={handleCancelEdit} aria-label="Close"></button>
                                 </div>
 
-                                <div className="modal-body p-4">
-                                    {/* Header Info */}
-                                    {/* Premium Timer & Info Bar */}
-                                    <div className="d-flex align-items-center justify-content-between p-3 mb-4 rounded-3" style={{ background: 'linear-gradient(to right, #f8fafc, #f1f5f9)', border: '1px solid #e2e8f0' }}>
+                                <div className="modal-body p-4 bg-light bg-opacity-50">
+                                    <div className="status-card mb-4 p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center justify-content-between">
                                         <div className="d-flex align-items-center gap-3">
-                                            <div className={`d-flex align-items-center justify-content-center rounded-circle ${timeLeft === 'Expirado' ? 'bg-danger bg-opacity-10 text-danger' : 'bg-primary bg-opacity-10 text-primary'}`} style={{ width: '40px', height: '40px' }}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                            <div className={`p-2 rounded-circle ${timeLeft === 'Expirado' ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
+                                                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
                                                     <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" />
                                                     <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" />
                                                 </svg>
                                             </div>
                                             <div>
-                                                <div className="small text-muted fw-bold text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>Tiempo Restante</div>
-                                                <div className={`fw-bold ${timeLeft === 'Expirado' ? 'text-danger' : 'text-primary'}`} style={{ fontSize: '1.2rem', lineHeight: '1' }}>
-                                                    {timeLeft}
-                                                </div>
+                                                <div className="text-muted fw-bold text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Tiempo Restante</div>
+                                                <div className={`fw-black ${timeLeft === 'Expirado' ? 'text-danger' : 'text-success'}`} style={{ fontSize: '1.25rem' }}>{timeLeft}</div>
                                             </div>
                                         </div>
-
-                                        <div className="text-end border-start ps-3 ms-3">
-                                            <div className="small text-muted mb-1">
-                                                <span className="fw-semibold text-dark">{userName}</span> (Editor)
-                                            </div>
-                                            <div className="small text-secondary bg-white px-2 py-1 rounded border d-inline-block">
-                                                Inicio: {editLockInfo?.startedAt ? new Date(editLockInfo.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                        <div className="text-end border-start ps-4">
+                                            <div className="text-muted small">Editado por: <span className="fw-bold text-dark">{userName}</span></div>
+                                            <div className="text-secondary small mt-1 bg-light px-2 py-1 rounded d-inline-block border">
+                                                Iniciado: {editLockInfo?.startedAt ? new Date(editLockInfo.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                             </div>
                                         </div>
                                     </div>
 
                                     {editError && <div className="alert alert-danger">{editError}</div>}
 
-                                    <div className="mb-4">
-                                        <h5 className="border-bottom pb-2 text-secondary">Reglas de Edición</h5>
-                                        <ul className="small text-muted">
-                                            <li>Puede modificar: Lote Interno, Lote Producto, Guía, Marca, Cantidad y Fotos.</li>
-                                            <li>Máximo 2 fotos por registro.</li>
-                                            <li>Tiene 1 hora para completar la edición desde el inicio.</li>
-                                            <li>Al guardar, se registrará una auditoría permanente con los cambios realizados.</li>
-                                        </ul>
+                                    <div className="alert alert-info border-info-subtle bg-info bg-opacity-10 d-flex align-items-start gap-3 mb-4 rounded-3 shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-info mt-1 flex-shrink-0" viewBox="0 0 16 16">
+                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                            <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z" />
+                                        </svg>
+                                        <div>
+                                            <h6 className="fw-bold mb-1 text-info-emphasis">Reglas de Edición</h6>
+                                            <ul className="small mb-0 text-muted ps-3" style={{ listStyleType: 'disc' }}>
+                                                <li>Campos permitidos: Lote Interno, Lote Producto, Guía, Marca, Cantidad y Evidencias (Fotos).</li>
+                                                <li>Límite de fotografías: Máximo 2 imágenes por registro.</li>
+                                                <li>Ventana de edición: Dispone de 1 hora para guardar los cambios desde su inicio.</li>
+                                                <li>Auditoría: Todas las modificaciones generarán un registro inmutable en el historial.</li>
+                                            </ul>
+                                        </div>
                                     </div>
 
                                     {/* Editable Fields Section */}
-                                    <div className="mb-4 bg-white rounded-3 overflow-hidden shadow-sm" style={{ border: '1px solid #e2e8f0' }}>
-                                        <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light bg-opacity-50">
-                                            <label className="form-label fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-secondary" viewBox="0 0 16 16">
-                                                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                                                    <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
-                                                </svg>
-                                                Editar Datos del Registro
-                                            </label>
+                                    <div className="modal-section-title d-flex align-items-center gap-2 mb-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" className="text-primary" viewBox="0 0 16 16">
+                                            <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                            <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
+                                        </svg>
+                                        <h5 className="mb-0 fw-bold text-dark" style={{ fontSize: '1.15rem' }}>Datos del Registro</h5>
+                                    </div>
+
+                                    <div className="row g-4 mb-4">
+                                        <div className="col-md-6">
+                                            <div className="premium-input-group">
+                                                <label className="form-label text-muted fw-bold small text-uppercase" style={{ letterSpacing: '0.5px' }}>Lote Interno</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control premium-input"
+                                                    value={editFields.lote_interno}
+                                                    onChange={(e) => setEditFields(prev => ({ ...prev, lote_interno: e.target.value }))}
+                                                    disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    placeholder="Ej: Lote Interno..."
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="p-3">
-                                            <div className="row g-3">
-                                                <div className="col-md-6">
-                                                    <label className="form-label small fw-bold text-muted">Lote Interno</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control form-control-sm"
-                                                        value={editFields.lote_interno}
-                                                        onChange={(e) => setEditFields(prev => ({ ...prev, lote_interno: e.target.value }))}
-                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
-                                                    />
-                                                </div>
-                                                <div className="col-md-6">
-                                                    <label className="form-label small fw-bold text-muted">Lote de Producto</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control form-control-sm"
-                                                        value={editFields.lote_producto}
-                                                        onChange={(e) => setEditFields(prev => ({ ...prev, lote_producto: e.target.value }))}
-                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
-                                                    />
-                                                </div>
-                                                <div className="col-md-6">
-                                                    <label className="form-label small fw-bold text-muted">Guía</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control form-control-sm"
-                                                        value={editFields.guia}
-                                                        onChange={(e) => setEditFields(prev => ({ ...prev, guia: e.target.value }))}
-                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
-                                                    />
-                                                </div>
-                                                <div className="col-md-6">
-                                                    <label className="form-label small fw-bold text-muted">Marca</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control form-control-sm"
-                                                        value={editFields.marca}
-                                                        onChange={(e) => setEditFields(prev => ({ ...prev, marca: e.target.value }))}
-                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
-                                                    />
-                                                </div>
-                                                <div className="col-md-6">
-                                                    <label className="form-label small fw-bold text-muted">Cantidad</label>
-                                                    <input
-                                                        type="number"
-                                                        className="form-control form-control-sm"
-                                                        value={editFields.cantidad}
-                                                        onChange={(e) => setEditFields(prev => ({ ...prev, cantidad: e.target.value }))}
-                                                        disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
-                                                        min="0"
-                                                    />
-                                                </div>
+                                        <div className="col-md-6">
+                                            <div className="premium-input-group">
+                                                <label className="form-label text-muted fw-bold small text-uppercase" style={{ letterSpacing: '0.5px' }}>Lote de Producto</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control premium-input"
+                                                    value={editFields.lote_producto}
+                                                    onChange={(e) => setEditFields(prev => ({ ...prev, lote_producto: e.target.value }))}
+                                                    disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    placeholder="Ej: Lote de Producto..."
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="premium-input-group">
+                                                <label className="form-label text-muted fw-bold small text-uppercase" style={{ letterSpacing: '0.5px' }}>Guía</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control premium-input"
+                                                    value={editFields.guia}
+                                                    onChange={(e) => setEditFields(prev => ({ ...prev, guia: e.target.value }))}
+                                                    disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    placeholder="Ej: Número de Guía..."
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="premium-input-group">
+                                                <label className="form-label text-muted fw-bold small text-uppercase" style={{ letterSpacing: '0.5px' }}>Marca</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control premium-input"
+                                                    value={editFields.marca}
+                                                    onChange={(e) => setEditFields(prev => ({ ...prev, marca: e.target.value }))}
+                                                    disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    placeholder="Ej: Marca del proveedor..."
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="premium-input-group">
+                                                <label className="form-label text-muted fw-bold small text-uppercase" style={{ letterSpacing: '0.5px' }}>Cantidad</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control premium-input"
+                                                    value={editFields.cantidad}
+                                                    onChange={(e) => setEditFields(prev => ({ ...prev, cantidad: e.target.value }))}
+                                                    disabled={!!editError || (timeLeft === 'Expirado' && userRole !== 'administrador')}
+                                                    min="0"
+                                                    placeholder="0"
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -1406,118 +1410,81 @@ export default function RegistrosClient() {
                                     </div> {/* Cierre del contenedor principal premium */}
 
                                     {/* History Timeline Premium Container */}
-                                    <div className="mb-4 bg-white rounded-3 overflow-hidden shadow-sm" style={{ border: '1px solid #e2e8f0' }}>
+                                    <div className="mb-4 bg-white rounded-3 overflow-hidden shadow-sm border border-light">
                                         <h5 className="border-bottom p-3 mb-0 bg-light bg-opacity-50 text-dark fw-bold d-flex align-items-center gap-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-secondary" viewBox="0 0 16 16">
                                                 <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.02 8.02 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z" />
                                                 <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z" />
-                                                <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z" />
                                             </svg>
-                                            Historial de Cambios
+                                            Auditoría e Historial de Cambios
                                         </h5>
-                                        <div style={{
-                                            maxHeight: '250px',
-                                            overflowY: 'auto',
-                                            backgroundColor: '#fff',
-                                            borderRadius: '0 0 8px 8px',
-                                            padding: '10px'
-                                        }}>
-                                            {editHistory.length === 0 ? (
-                                                <p className="text-muted small fst-italic py-3 text-center mb-0">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="opacity-50 d-block mx-auto mb-2" viewBox="0 0 16 16">
-                                                        <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.02 8.02 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z" />
-                                                        <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z" />
-                                                        <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z" />
-                                                    </svg>
-                                                    No hay ediciones previas registradas.
-                                                </p>
-                                            ) : (
-                                                <div className="d-flex flex-column gap-2">
-                                                    {editHistory.map(hist => {
-                                                        const actionStr = hist.action || '';
-                                                        const addMatch = actionStr.match(/add_photo:(\d+)/);
-                                                        const delMatch = actionStr.match(/delete_photo:(\d+)/);
-                                                        // Handle both "add_photo:1" and "add_photo" formats
-                                                        const addCount = addMatch ? parseInt(addMatch[1]) : (actionStr.includes('add_photo') ? 1 : 0);
-                                                        const delCount = delMatch ? parseInt(delMatch[1]) : (actionStr.includes('delete_photo') && !delMatch ? 1 : 0);
-
-                                                        return (
-                                                            <div key={hist.id} className="border-0 rounded-3 p-3 bg-light bg-opacity-50 hover-bg-light transition-all" style={{ borderLeft: `3px solid ${hist.role === 'administrador' ? '#607d8b' : '#94a3b8'}` }}>
-                                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                    <div className="d-flex align-items-center gap-2">
-                                                                        <span className={`badge rounded-pill fw-normal d-inline-flex align-items-center gap-1 px-2 py-1 ${hist.role === 'administrador' ? 'bg-secondary bg-opacity-75' : 'bg-secondary bg-opacity-50'}`} style={{ fontSize: '0.75rem' }}>
-                                                                            {hist.role === 'administrador' ? (
-                                                                                <>
-                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
-                                                                                        <path d="M14 6.551V11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6.551l7-1.75 7 1.75zM15 11V5l-7 1.75L1 5v6a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3z" />
-                                                                                        <path d="M14.5 3a.5.5 0 0 1 .5.5v1.101l-7 1.75-7-1.75V3.5a.5.5 0 0 1 .5-.5h13z" />
-                                                                                    </svg>
-                                                                                    Admin
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
-                                                                                        <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-                                                                                    </svg>
-                                                                                    Trabajador
-                                                                                </>
-                                                                            )}
-                                                                        </span>
-                                                                        <strong className="text-dark" style={{ fontSize: '0.9rem' }}>
-                                                                            {hist.usuarios?.nombre_completo || 'Usuario'}
-                                                                        </strong>
+                                        <div className="table-responsive">
+                                            <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.85rem' }}>
+                                                <thead className="table-light">
+                                                    <tr>
+                                                        <th className="text-secondary fw-semibold ps-3">Fecha y Hora</th>
+                                                        <th className="text-secondary fw-semibold">Usuario Responsable</th>
+                                                        <th className="text-secondary fw-semibold pe-3">Detalles Técnicos</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {editHistory.length > 0 ? (
+                                                        editHistory.map(hist => (
+                                                            <tr key={hist.id}>
+                                                                <td className="ps-3 text-muted">{new Date(hist.created_at).toLocaleString('es-PE')}</td>
+                                                                <td className="fw-medium text-dark">{hist.usuarios?.nombre_completo || 'Usuario'}</td>
+                                                                <td className="text-muted pe-3">
+                                                                    <div className="d-flex align-items-center justify-content-between gap-2">
+                                                                        <div className="small bg-light px-2 py-1 rounded text-truncate" style={{ maxWidth: '200px' }} title={hist.action || 'Edición general'}>
+                                                                            {(() => {
+                                                                                if (!hist.action) return 'Edición general';
+                                                                                const parts = hist.action.split(',');
+                                                                                const summary = [];
+                                                                                if (parts.some((p: string) => p.startsWith('field_edit'))) summary.push('Campos modificados');
+                                                                                if (parts.some((p: string) => p.startsWith('add_photo'))) summary.push('Fotos agregadas');
+                                                                                if (parts.some((p: string) => p.startsWith('delete_photo'))) summary.push('Fotos eliminadas');
+                                                                                return summary.length > 0 ? summary.join(', ') : 'Edición general';
+                                                                            })()}
+                                                                        </div>
+                                                                        <button
+                                                                            className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 flex-shrink-0"
+                                                                            style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                                                                            onClick={() => setSelectedHistoryDetail(hist)}
+                                                                        >
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                                                                <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
+                                                                                <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+                                                                            </svg>
+                                                                            Detalles
+                                                                        </button>
                                                                     </div>
-                                                                    <small className="text-muted fw-light" style={{ fontSize: '0.75rem' }}>
-                                                                        {new Date(hist.created_at).toLocaleString()}
-                                                                    </small>
-                                                                </div>
-                                                                <div className="d-flex flex-wrap gap-2 ms-1">
-                                                                    {addCount > 0 && (
-                                                                        <span className="badge fw-medium px-2 py-1" style={{ fontSize: '0.75rem', background: '#d1e7dd', color: '#0f5132', border: '1px solid #a3cfbb' }}>
-                                                                            + Agregó {addCount} foto{addCount > 1 ? 's' : ''}
-                                                                        </span>
-                                                                    )}
-                                                                    {delCount > 0 && (
-                                                                        <span className="badge fw-medium px-2 py-1" style={{ fontSize: '0.75rem', background: '#f8d7da', color: '#842029', border: '1px solid #f1aeb5' }}>
-                                                                            − Eliminó {delCount} foto{delCount > 1 ? 's' : ''}
-                                                                        </span>
-                                                                    )}
-                                                                    {addCount === 0 && delCount === 0 && !hist.field_changes && (
-                                                                        <span className="badge fw-medium px-2 py-1" style={{ fontSize: '0.75rem', background: '#e2e3e5', color: '#41464b', border: '1px solid #c4c8cb' }}>
-                                                                            ✎ Editó registro
-                                                                        </span>
-                                                                    )}
-                                                                    {hist.field_changes && Object.entries(hist.field_changes).map(([field, change]: [string, any]) => {
-                                                                        const fieldLabels: Record<string, string> = {
-                                                                            lote_interno: 'Lote Interno',
-                                                                            lote_producto: 'Lote Producto',
-                                                                            guia: 'Guía',
-                                                                            marca: 'Marca',
-                                                                            cantidad: 'Cantidad',
-                                                                        };
-                                                                        return (
-                                                                            <span key={field} className="badge fw-medium px-2 py-1" style={{ fontSize: '0.75rem', background: '#fff3cd', color: '#664d03', border: '1px solid #ffda6a' }}>
-                                                                                ✏ {fieldLabels[field] || field}: <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>{change.old || '(vacío)'}</span> → <strong>{change.new || '(vacío)'}</strong>
-                                                                            </span>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={3} className="text-center py-4 text-muted fst-italic">
+                                                                No hay registro de ediciones previas para este control.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
+                                </div> {/* Cierre del body principal */}
 
-                                </div>
-
-                                <div className="modal-footer sticky-bottom bg-white border-top p-3" style={{ margin: '0 -1.5rem -1.5rem -1.5rem', zIndex: 100 }}>
-                                    <button className="btn btn-secondary px-4" onClick={handleCancelEdit}>Cancelar Edición</button>
+                                <div className="modal-footer-premium p-3 bg-light border-top flex-shrink-0" style={{ borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                                    <button className="btn btn-light fw-bold text-secondary border shadow-sm px-4" onClick={handleCancelEdit}>
+                                        Descartar y Volver
+                                    </button>
                                     <button
-                                        className="btn btn-warning fw-bold px-4"
+                                        className="btn btn-primary fw-bold shadow-sm px-4 d-flex align-items-center gap-2"
                                         onClick={handleSaveEdit}
                                         disabled={
+                                            (timeLeft === 'Expirado' && userRole !== 'administrador') ||
+                                            (((editingRegistro.fotos?.filter(f => !photosToDelete.includes(f.id)).length || 0) + editPhotos.length) > 2) ||
+                                            !!editError ||
                                             (
                                                 editPhotos.length === 0 &&
                                                 photosToDelete.length === 0 &&
@@ -1526,13 +1493,149 @@ export default function RegistrosClient() {
                                                 editFields.guia === (editingRegistro.guia || '') &&
                                                 editFields.marca === (editingRegistro.marca || '') &&
                                                 editFields.cantidad === String(editingRegistro.cantidad || '')
-                                            ) ||
-                                            !!editError ||
-                                            (timeLeft === 'Expirado' && userRole !== 'administrador')
+                                            )
                                         }
                                     >
-                                        Guardar Cambios
+                                        Guardar Edición Permanentemente
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Editing History Detail Mini-Modal */}
+            {
+                selectedHistoryDetail && (
+                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', zIndex: 2400 }}>
+                        <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                            <div className="modal-content border-0 shadow-lg">
+                                <div className="modal-header bg-light p-3 d-flex justify-content-between align-items-center" style={{ borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+                                    <h5 className="mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" className="text-primary" viewBox="0 0 16 16">
+                                            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.02 8.02 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z" />
+                                            <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z" />
+                                        </svg>
+                                        Detalles de la Edición
+                                    </h5>
+                                    <button type="button" className="btn-close shadow-none m-0" onClick={() => setSelectedHistoryDetail(null)} aria-label="Close"></button>
+                                </div>
+                                <div className="modal-body p-4 bg-white">
+                                    <div className="mb-3 d-flex justify-content-between text-muted small border-bottom pb-2">
+                                        <span className="fw-medium text-dark"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="me-1 mb-1" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /></svg>
+                                            {selectedHistoryDetail.usuarios?.nombre_completo || 'Usuario'}</span>
+                                        <span className="bg-light px-2 rounded border">{new Date(selectedHistoryDetail.created_at).toLocaleString('es-PE')}</span>
+                                    </div>
+
+                                    {selectedHistoryDetail.field_changes && Object.keys(selectedHistoryDetail.field_changes).length > 0 && (
+                                        <div className="mb-4">
+                                            <h6 className="fw-bold fs-6 text-dark mb-3"><span className="badge bg-warning text-dark me-2">✎</span>Campos Modificados</h6>
+                                            <div className="table-responsive border rounded">
+                                                <table className="table table-sm table-bordered mb-0" style={{ fontSize: '0.85rem' }}>
+                                                    <thead className="table-light">
+                                                        <tr>
+                                                            <th>Campo</th>
+                                                            <th>Valor Anterior</th>
+                                                            <th>Valor Nuevo</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {Object.entries(selectedHistoryDetail.field_changes).map(([field, vals]: [string, any]) => (
+                                                            <tr key={field}>
+                                                                <td className="fw-medium text-capitalize">{field.replace('_', ' ')}</td>
+                                                                <td className="text-danger bg-danger bg-opacity-10 text-decoration-line-through">{vals.old || '-'}</td>
+                                                                <td className="text-success bg-success bg-opacity-10 fw-bold">{vals.new || '-'}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {selectedHistoryDetail.photos_added && selectedHistoryDetail.photos_added.length > 0 && (
+                                        <div className="mb-4">
+                                            <h6 className="fw-bold fs-6 text-dark mb-3"><span className="badge bg-success me-2">+</span>Fotos Agregadas ({selectedHistoryDetail.photos_added.length})</h6>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {selectedHistoryDetail.photos_added.map((p: any, i: number) => {
+                                                    // Buscamos la data en cualquier propiedad posible
+                                                    const raw = p?.data || p?.datos_base64 || p?.url || p?.path || (typeof p === 'string' ? p : '');
+                                                    if (!raw || raw.length < 10) return null;
+
+                                                    // Limpieza profunda de espacios en blanco que rompen la URL
+                                                    const clean = raw.trim().replace(/\s/g, '');
+                                                    const src = (clean.startsWith('data:') || clean.startsWith('http')) ? clean : `data:image/jpeg;base64,${clean}`;
+
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className="border rounded shadow-sm"
+                                                            style={{
+                                                                width: '80px',
+                                                                height: '80px',
+                                                                backgroundImage: `url("${src}")`,
+                                                                backgroundSize: 'cover',
+                                                                backgroundPosition: 'center',
+                                                                cursor: 'pointer',
+                                                                backgroundColor: '#f8f9fa'
+                                                            }}
+                                                            onClick={() => setZoomImage({ url: src, description: 'Foto agregada' })}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {selectedHistoryDetail.photos_deleted && selectedHistoryDetail.photos_deleted.length > 0 && (
+                                        <div className="mb-4">
+                                            <h6 className="fw-bold fs-6 text-dark mb-2"><span className="badge bg-danger me-2">-</span>Fotos Eliminadas ({selectedHistoryDetail.photos_deleted.length})</h6>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {selectedHistoryDetail.photos_deleted.map((p: any, i: number) => {
+                                                    const raw = p?.data || p?.datos_base64 || p?.url || p?.path || (typeof p === 'string' ? p : '');
+                                                    const id = p?.id || (typeof p === 'number' ? p : 'N/A');
+
+                                                    if (!raw || raw.length < 20) {
+                                                        return (
+                                                            <div key={i} className="border border-danger rounded d-flex flex-column align-items-center justify-content-center bg-danger bg-opacity-10 text-danger text-center px-1" style={{ width: '80px', height: '80px' }}>
+                                                                <span className="fw-bold" style={{ fontSize: '9px' }}>ID: {id}</span>
+                                                                <span style={{ fontSize: '8px' }}>SIN IMAGEN</span>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Limpieza profunda de espacios en blanco
+                                                    const clean = raw.trim().replace(/\s/g, '');
+                                                    const src = (clean.startsWith('data:') || clean.startsWith('http')) ? clean : `data:image/jpeg;base64,${clean}`;
+
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className="border border-danger rounded shadow-sm position-relative overflow-hidden"
+                                                            style={{
+                                                                width: '80px',
+                                                                height: '80px',
+                                                                backgroundImage: `url("${src}")`,
+                                                                backgroundSize: 'cover',
+                                                                backgroundPosition: 'center',
+                                                                cursor: 'pointer',
+                                                                backgroundColor: '#f8f9fa'
+                                                            }}
+                                                            onClick={() => setZoomImage({ url: src, description: 'Foto eliminada' })}
+                                                        >
+                                                            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 2, pointerEvents: 'none', backgroundColor: 'rgba(220, 53, 69, 0.15)' }}>
+                                                                <span className="badge bg-danger shadow-sm px-1 py-1" style={{ fontSize: '0.45rem' }}>ELIMINADA</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="modal-footer border-0 p-3 bg-light d-flex justify-content-end" style={{ flexShrink: 0 }}>
+                                    <button className="btn btn-secondary px-4 fw-bold shadow-sm" onClick={() => setSelectedHistoryDetail(null)}>Cerrar</button>
                                 </div>
                             </div>
                         </div>
@@ -1929,7 +2032,7 @@ export default function RegistrosClient() {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1000;
+          z-index: 2000;
           padding: 1rem;
         }
 
@@ -1948,6 +2051,7 @@ export default function RegistrosClient() {
           align-items: center;
           padding: 1rem 1.5rem;
           border-bottom: 1px solid #dee2e6;
+          flex-shrink: 0;
         }
 
         .modal-header h3 {
@@ -1972,6 +2076,7 @@ export default function RegistrosClient() {
           gap: 0.5rem;
           padding: 1rem 1.5rem;
           border-top: 1px solid #dee2e6;
+          flex-shrink: 0;
         }
 
         .detail-grid {

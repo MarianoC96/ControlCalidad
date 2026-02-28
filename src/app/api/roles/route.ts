@@ -13,12 +13,11 @@ const ALL_MODULES = [
     'usuarios',
     'admin/config-pdf',
     'accesos',
-    'temporal',
 ];
 
 async function getAuthUser(supabase: ReturnType<typeof createAdminClient>) {
     const auth = await getAuthUserId();
-        const userId = auth?.userId;
+    const userId = auth?.userId;
     if (!userId) return null;
 
     const { data: user } = await supabase

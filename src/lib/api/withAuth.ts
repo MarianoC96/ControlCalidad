@@ -3,8 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 /**
- * Authenticated user profile from the `usuarios` table,
- * enriched with Supabase Auth UID.
+ * Perfil de usuario autenticado enriquecido con UID de Supabase
+ * y secretos de 2FA.
  */
 export interface AuthenticatedUser {
     readonly id: number;
@@ -15,6 +15,7 @@ export interface AuthenticatedUser {
     readonly roles: 'administrador' | 'trabajador';
     readonly role_id: number | null;
     readonly activo: boolean;
+    readonly two_factor_secret?: string | null;
 }
 
 type RouteHandler = (
@@ -23,17 +24,7 @@ type RouteHandler = (
 ) => Promise<NextResponse>;
 
 /**
- * Higher-order function that wraps API route handlers with auth validation.
- *
- * Why this exists: every API route duplicated the same pattern —
- * read cookies, validate user, create admin client. This centralizes
- * that into a single composable wrapper.
- *
- * Flow:
- * 1. Gets Supabase session from the request cookies (Supabase SSR)
- * 2. Validates the session JWT via `supabase.auth.getUser()`
- * 3. Looks up the corresponding `usuarios` record via `auth_uid`
- * 4. Passes the authenticated user to the wrapped handler
+ * HOF que envuelve las rutas de API con validación de sesión de Supabase.
  */
 export function withAuth(handler: RouteHandler) {
     return async (request: Request): Promise<NextResponse> => {
@@ -52,16 +43,12 @@ export function withAuth(handler: RouteHandler) {
                 );
             }
 
-            // Look up the app-level user profile
-            const adminClient = createAdminClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
-                { auth: { autoRefreshToken: false, persistSession: false } }
-            );
+            // Buscamos el perfil en la tabla de usuarios local
+            const adminClient = createServiceClient();
 
             const { data: appUser, error: userError } = await adminClient
                 .from('usuarios')
-                .select('id, auth_uid, nombre_completo, usuario, email, roles, role_id, activo')
+                .select('id, auth_uid, nombre_completo, usuario, email, roles, role_id, activo, two_factor_secret')
                 .eq('auth_uid', authUser.id)
                 .eq('activo', true)
                 .eq('is_deleted', false)
@@ -69,7 +56,7 @@ export function withAuth(handler: RouteHandler) {
 
             if (userError || !appUser) {
                 return NextResponse.json(
-                    { error: 'Usuario no encontrado en el sistema' },
+                    { error: 'Usuario no encontrado o inactivo' },
                     { status: 403 }
                 );
             }
@@ -86,8 +73,8 @@ export function withAuth(handler: RouteHandler) {
 }
 
 /**
- * Creates an admin Supabase client that bypasses RLS.
- * Use only in server-side API routes where elevated access is required.
+ * Crea un cliente de Supabase con Service Role (Admin).
+ * Úsalo solo en rutas de API seguras (Server-side).
  */
 export function createServiceClient() {
     return createAdminClient(
@@ -98,12 +85,7 @@ export function createServiceClient() {
 }
 
 /**
- * Lightweight auth check for routes that just need the userId.
- * Returns the usuarios.id (app-level ID) or null if unauthenticated.
- *
- * Why this exists: many routes only need `userId` to filter queries.
- * The full `withAuth` HOF is better for new routes, but this function
- * allows migrating existing routes with minimal code changes.
+ * Obtiene el ID del usuario autenticado de forma ligera.
  */
 export async function getAuthUserId(): Promise<{ userId: string; authUid: string } | null> {
     try {

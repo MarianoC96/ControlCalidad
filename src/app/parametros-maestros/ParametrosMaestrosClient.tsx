@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { useRouter } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/client';
@@ -22,6 +23,14 @@ export default function ParametrosMaestrosClient() {
     const [formData, setFormData] = useState({ nombre: '', tipo: 'texto' as 'texto' | 'numero' | 'rango' });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+
+    const [activeTab, setActiveTab] = useState<'maestros' | 'locales'>('maestros');
+    const [parametrosLocales, setParametrosLocales] = useState<any[]>([]);
+
+    // Pagination & Search states
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     // Initialize on mount only
     useEffect(() => {
@@ -64,14 +73,50 @@ export default function ParametrosMaestrosClient() {
 
     const loadParametros = async () => {
         try {
+            setLoading(true);
             const response = await fetch('/api/parametros-maestros');
             if (!response.ok) throw new Error('Error al cargar parámetros');
             const data = await response.json();
             setParametros(data || []);
+
+            // Also load local parameters for standardization
+            const respLocales = await fetch('/api/parametros-maestros?type=locales');
+            if (respLocales.ok) {
+                const dataLocales = await respLocales.json();
+                setParametrosLocales(dataLocales || []);
+            }
         } catch (err) {
             console.error('Error loading parametros:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleStandardize = async (nombre: string, tipo: string) => {
+        if (!confirm(`¿Desea convertir "${nombre}" en un Parámetro Maestro? Esto actualizará automáticamente todos los productos que lo usan.`)) {
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const response = await fetch('/api/parametros-maestros/estandarizar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, tipo }),
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Error al estandarizar');
+            }
+
+            // Refresh everything
+            loadParametros();
+            alert('Parámetro estandarizado con éxito. Se han actualizado todos los vínculos.');
+        } catch (err) {
+            alert(err instanceof Error ? err.message : 'Error al estandarizar');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -146,32 +191,50 @@ export default function ParametrosMaestrosClient() {
         }
     };
 
-    const handleLogout = async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        router.push('/');
-    };
+    const filteredParametros = parametros.filter((p) =>
+        p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Pagination & Search logic for Maestros
+    const totalPages = Math.ceil(filteredParametros.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredParametros.slice(indexOfFirstItem, indexOfLastItem);
+
+    const filteredLocales = parametrosLocales.filter((p) =>
+        p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Pagination & Search logic for Locales
+    const totalLocalPages = Math.ceil(filteredLocales.length / itemsPerPage);
+    const indexOfLastLocalItem = currentPage * itemsPerPage;
+    const indexOfFirstLocalItem = indexOfLastLocalItem - itemsPerPage;
+    const currentLocalItems = filteredLocales.slice(indexOfFirstLocalItem, indexOfLastLocalItem);
+
+    // Reset page on search
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     const getTipoBadge = (tipo: string) => {
         const classes: Record<string, string> = {
-            texto: 'badge-secondary',
-            numero: 'badge-info',
-            rango: 'badge-success',
+            texto: 'badge-texto',
+            numero: 'badge-numero',
+            rango: 'badge-rango',
         };
-        return classes[tipo] || 'badge-secondary';
+        const labels: Record<string, string> = {
+            texto: 'Texto Libre',
+            numero: 'Numérico',
+            rango: 'Rango Mín/Máx',
+        };
+        return {
+            className: classes[tipo] || 'badge-texto',
+            label: labels[tipo] || tipo.toUpperCase()
+        };
     };
 
     if (loading) {
-        return (
-            <>
-
-                <div className="container mt-4">
-                    <div className="text-center">
-                        <div className="spinner"></div>
-                        <p>Cargando...</p>
-                    </div>
-                </div>
-            </>
-        );
+        return <LoadingOverlay message="Cargando Parámetros..." />;
     }
 
     return (
@@ -192,101 +255,299 @@ export default function ParametrosMaestrosClient() {
                             <span className="lab">TOTAL</span>
                         </div>
                         <button className="btn-add-premium shadow-sm" onClick={openNewModal}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style={{ marginRight: '8px' }}>
-                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
-                            </svg>
-                            <span>Agregar Parámetro</span>
+                            <i className="bi bi-plus-lg me-2"></i>
+                            <span>Nuevo Parámetro</span>
                         </button>
                     </div>
                 </div>
 
-                <div className="table-container">
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
-                                <th>Fecha Creación</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {parametros.map((param) => (
-                                <tr key={param.id}>
-                                    <td>{param.nombre}</td>
-                                    <td>
-                                        <span className={`badge ${getTipoBadge(param.tipo)}`}>
-                                            {param.tipo.toUpperCase()}
-                                        </span>
-                                    </td>
-                                    <td>{new Date(param.created_at).toLocaleDateString('es-PE')}</td>
-                                    <td>
-                                        <div className="btn-group">
-                                            <button
-                                                className="btn btn-primary btn-sm"
-                                                onClick={() => openEditModal(param)}
-                                            >
-                                                Editar
-                                            </button>
-                                            <button
-                                                className="btn btn-danger btn-sm"
-                                                onClick={() => handleDelete(param.id)}
-                                            >
-                                                Eliminar
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="tab-navigation mb-4">
+                    <button
+                        className={`tab-btn ${activeTab === 'maestros' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('maestros'); setCurrentPage(1); }}
+                    >
+                        <i className="bi bi-shield-check me-2"></i>
+                        Catálogo Maestro
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'locales' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('locales'); setCurrentPage(1); }}
+                    >
+                        <i className="bi bi-search me-2"></i>
+                        Locales / Por Estandarizar
+                        {parametrosLocales.length > 0 && (
+                            <span className="count-badge animate-pulse">{parametrosLocales.length}</span>
+                        )}
+                    </button>
+                </div>
+
+                <div className="table-container-card shadow-sm border">
+                    <div className="toolbar-section border-bottom">
+                        <div className="search-group">
+                            <i className="bi bi-search"></i>
+                            <input
+                                type="text"
+                                className="toolbar-input"
+                                placeholder={activeTab === 'maestros' ? "Buscar parámetro maestro..." : "Buscar en parámetros locales..."}
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="table-responsive">
+                        {activeTab === 'maestros' ? (
+                            <table className="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th style={{ width: '40%' }}>NOMBRE DEL PARÁMETRO</th>
+                                        <th className="text-center" style={{ width: '25%' }}>TIPO DE DATO</th>
+                                        <th className="text-center" style={{ width: '20%' }}>FECHA ALTA</th>
+                                        <th className="text-end" style={{ width: '15%', paddingRight: '24px' }}>ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentItems.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="text-center py-5">
+                                                <div className="empty-state-table">
+                                                    <i className="bi bi-search fs-1 mb-2"></i>
+                                                    <p>No se encontraron parámetros maestros</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        currentItems.map((param) => {
+                                            const badge = getTipoBadge(param.tipo);
+                                            return (
+                                                <tr key={param.id} className="row-hover">
+                                                    <td>
+                                                        <div className="param-info-cell">
+                                                            <div className="param-avatar">
+                                                                <i className="bi bi-gear-fill"></i>
+                                                            </div>
+                                                            <span className="param-name-txt">{param.nombre}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <span className={`type-badge ${badge.className}`}>
+                                                            {badge.label}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <span className="date-txt">{new Date(param.created_at).toLocaleDateString('es-PE')}</span>
+                                                    </td>
+                                                    <td className="text-end" style={{ paddingRight: '24px' }}>
+                                                        <div className="d-flex justify-content-end gap-2">
+                                                            <button
+                                                                className="btn-action edit"
+                                                                onClick={() => openEditModal(param)}
+                                                                title="Editar"
+                                                            >
+                                                                <i className="bi bi-pencil-fill"></i>
+                                                            </button>
+                                                            <button
+                                                                className="btn-action delete"
+                                                                onClick={() => handleDelete(param.id)}
+                                                                title="Eliminar"
+                                                            >
+                                                                <i className="bi bi-trash3-fill"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <table className="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th style={{ width: '35%' }}>PARÁMETRO LOCAL</th>
+                                        <th className="text-center" style={{ width: '20%' }}>TIPO</th>
+                                        <th className="text-center" style={{ width: '15%' }}>USOS</th>
+                                        <th className="text-center" style={{ width: '15%' }}>ESTADO</th>
+                                        <th className="text-end" style={{ width: '15%', paddingRight: '24px' }}>ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentLocalItems.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="text-center py-5">
+                                                <div className="empty-state-table">
+                                                    <i className="bi bi-magic fs-1 mb-2 text-primary opacity-50"></i>
+                                                    <p className="fw-bold">¡Todo estandarizado!</p>
+                                                    <span className="small text-muted">No hay parámetros locales pendientes de normalizar.</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        currentLocalItems.map((local: any, idx: number) => {
+                                            const badge = getTipoBadge(local.tipo);
+                                            return (
+                                                <tr key={idx} className="row-hover">
+                                                    <td>
+                                                        <div className="param-info-cell">
+                                                            <div className="param-avatar bg-warning bg-opacity-10 text-warning">
+                                                                <i className="bi bi-exclamation-circle"></i>
+                                                            </div>
+                                                            <div>
+                                                                <span className="param-name-txt d-block">{local.nombre}</span>
+                                                                <span className="small text-muted text-truncate d-inline-block" style={{ maxWidth: '200px' }} title={local.productos.join(', ')}>
+                                                                    En: {local.productos.slice(0, 2).join(', ')}{local.productos.length > 2 && '...'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <span className={`type-badge ${badge.className}`}>
+                                                            {badge.label}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <span className="fw-bold text-dark">{local.frecuencia}</span>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <span className="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2 small">
+                                                            Pendiente
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-end" style={{ paddingRight: '24px' }}>
+                                                        <button
+                                                            className="btn btn-primary btn-sm rounded-pill fw-bold shadow-sm px-3"
+                                                            onClick={() => handleStandardize(local.nombre, local.tipo)}
+                                                            disabled={saving}
+                                                        >
+                                                            <i className="bi bi-magic me-1"></i> Estandarizar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+
+                    {/* Pagination Bar */}
+                    {(activeTab === 'maestros' ? totalPages : totalLocalPages) > 1 && (
+                        <div className="pagination-bar border-top">
+                            <span className="pagination-info">
+                                Mostrando <b>{activeTab === 'maestros' ? (indexOfFirstItem + 1) : (indexOfFirstLocalItem + 1)} -
+                                    {activeTab === 'maestros' ? Math.min(indexOfLastItem, filteredParametros.length) : Math.min(indexOfLastLocalItem, filteredLocales.length)}</b> de
+                                {activeTab === 'maestros' ? filteredParametros.length : filteredLocales.length}
+                            </span>
+                            <div className="pagination-controls">
+                                <button
+                                    className="page-btn"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => prev - 1)}
+                                >
+                                    <i className="bi bi-chevron-left"></i>
+                                </button>
+                                {[...Array(activeTab === 'maestros' ? totalPages : totalLocalPages)].map((_, i) => (
+                                    <button
+                                        key={i + 1}
+                                        className={`page-btn ${currentPage === i + 1 ? 'active' : ''}`}
+                                        onClick={() => setCurrentPage(i + 1)}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                                <button
+                                    className="page-btn"
+                                    disabled={currentPage === (activeTab === 'maestros' ? totalPages : totalLocalPages)}
+                                    onClick={() => setCurrentPage(prev => prev + 1)}
+                                >
+                                    <i className="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
 
-            {/* Modal */}
+            {/* Premium Modal */}
             {
                 showModal && (
                     <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h3>{editingParam ? 'Editar Parámetro' : 'Nuevo Parámetro'}</h3>
-                                <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+                        <div className="modal-content premium-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header-premium border-bottom shadow-sm">
+                                <div className="d-flex flex-column">
+                                    <span className="text-uppercase small fw-bold text-muted mb-1" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
+                                        {editingParam ? 'Modificando Registro' : 'Definiendo Nuevo'}
+                                    </span>
+                                    <h3 className="mb-0 fw-bold text-dark" style={{ fontSize: '1.4rem' }}>
+                                        {editingParam ? 'Editar Parámetro' : 'Nuevo Parámetro Maestro'}
+                                    </h3>
+                                </div>
+                                <button className="btn-close-custom" onClick={() => setShowModal(false)}>
+                                    <i className="bi bi-x-lg"></i>
+                                </button>
                             </div>
 
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label className="form-label">Nombre *</label>
+                            <div className="modal-body-premium p-4">
+                                <div className="form-group mb-4">
+                                    <label className="form-label fw-bold text-dark small text-uppercase">Nombre del Parámetro <span className="text-danger">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-control form-control-lg border-0 bg-light fw-semibold"
                                         value={formData.nombre}
                                         onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                                        placeholder="Nombre del parámetro"
+                                        placeholder="Ej: Humedad Relativa"
+                                        autoFocus
                                     />
+                                    <div className="form-text mt-2 small text-muted">Use un nombre descriptivo (ej. Presión, Color, Temperatura).</div>
                                 </div>
 
-                                <div className="form-group mt-3">
-                                    <label className="form-label">Tipo *</label>
-                                    <select
-                                        className="form-select"
-                                        value={formData.tipo}
-                                        onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'texto' | 'numero' | 'rango' })}
-                                    >
-                                        <option value="texto">Texto</option>
-                                        <option value="numero">Número</option>
-                                        <option value="rango">Rango</option>
-                                    </select>
+                                <div className="form-group">
+                                    <label className="form-label fw-bold text-dark small text-uppercase">Tipo de Evaluación <span className="text-danger">*</span></label>
+                                    <div className="row g-3">
+                                        {(['texto', 'numero', 'rango'] as const).map((t) => (
+                                            <div className="col-4" key={t}>
+                                                <div
+                                                    className={`type-selector-card ${formData.tipo === t ? 'active' : ''}`}
+                                                    onClick={() => setFormData({ ...formData, tipo: t })}
+                                                >
+                                                    <div className="type-icon">
+                                                        {t === 'texto' && <i className="bi bi-fonts"></i>}
+                                                        {t === 'numero' && <i className="bi bi-123"></i>}
+                                                        {t === 'rango' && <i className="bi bi-arrows-expand"></i>}
+                                                    </div>
+                                                    <span className="type-label">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                {error && <div className="alert alert-danger mt-3">{error}</div>}
+                                {error && (
+                                    <div className="alert alert-danger mt-4 d-flex align-items-center gap-2 border-0 bg-danger bg-opacity-10 text-danger rounded-3">
+                                        <i className="bi bi-exclamation-triangle-fill"></i>
+                                        <span className="small fw-semibold">{error}</span>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="modal-footer">
-                                <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                            <div className="modal-footer-premium p-3 border-top bg-light d-flex justify-content-end gap-2">
+                                <button className="btn btn-link text-decoration-none text-secondary fw-bold px-4" onClick={() => setShowModal(false)}>
                                     Cancelar
                                 </button>
-                                <button className="btn btn-success" onClick={handleSave} disabled={saving}>
-                                    {saving ? 'Guardando...' : 'Guardar'}
+                                <button
+                                    className="btn btn-primary fw-bold px-5 rounded-pill shadow-sm"
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    style={{ background: 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)', border: 'none' }}
+                                >
+                                    {saving ? (
+                                        <><span className="spinner-border spinner-border-sm me-2"></span>Guardando...</>
+                                    ) : 'Guardar Parámetro'}
                                 </button>
                             </div>
                         </div>
@@ -295,19 +556,65 @@ export default function ParametrosMaestrosClient() {
             }
 
             <style jsx>{`
-        /* Page Layout */
+        /* PAGE LAYOUT */
         .page-wrapper {
             min-height: 100vh;
             background-color: #f8fafc;
-            font-family: 'Inter', system-ui, sans-serif;
         }
         .main-content {
-            max-width: 1100px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 40px 20px;
         }
 
-        /* Header Premium */
+        /* TABS NAVIGATION */
+        .tab-navigation {
+            display: flex;
+            gap: 12px;
+            background: #f1f5f9;
+            padding: 6px;
+            border-radius: 16px;
+            width: fit-content;
+        }
+        .tab-btn {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #64748b;
+            background: transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .tab-btn:hover { color: #1e293b; }
+        .tab-btn.active {
+            background: white;
+            color: #2563eb;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .count-badge {
+            margin-left: 8px;
+            background: #ef4444;
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            min-width: 20px;
+        }
+        .animate-pulse {
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+            100% { transform: scale(1); }
+        }
+
+        /* HEADER SYSTEM */
         .header-container {
             background: white;
             border-radius: 24px;
@@ -338,22 +645,10 @@ export default function ParametrosMaestrosClient() {
             70% { box-shadow: 0 0 0 6px rgba(3,105,161,0); }
             100% { box-shadow: 0 0 0 0 rgba(3,105,161,0); }
         }
-        .title {
-            font-size: 1.6rem;
-            font-weight: 900;
-            color: #1e293b;
-            margin: 0;
-        }
-        .subtitle {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin: 5px 0 0 0;
-        }
-        .header-stats {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
+        .title { font-size: 1.6rem; font-weight: 900; color: #1e293b; margin: 0; }
+        .subtitle { color: #64748b; font-size: 0.9rem; margin: 5px 0 0 0; }
+        
+        .header-stats { display: flex; gap: 15px; align-items: center; }
         .stat-pill {
             background: #f8fafc;
             padding: 8px 15px;
@@ -363,28 +658,20 @@ export default function ParametrosMaestrosClient() {
             flex-direction: column;
             text-align: center;
         }
-        .stat-pill .val {
-            font-weight: 900;
-            font-size: 1.2rem;
-            line-height: 1;
-            color: #1e293b;
-        }
-        .stat-pill .lab {
-            font-size: 0.6rem;
-            font-weight: 800;
-            color: #94a3b8;
-        }
+        .stat-pill .val { font-weight: 900; font-size: 1.2rem; line-height: 1; color: #1e293b; }
+        .stat-pill .lab { font-size: 0.6rem; font-weight: 800; color: #94a3b8; }
+
         .btn-add-premium {
             background: #10b981;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 14px;
             font-weight: 800;
             font-size: 0.85rem;
             display: flex;
             align-items: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             cursor: pointer;
@@ -395,102 +682,175 @@ export default function ParametrosMaestrosClient() {
             box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
         }
 
-        @media (max-width: 768px) {
-            .header-container {
-                flex-direction: column;
-                text-align: center;
-                gap: 20px;
-            }
-            .header-stats {
-                flex-direction: column;
-                width: 100%;
-            }
-            .btn-add-premium {
-                width: 100%;
-                justify-content: center;
-            }
+        /* TOOLBAR SECTION */
+        .toolbar-section {
+            background: white;
+            border-radius: 16px;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+        }
+        .search-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: #94a3b8;
+        }
+        .toolbar-input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 500;
+            background: transparent;
         }
 
-        .actions-bar {
-          display: flex;
-          justify-content: flex-end;
-          margin-bottom: 1.5rem;
+        /* TABLE PREMIUM */
+        .table-container-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
         }
-
-        .table-container {
-          overflow-x: auto;
+        .table-premium {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
         }
-
-        .btn-group {
-          display: flex;
-          gap: 0.5rem;
+        .table-premium thead th {
+            background: #f8fafc;
+            padding: 18px 24px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #e2e8f0;
         }
-
-        .btn-sm {
-          padding: 0.25rem 0.75rem;
-          font-size: 0.875rem;
+        .table-premium tbody td {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
         }
+        .row-hover { transition: background 0.2s; }
+        .row-hover:hover { background: #f8fafc; }
 
-        .badge-secondary {
-          background-color: #6c757d;
+        .param-info-cell { display: flex; align-items: center; gap: 16px; }
+        .param-avatar {
+            width: 36px;
+            height: 36px;
+            background: #f1f5f9;
+            color: #64748b;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
         }
+        .param-name-txt { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
+        .date-txt { font-size: 0.85rem; color: #64748b; font-weight: 500; }
 
-        .badge-info {
-          background-color: #17a2b8;
+        /* TYPE BADGES */
+        .type-badge {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
         }
+        .badge-texto { background: #f1f5f9; color: #475569; }
+        .badge-numero { background: #e0f2fe; color: #0369a1; }
+        .badge-rango { background: #dcfce7; color: #15803d; }
 
-        /* Modal Styles */
+        /* ACTIONS */
+        .btn-action {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-action.edit { background: #f1f5f9; color: #64748b; }
+        .btn-action.edit:hover { background: #e0f2fe; color: #0284c7; }
+        .btn-action.delete { background: #f1f5f9; color: #64748b; }
+        .btn-action.delete:hover { background: #fee2e2; color: #ef4444; }
+
+        /* PAGINATION */
+        .pagination-bar {
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+        .pagination-info { font-size: 0.85rem; color: #64748b; }
+        .pagination-controls { display: flex; gap: 6px; }
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .page-btn:hover:not(:disabled) { border-color: #3b82f6; color: #3b82f6; }
+        .page-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* MODAL PREMIUM */
         .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 1rem;
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; padding: 20px;
+            backdrop-filter: blur(4px);
         }
-
-        .modal-content {
-          background: white;
-          border-radius: 0.5rem;
-          width: 100%;
-          max-width: 500px;
+        .modal-content.premium-modal {
+            background: white; border-radius: 20px;
+            width: 100%; max-width: 500px;
+            overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
         }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid #dee2e6;
+        .modal-header-premium {
+            padding: 24px; display: flex; justify-content: space-between; align-items: center;
         }
-
-        .modal-header h3 {
-          margin: 0;
+        .btn-close-custom {
+            background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer;
         }
-
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          color: #6c757d;
+        .type-selector-card {
+            border: 2px solid #f1f5f9;
+            border-radius: 14px;
+            padding: 16px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; flex-direction: column; gap: 8px;
         }
+        .type-selector-card:hover { border-color: #3b82f6; background: #eff6ff; }
+        .type-selector-card.active { border-color: #3b82f6; background: #3b82f6; color: white; }
+        .type-icon { font-size: 1.5rem; }
+        .type-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
 
-        .modal-body {
-          padding: 1.5rem;
-        }
-
-        .modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 0.5rem;
-          padding: 1rem 1.5rem;
-          border-top: 1px solid #dee2e6;
+        @media (max-width: 768px) {
+            .header-container { flex-direction: column; text-align: center; gap: 20px; }
+            .header-info { text-align: center; }
+            .stat-pill { width: 100%; }
+            .btn-add-premium { width: 100%; justify-content: center; }
+            .toolbar-section { flex-direction: column; gap: 10px; }
         }
       `}</style>
         </div>

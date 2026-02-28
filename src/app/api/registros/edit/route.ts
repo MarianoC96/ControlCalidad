@@ -155,6 +155,23 @@ export async function POST(request: Request) {
 
         // === Perform Save — run independent operations in parallel ===
 
+        let deletedPhotosData: any[] = [];
+        if (photosToDelete.length > 0) {
+            const { data: fetchDelPhot } = await supabase
+                .from('fotos')
+                .select('id, datos_base64')
+                .in('id', photosToDelete)
+                .eq('registro_id', registro_id);
+
+            if (fetchDelPhot) {
+                // Keep the base64 structure so the frontend can render it
+                deletedPhotosData = fetchDelPhot.map(p => ({
+                    id: p.id,
+                    data: p.datos_base64
+                }));
+            }
+        }
+
         // Build all parallel operations
         const parallelOps: PromiseLike<any>[] = [];
 
@@ -185,7 +202,7 @@ export async function POST(request: Request) {
                 role: user.roles,
                 action: actionParts.join(',') || 'edit',
                 photos_added: photos.length > 0 ? photos : null,
-                photos_deleted: photosToDelete.length > 0 ? photosToDelete : null,
+                photos_deleted: deletedPhotosData.length > 0 ? deletedPhotosData : (photosToDelete.length > 0 ? photosToDelete : null),
                 field_changes: Object.keys(fieldChanges).length > 0 ? fieldChanges : null
             }).then()
         );

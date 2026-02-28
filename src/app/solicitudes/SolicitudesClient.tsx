@@ -1,8 +1,8 @@
 'use client';
 
 import Head from 'next/head';
-
-import { useState, useEffect } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
 
@@ -48,6 +48,7 @@ export default function SolicitudesClient() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [dateFilter, setDateFilter] = useState('');
+    const [activeTab, setActiveTab] = useState<'pendientes' | 'historial'>('pendientes');
 
     const MONTH_ABBREVIATIONS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'] as const;
 
@@ -65,16 +66,25 @@ export default function SolicitudesClient() {
     const filteredRequests = requests.filter(req => {
         const displayId = buildDisplayId(req);
         const normalizedSearch = searchTerm.toLowerCase();
+
+        // Filtrado por Pestaña
+        const matchesTab = activeTab === 'pendientes'
+            ? req.status === 'pendiente'
+            : (req.status === 'aprobado' || req.status === 'rechazado' || req.status === 'usado');
+
+        if (!matchesTab) return false;
+
         const matchesSearch =
             req.usuarios.nombre_completo.toLowerCase().includes(normalizedSearch) ||
             req.usuarios.usuario.toLowerCase().includes(normalizedSearch) ||
             req.registros.producto_nombre.toLowerCase().includes(normalizedSearch) ||
             displayId.toLowerCase().includes(normalizedSearch);
+
         const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
-        // Convert created_at to Peru time (GMT-5) before comparing with date filter
+
         let matchesDate = true;
         if (dateFilter) {
-            const peruDate = new Date(req.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Lima' }); // returns YYYY-MM-DD
+            const peruDate = new Date(req.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
             matchesDate = peruDate === dateFilter;
         }
         return matchesSearch && matchesStatus && matchesDate;
@@ -157,6 +167,7 @@ export default function SolicitudesClient() {
             default: return <span className="custom-badge bg-secondary text-white">{status}</span>;
         }
     };
+    if (loading) return <LoadingOverlay message="Sincronizando Solicitudes..." />;
 
     return (
         <div className="admin-page-wrapper">
@@ -183,6 +194,31 @@ export default function SolicitudesClient() {
                 </div>
 
                 <div className="card shadow-sm border-0 bg-white" style={{ borderRadius: '12px', minHeight: '600px' }}>
+                    {/* Tabs Navigation */}
+                    <div className="tabs-container">
+                        <button
+                            className={`tab-btn ${activeTab === 'pendientes' ? 'active' : ''}`}
+                            onClick={() => {
+                                setActiveTab('pendientes');
+                                setStatusFilter('all');
+                            }}
+                        >
+                            <i className="bi bi-clock-history"></i>
+                            Pendientes
+                            <span className="count-badge">{requests.filter(r => r.status === 'pendiente').length}</span>
+                        </button>
+                        <button
+                            className={`tab-btn ${activeTab === 'historial' ? 'active' : ''}`}
+                            onClick={() => {
+                                setActiveTab('historial');
+                                setStatusFilter('all');
+                            }}
+                        >
+                            <i className="bi bi-journal-text"></i>
+                            Historial
+                        </button>
+                    </div>
+
                     <div className="card-body p-4">
 
                         {/* Toolbar */}
@@ -205,17 +241,19 @@ export default function SolicitudesClient() {
 
                             {/* Right Side: Filters */}
                             <div className="toolbar-filters">
-                                <select
-                                    className="form-select form-select-sm rounded-pill border-secondary-subtle bg-light text-secondary fw-medium shadow-none"
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    style={{ width: 'auto' }}
-                                >
-                                    <option value="all">Todos los estados</option>
-                                    <option value="pendiente">Pendientes</option>
-                                    <option value="aprobado">Aprobados</option>
-                                    <option value="rechazado">Rechazados</option>
-                                </select>
+                                {activeTab === 'historial' && (
+                                    <select
+                                        className="form-select form-select-sm rounded-pill border-secondary-subtle bg-light text-secondary fw-medium shadow-none"
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        style={{ width: 'auto' }}
+                                    >
+                                        <option value="all">Todos los resueltos</option>
+                                        <option value="aprobado">Solo Aprobados</option>
+                                        <option value="rechazado">Solo Rechazados</option>
+                                        <option value="usado">Solo Usados</option>
+                                    </select>
+                                )}
                                 <div style={{ position: 'relative', width: 'auto', display: 'inline-flex', alignItems: 'center' }}>
                                     <input
                                         type="text"
@@ -612,6 +650,67 @@ export default function SolicitudesClient() {
                 .stat-pill .lab { font-size: 0.6rem; font-weight: 800; color: #94a3b8; }
                 .stat-pill.pending { border-color: #fbbf24; background: #fef3c7; }
                 .stat-pill.pending .val { color: #92400e; }
+
+                /* Premium Tabs */
+                .tabs-container {
+                    display: flex;
+                    padding: 20px 24px 0;
+                    border-bottom: 1px solid #e2e8f0;
+                    gap: 8px;
+                }
+
+                .tab-btn {
+                    padding: 12px 24px;
+                    border: none;
+                    background: none;
+                    font-weight: 700;
+                    font-size: 0.95rem;
+                    color: #64748b;
+                    cursor: pointer;
+                    position: relative;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    border-radius: 12px 12px 0 0;
+                }
+
+                .tab-btn i { font-size: 1.1rem; }
+
+                .tab-btn:hover {
+                    color: #1e293b;
+                    background: #f8fafc;
+                }
+
+                .tab-btn.active {
+                    color: #2563eb;
+                    background: white;
+                }
+
+                .tab-btn.active::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -1px;
+                    left: 0;
+                    right: 0;
+                    height: 3px;
+                    background: #2563eb;
+                    border-radius: 3px 3px 0 0;
+                }
+
+                .count-badge {
+                    background: #fee2e2;
+                    color: #ef4444;
+                    padding: 2px 8px;
+                    border-radius: 20px;
+                    font-size: 0.75rem;
+                    font-weight: 800;
+                }
+
+                .tab-btn.active .count-badge {
+                    background: #2563eb;
+                    color: white;
+                }
 
                 /* Filter Bar - Modern & Clear */
                 .filters-bar {

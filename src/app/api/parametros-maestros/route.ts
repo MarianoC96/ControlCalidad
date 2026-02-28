@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const auth = await getAuthUserId();
+        const { searchParams } = new URL(request.url);
+        const type = searchParams.get('type');
 
         if (!auth) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -11,19 +13,48 @@ export async function GET() {
 
         const supabase = createServiceClient();
 
+        if (type === 'locales') {
+            // Get unique local parameters (parametro_maestro_id IS NULL)
+            // We group by name and type to show candidates for standardization
+            const { data, error } = await supabase
+                .from('parametros')
+                .select('nombre, tipo, producto_id, productos(nombre)')
+                .is('parametro_maestro_id', null);
+
+            if (error) throw error;
+
+            // Group by name and type to count occurrences
+            const grouped = data.reduce((acc: any, curr: any) => {
+                const key = `${curr.nombre.toLowerCase()}-${curr.tipo}`;
+                if (!acc[key]) {
+                    acc[key] = {
+                        nombre: curr.nombre,
+                        tipo: curr.tipo,
+                        frecuencia: 0,
+                        productos: []
+                    };
+                }
+                acc[key].frecuencia += 1;
+                if (curr.productos?.nombre) {
+                    acc[key].productos.push(curr.productos.nombre);
+                }
+                return acc;
+            }, {});
+
+            return NextResponse.json(Object.values(grouped));
+        }
+
         const { data, error } = await supabase
             .from('parametros_maestros')
             .select('*')
             .order('id', { ascending: true });
 
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
-        }
+        if (error) throw error;
 
         return NextResponse.json(data);
 
-    } catch (error) {
-        return NextResponse.json({ error: 'Error interno' }, { status: 500 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 });
     }
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
+import LoadingOverlay from "@/components/LoadingOverlay";
 import DownloadHistory from '@/components/DownloadHistory';
 import BulkDownloadModal from '@/components/BulkDownloadModal';
 import RouteGuard from '@/components/RouteGuard';
@@ -43,13 +43,7 @@ export default function HistorialDescargasPage() {
     };
 
     if (loading) {
-        return (
-            <div className="container mt-4 text-center">
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Cargando...</span>
-                </div>
-            </div>
-        );
+        return <LoadingOverlay message="Cargando Historial..." />;
     }
 
     return (

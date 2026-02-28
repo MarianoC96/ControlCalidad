@@ -3,18 +3,16 @@ import { withAuth } from '@/lib/api/withAuth';
 
 /**
  * GET /api/auth/me
- *
- * Chesterton's Fence: previously read user_id from cookie and fetched from DB
- * with SERVICE_ROLE_KEY. Now uses the withAuth helper which validates the
- * Supabase JWT session and looks up the usuarios profile automatically.
+ * Retorna la información del usuario actual.
  */
 export const GET = withAuth(async (_request, user) => {
     return NextResponse.json({
         id: user.id,
         nombre_completo: user.nombre_completo,
         usuario: user.usuario,
-        email: user.email,
         roles: user.roles,
+        email: user.email,
         activo: user.activo,
+        two_factor_enabled: !!user.two_factor_secret, // Se marca como activo si existe el secreto
     });
 });
