@@ -29,14 +29,14 @@ export async function POST(request: NextRequest) {
 
         const supabase = await createClient();
 
-        // Build email from username convention
-        // sadmin → sadmin@controlcalidad.local
-        const email = usuario.trim().toLowerCase().includes('@')
-            ? usuario.trim().toLowerCase()
-            : `${usuario.trim().toLowerCase()}@controlcalidad.local`;
+        // All users authenticate via the internal email convention:
+        // username → username@controlcalidad.local
+        // WHY: Supabase Auth requires an email, but our users only know their username.
+        // The email is auto-generated and never shown to the user.
+        const emailForAuth = `${usuario.trim().toLowerCase()}@controlcalidad.local`;
 
         const { data, error } = await supabase.auth.signInWithPassword({
-            email,
+            email: emailForAuth,
             password,
         });
 
@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
         // Fetch app-level user profile
         const { createServiceClient } = await import('@/lib/api/withAuth');
         const adminClient = createServiceClient();
-
         const { data: appUser } = await adminClient
             .from('usuarios')
             .select('id, nombre_completo, usuario, roles')

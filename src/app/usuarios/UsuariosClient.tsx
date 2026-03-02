@@ -33,7 +33,6 @@ export default function UsuariosClient() {
     const [formData, setFormData] = useState({
         nombre_completo: '',
         usuario: '',
-        email: '',
         password: '',
         roles: 'trabajador' as 'administrador' | 'trabajador',
         role_id: null as number | null,
@@ -51,6 +50,7 @@ export default function UsuariosClient() {
 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         checkAuth();
@@ -107,6 +107,14 @@ export default function UsuariosClient() {
     const handleSave = async () => {
         if (!formData.nombre_completo.trim() || !formData.usuario.trim()) {
             setError('Nombre y usuario son obligatorios');
+            return;
+        }
+        if (!formData.role_id) {
+            setError('Debe seleccionar un rol de acceso');
+            return;
+        }
+        if (!editingUser && !formData.password.trim()) {
+            setError('La contraseña es obligatoria para nuevos usuarios');
             return;
         }
         setSaving(true);
@@ -192,7 +200,7 @@ export default function UsuariosClient() {
                             <span className="val">{usuarios.length}</span>
                             <span className="lab">TOTAL</span>
                         </div>
-                        <button className="btn-add-premium shadow-sm" onClick={() => { setEditingUser(null); setFormData({ nombre_completo: '', usuario: '', email: '', password: '', roles: 'trabajador', role_id: null, activo: true }); setShowModal(true); }}>
+                        <button className="btn-add-premium shadow-sm" onClick={() => { setEditingUser(null); setFormData({ nombre_completo: '', usuario: '', password: '', roles: 'trabajador', role_id: null, activo: true }); setShowModal(true); }}>
                             <i className="bi bi-person-plus-fill me-2"></i>
                             <span>Nuevo Personal</span>
                         </button>
@@ -223,7 +231,6 @@ export default function UsuariosClient() {
                                         </div>
                                         <div className="u-handle">
                                             <span>@{user.usuario}</span>
-                                            {user.email && <span className="u-email">• {user.email}</span>}
                                         </div>
 
                                     </div>
@@ -243,7 +250,6 @@ export default function UsuariosClient() {
                                             setFormData({
                                                 nombre_completo: user.nombre_completo,
                                                 usuario: user.usuario,
-                                                email: user.email || '',
                                                 password: '',
                                                 roles: user.roles,
                                                 role_id: user.role_id,
@@ -346,27 +352,15 @@ export default function UsuariosClient() {
                                             }}
                                         >
                                             <option value="" disabled>Seleccione un rol...</option>
-                                            {rolesList.map(r => (
-                                                <option key={r.id} value={r.id}>
-                                                    {r.nombre.toLowerCase().includes('admin') ? '👑' : '👷'} {r.nombre}
-                                                </option>
-                                            ))}
+                                            {rolesList
+                                                .filter(r => !r.is_system)
+                                                .map(r => (
+                                                    <option key={r.id} value={r.id}>
+                                                        {r.nombre.toLowerCase().includes('admin') ? '👑' : '👷'} {r.nombre}
+                                                    </option>
+                                                ))}
                                         </select>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Email */}
-                            <div className="premium-input-group">
-                                <div className="input-icon"><i className="bi bi-envelope-fill"></i></div>
-                                <div className="input-content">
-                                    <label>Email Institucional <span className="optional-tag">Opcional</span></label>
-                                    <input
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        placeholder="correo@empresa.com"
-                                    />
                                 </div>
                             </div>
 
@@ -375,12 +369,22 @@ export default function UsuariosClient() {
                                 <div className="input-icon"><i className="bi bi-key-fill"></i></div>
                                 <div className="input-content">
                                     <label>Contraseña {editingUser && <span className="optional-tag">Opcional</span>}</label>
-                                    <input
-                                        type="password"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        placeholder={editingUser ? "Dejar vacío para mantener" : "Contraseña segura"}
-                                    />
+                                    <div className="password-field-wrapper">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                            placeholder={editingUser ? "Dejar vacío para mantener" : "Contraseña segura"}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="toggle-pass-btn"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                        >
+                                            <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -592,6 +596,12 @@ export default function UsuariosClient() {
                 .input-content input, .input-content select { width: 100%; padding: 8px 0; border: none; background: transparent; font-size: 0.95rem; color: #1e293b; outline: none; font-weight: 500; }
                 .input-content input::placeholder { color: #94a3b8; }
                 .input-content select { cursor: pointer; }
+
+                /* Password Toggle */
+                .password-field-wrapper { position: relative; display: flex; align-items: center; }
+                .password-field-wrapper input { flex: 1; padding-right: 36px; }
+                .toggle-pass-btn { position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px 6px; font-size: 1.1rem; display: flex; align-items: center; transition: color 0.2s; }
+                .toggle-pass-btn:hover { color: var(--primary-500, #005d31); }
 
                 /* Input Grid */
                 .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

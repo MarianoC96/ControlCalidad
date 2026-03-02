@@ -2,17 +2,18 @@
 
 /* Design Tokens - Paleta Profesional Vibrante */
 :root {
-  /* Primary Colors - Sapphire Blue (Confiable, Profesional) */
-  --primary-400: #60a5fa;
-  --primary-500: #3b82f6;
-  --primary-600: #2563eb;
-  --primary-700: #1d4ed8;
-  --primary-800: #1e40af;
+  /* Primary Colors - El Olivar Green */
+  --primary-400: #208754;
+  --primary-500: #005d31;
+  --primary-600: #004d29;
+  --primary-700: #003f21;
+  --primary-800: #003019;
 
-  /* Accent Colors - Emerald (Moderno, Acciones Positivas) */
-  --accent-500: #10b981;
-  --accent-600: #059669;
-  --accent-700: #047857;
+  /* Accent Colors - El Olivar Olive/Gold */
+  --accent-400: #b5b74b;
+  --accent-500: #969836;
+  --accent-600: #7b7c2b;
+  --accent-700: #58623f;
 
   /* Background Colors - Luminoso y Limpio */
   --background: #f8fafc;
@@ -463,9 +464,9 @@ body {
 /* Sidebar Global Layout (Moved from Navbar to prevent CLS) */
 :root {
   --sidebar-width: 0px;
-  --sidebar-bg: #1e293b;
+  --sidebar-bg: #003019; /* El Olivar dark green */
   --sidebar-text: #e2e8f0;
-  --primary-color: #10b981;
+  --primary-color: #005d31;
 }
 
 /* Mobile: top padding for mobile header (only when sidebar present) */

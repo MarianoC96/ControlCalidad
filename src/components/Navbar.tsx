@@ -209,7 +209,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
     <>
       {/* Mobile Header Toggle */}
       <div className="mobile-header">
-        <Link href="/registro-productos" className="mobile-brand">Control Calidad</Link>
+        <Link href="/registro-productos" className="mobile-brand">Control Calidad - El Olivar</Link>
         <button className="mobile-toggle" onClick={toggleMobile} aria-label="Abrir menú">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
@@ -227,9 +227,12 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
         <div className="sidebar-header">
           <div className="brand-wrapper">
             <div className="logo-box">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <img src="/logo.png" alt="Logo El Olivar" />
             </div>
-            {!isCollapsed && <span className="brand-name">Control Calidad</span>}
+            {!isCollapsed && <span className="brand-name">
+                <span className="block text-sm">Control Calidad</span>
+                <span className="block text-xs text-[#969836] font-semibold">El Olivar</span>
+            </span>}
           </div>
         </div>
 
@@ -390,24 +393,32 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                 .logo-box {
                     min-width: 36px;
                     height: 36px;
-                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                    color: white;
+                    background: #ffffff;
+                    color: var(--sidebar-bg);
                     border-radius: 8px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                    padding: 4px;
+                }
+                
+                .logo-box img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
                 }
 
                 .brand-box svg { width: 20px; height: 20px; }
 
                 .brand-name {
                     font-weight: 700;
-                    font-size: 1.1rem;
+                    font-size: 1.05rem;
                     white-space: nowrap;
                     color: #fff;
                     opacity: 1;
                     transition: opacity 0.2s;
+                    line-height: 1.2;
                 }
 
                 /* Collapse Button */

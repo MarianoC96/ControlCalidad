@@ -6,15 +6,15 @@ import AppShell from "@/components/AppShell";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
-  title: "Control de Calidad",
-  description: "Sistema de Control de Calidad para Registro de Productos",
+  title: "Control Calidad - El Olivar",
+  description: "Sistema de Control Calidad para Registro de Productos - El Olivar",
   manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1e40af",
+  themeColor: "#003019",
 };
 
 export default function RootLayout({

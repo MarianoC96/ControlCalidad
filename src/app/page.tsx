@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import './login.css';
 
 export default function LoginPage() {
@@ -18,26 +17,27 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const supabase = createClient();
-      const identifier = formData.usuario.trim().toLowerCase();
-
-      // Atajo administrativo: sadmin puede usar su nombre
-      const emailForAuth = identifier === 'sadmin'
-        ? 'sadmin@controlcalidad.local'
-        : identifier;
-
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: emailForAuth,
-        password: formData.password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuario: formData.usuario.trim(),
+          password: formData.password,
+        }),
       });
 
-      if (authError) throw new Error('Usuario o contraseña incorrectos');
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Usuario o contraseña incorrectos');
+      }
 
       router.push('/registro-productos');
       router.refresh();
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      setError(message);
       setLoading(false);
     }
   };
@@ -46,23 +46,24 @@ export default function LoginPage() {
     <div className="login-container">
       <div className="login-card">
         <div className="system-logo">
-          <i className="bi bi-shield-lock-fill"></i>
+          <img src="/logo.png" alt="Logo El Olivar" className="w-full h-full object-contain p-2" />
         </div>
 
         <div className="login-header">
-          <h1>Control Calidad</h1>
+          <h1>Control Calidad - El Olivar</h1>
           <p>Inicia sesión con tu cuenta</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group-p">
-            <label>CORREO</label>
+            <label>USUARIO</label>
             <div className="input-with-icon">
               <i className="bi bi-person"></i>
               <input
                 type="text"
-                placeholder=""
+                placeholder="Ingresa tu usuario"
                 required
+                autoComplete="username"
                 value={formData.usuario}
                 onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
               />
@@ -77,6 +78,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••"
                 required
+                autoComplete="current-password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />

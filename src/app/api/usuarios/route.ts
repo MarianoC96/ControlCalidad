@@ -58,13 +58,12 @@ export async function POST(request: NextRequest) {
         if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
         const body = await request.json();
-        const { nombre_completo, usuario, email, password, roles, role_id } = body;
+        const { nombre_completo, usuario, password, roles, role_id } = body;
 
         // 2. Crear usuario en Supabase Auth
-        // Sintetizamos un email si no viene para que Supabase lo acepte
-        const authEmail = email && email.includes('@')
-            ? email.toLowerCase()
-            : `${usuario.toLowerCase()}@controlcalidad.local`;
+        // WHY: Supabase Auth requires an email. We auto-generate it from the
+        // username so the user only needs to remember their username + password.
+        const authEmail = `${usuario.trim().toLowerCase()}@controlcalidad.local`;
 
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
             email: authEmail,
@@ -84,8 +83,8 @@ export async function POST(request: NextRequest) {
             .insert({
                 auth_uid: authData.user.id,
                 nombre_completo,
-                usuario,
-                email: email || authEmail,
+                usuario: usuario.trim().toLowerCase(),
+                email: authEmail,
                 password: hashedPassword,
                 roles: roles || 'trabajador',
                 role_id: role_id || null,
@@ -123,25 +122,47 @@ export async function PUT(request: NextRequest) {
         if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
         const body = await request.json();
-        const { id, nombre_completo, usuario, email, password, roles, role_id, activo, is_deleted } = body;
+        const { id, nombre_completo, usuario, password, roles, role_id, activo, is_deleted } = body;
 
         if (id === 1) return NextResponse.json({ error: 'sadmin no modificable' }, { status: 403 });
 
-        // Sincronizar con Supabase Auth si es necesario
+        // Auto-generate internal email from username
+        const authEmail = usuario
+            ? `${usuario.trim().toLowerCase()}@controlcalidad.local`
+            : undefined;
+
+        // Sincronizar con Supabase Auth
         const { data: currentUser } = await supabase.from('usuarios').select('auth_uid').eq('id', id).single();
 
         if (currentUser?.auth_uid) {
-            const authUpdate: any = {};
-            if (password) authUpdate.password = password;
-            if (email) authUpdate.email = email;
-            if (is_deleted || activo === false) authUpdate.app_metadata = { disabled: true };
-            else authUpdate.app_metadata = { disabled: false };
+            if (is_deleted) {
+                // WHY: On soft-delete, we fully remove the Auth account to free
+                // the username for a potential new user. The local usuarios row
+                // persists (is_deleted=true) so historical FK references survive.
+                await supabase.auth.admin.deleteUser(currentUser.auth_uid);
+            } else {
+                const authUpdate: Record<string, unknown> = {};
+                if (password) authUpdate.password = password;
+                if (authEmail) authUpdate.email = authEmail;
+                if (activo === false) authUpdate.app_metadata = { disabled: true };
+                else authUpdate.app_metadata = { disabled: false };
 
-            await supabase.auth.admin.updateUserById(currentUser.auth_uid, authUpdate);
+                if (Object.keys(authUpdate).length > 0) {
+                    await supabase.auth.admin.updateUserById(currentUser.auth_uid, authUpdate);
+                }
+            }
         }
 
         // Actualizar local
-        const updateData: any = { nombre_completo, usuario, email, roles, role_id, activo, is_deleted };
+        const updateData: Record<string, unknown> = { nombre_completo, roles, role_id, activo, is_deleted };
+        if (is_deleted) {
+            // Clear auth_uid so the record is fully disconnected from Auth
+            updateData.auth_uid = null;
+        }
+        if (usuario && !is_deleted) {
+            updateData.usuario = usuario.trim().toLowerCase();
+            updateData.email = authEmail;
+        }
         if (password) updateData.password = await bcrypt.hash(password, 10);
 
         const { data, error } = await supabase.from('usuarios').update(updateData).eq('id', id).select().single();
