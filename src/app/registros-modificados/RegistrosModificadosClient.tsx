@@ -186,8 +186,8 @@ export default function RegistrosModificadosClient() {
                             </div>
 
                             {selectedDetail.field_changes && Object.keys(selectedDetail.field_changes).length > 0 && (
-                                <div className="changes-section mb-4">
-                                    <h6 className="section-title"><span className="badge-tech">CAMBIOS</span> Campos Modificados</h6>
+                                <div className="changes-section mb-4 p-4 bg-white border rounded-4 shadow-sm">
+                                    <h6 className="section-title mb-4"><span className="badge-tech">CAMBIOS</span> Campos Modificados</h6>
                                     <div className="table-responsive border rounded-3 overflow-hidden">
                                         <table className="table table-sm table-hover mb-0">
                                             <thead>
@@ -212,8 +212,8 @@ export default function RegistrosModificadosClient() {
                             )}
 
                             {selectedDetail.photos_added && selectedDetail.photos_added.length > 0 && (
-                                <div className="mb-4 bg-white p-3 rounded-3 border shadow-sm">
-                                    <h6 className="fw-bold fs-6 text-dark mb-3 d-flex align-items-center" style={{ gap: '16px' }}>
+                                <div className="mb-4 bg-white p-4 rounded-4 border shadow-sm">
+                                    <h6 className="fw-bold fs-6 text-dark mb-4 d-flex align-items-center" style={{ gap: '15px' }}>
                                         <span className="badge-tech bg-success" style={{ fontSize: '0.65rem', fontWeight: '800', letterSpacing: '0.5px', borderRadius: '6px', color: '#ffffff' }}>AGREGADO</span>
                                         Fotos Agregadas ({selectedDetail.photos_added.length})
                                     </h6>
@@ -247,8 +247,8 @@ export default function RegistrosModificadosClient() {
                             )}
 
                             {selectedDetail.photos_deleted && selectedDetail.photos_deleted.length > 0 && (
-                                <div className="mb-4 bg-white p-3 rounded-3 border shadow-sm">
-                                    <h6 className="fw-bold fs-6 text-dark mb-3 d-flex align-items-center" style={{ gap: '16px' }}>
+                                <div className="mb-4 bg-white p-4 rounded-4 border shadow-sm">
+                                    <h6 className="fw-bold fs-6 text-dark mb-4 d-flex align-items-center" style={{ gap: '15px' }}>
                                         <span className="badge-tech bg-danger" style={{ fontSize: '0.65rem', fontWeight: '800', letterSpacing: '0.5px', borderRadius: '6px', color: '#ffffff', backgroundColor: '#ef4444' }}>ELIMINADO</span>
                                         Fotos Eliminadas ({selectedDetail.photos_deleted.length})
                                     </h6>
@@ -367,23 +367,28 @@ export default function RegistrosModificadosClient() {
                 .modal-header p { margin: 0; font-size: 0.85rem; color: #64748b; }
                 .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; }
                 
-                .history-list { max-height: 400px; overflow-y: auto; }
-                .history-item { padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s; }
+                .history-list { max-height: 420px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
+                .history-item { padding: 18px 25px; display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s; gap: 12px; }
                 .history-item:hover { background: #f8fafc; }
-                .item-main { display: flex; align-items: center; gap: 15px; }
-                .user-icon { width: 36px; height: 36px; background: #6366f1; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
-                .user-name { font-weight: 700; color: #1e293b; font-size: 0.9rem; }
-                .timestamp { font-size: 0.75rem; color: #94a3b8; }
-                .action-tag { font-size: 0.7rem; font-weight: 700; color: #6366f1; background: #eef2ff; padding: 2px 10px; border-radius: 20px; }
+                .item-main { display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0; }
+                .info { min-width: 0; flex: 1; }
+                .user-icon { width: 40px; height: 40px; background: #6366f1; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2); }
+                .user-name { font-weight: 700; color: #1e293b; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+                .timestamp { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+                .action-tag { font-size: 0.7rem; font-weight: 800; color: #6366f1; background: #eef2ff; padding: 5px 12px; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; flex-shrink: 0; border: 1px solid #e0e7ff; }
+                .chevron { color: #cbd5e1; font-size: 1.5rem; transition: color 0.2s; flex-shrink: 0; }
+                .history-item:hover .chevron { color: #6366f1; }
                 
-                .responsible-box { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-                .user-initial { width: 44px; height: 44px; background: #10b981; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; }
-                .label { font-size: 0.6rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; }
-                .val { font-weight: 800; color: #1e293b; font-size: 1rem; }
-                .val-small { font-weight: 600; color: #475569; font-size: 0.85rem; background: #f8fafc; padding: 4px 10px; border-radius: 6px; margin-top: 4px; border: 1px solid #e2e8f0; }
+                .modal-body { padding: 30px 40px; }
                 
-                .section-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-                .badge-tech { font-size: 0.65rem; font-weight: 800; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 8px; border-radius: 4px; }
+                .responsible-box { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+                .user-initial { width: 44px; height: 44px; background: #10b981; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
+                .label { font-size: 0.65rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.8px; text-transform: uppercase; }
+                .val { font-weight: 900; color: #1e293b; font-size: 1.1rem; }
+                .val-small { font-weight: 700; color: #475569; font-size: 0.9rem; background: #f8fafc; padding: 6px 14px; border-radius: 10px; margin-top: 4px; border: 1px solid #e2e8f0; }
+                
+                .section-title { font-size: 1rem; font-weight: 900; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+                .badge-tech { font-size: 0.7rem; font-weight: 800; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 12px; border-radius: 8px; letter-spacing: 0.5px; }
                 .old-val { color: #ef4444; background: rgba(239, 68, 68, 0.05); text-decoration: line-through; }
                 .new-val { color: #10b981; background: rgba(16, 185, 129, 0.05); font-weight: 700; }
                 
