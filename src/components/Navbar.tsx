@@ -81,9 +81,9 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
     Promise.all([fetchPermissions(), fetchPendingCounts()]);
   }, [fetchPermissions, fetchPendingCounts]);
 
-  // Poll pending counts every 30 seconds (fallback)
+  // Poll pending counts every 10 seconds (fallback)
   useEffect(() => {
-    const interval = setInterval(fetchPendingCounts, 30000);
+    const interval = setInterval(fetchPendingCounts, 10000);
     return () => clearInterval(interval);
   }, [fetchPendingCounts]);
 
@@ -295,7 +295,10 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                       </span>
                       {!isCollapsed && <span className="nav-text">{link.label}</span>}
                       {!isCollapsed && badgeCount > 0 && (
-                        <span className="nav-badge">{badgeCount > 99 ? '99+' : badgeCount}</span>
+                        <div className="nav-badge-bell">
+                          <i className="bi bi-bell-fill bell-icon"></i>
+                          <span className="badge-count">{badgeCount > 99 ? '99+' : badgeCount}</span>
+                        </div>
                       )}
                       {isCollapsed && isActive(link.href) && <div className="active-dot" />}
                     </Link>
@@ -569,23 +572,48 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                     letter-spacing: 0.01em;
                 }
 
-                /* Notification Badge (expanded sidebar) */
-                .nav-badge {
+                /* Notification Bell (expanded sidebar) */
+                .nav-badge-bell {
                     margin-left: auto;
-                    background: linear-gradient(135deg, #ef4444, #dc2626);
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 24px;
+                    height: 24px;
+                }
+
+                .bell-icon {
+                    color: #ef4444; /* Rojo llamativo */
+                    font-size: 1.1rem;
+                    animation: bell-shake 2s infinite ease-in-out;
+                    filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.4));
+                }
+
+                .badge-count {
+                    position: absolute;
+                    top: -6px;
+                    right: -8px;
+                    background: #dc2626;
                     color: white;
-                    font-size: 0.7rem;
+                    font-size: 0.6rem;
                     font-weight: 800;
-                    min-width: 22px;
-                    height: 22px;
+                    min-width: 16px;
+                    height: 16px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     border-radius: 50px;
-                    padding: 0 6px;
-                    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-                    animation: badge-pulse 2s infinite;
-                    flex-shrink: 0;
+                    padding: 0 4px;
+                    border: 2px solid var(--sidebar-bg); /* O border para simular recorte */
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    z-index: 2;
+                }
+
+                @keyframes bell-shake {
+                    0%, 15%, 100% { transform: rotate(0); }
+                    5% { transform: rotate(15deg); }
+                    10% { transform: rotate(-15deg); }
                 }
 
                 /* Notification Badge (collapsed sidebar) */
