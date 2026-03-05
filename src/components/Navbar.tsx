@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getPendingCount } from '@/lib/temporal-db';
+import { createClient } from '@/lib/supabase/client';
 
 interface NavbarProps {
   userName?: string;
@@ -80,10 +81,34 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
     Promise.all([fetchPermissions(), fetchPendingCounts()]);
   }, [fetchPermissions, fetchPendingCounts]);
 
-  // Poll pending counts every 30 seconds (permissions don't change during session)
+  // Poll pending counts every 30 seconds (fallback)
   useEffect(() => {
     const interval = setInterval(fetchPendingCounts, 30000);
     return () => clearInterval(interval);
+  }, [fetchPendingCounts]);
+
+  // 🔥 Realtime Subscription for instant badge updates
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('navbar_realtime_badges')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'edit_requests'
+        },
+        () => {
+          // Whenever something changes in edit_requests, fetch the new count
+          fetchPendingCounts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchPendingCounts]);
 
   // Ajustar el margen del contenido principal según el estado del sidebar
@@ -230,8 +255,8 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
               <img src="/logo.png" alt="Logo El Olivar" />
             </div>
             {!isCollapsed && <span className="brand-name">
-                <span className="block text-sm">Control Calidad</span>
-                <span className="block text-xs text-[#969836] font-semibold">El Olivar</span>
+              <span className="block text-sm">Control Calidad</span>
+              <span className="block text-xs text-[#969836] font-semibold">El Olivar</span>
             </span>}
           </div>
         </div>
