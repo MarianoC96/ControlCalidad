@@ -59,6 +59,8 @@ export default function RegistrosClient() {
     const [requestRegistroId, setRequestRegistroId] = useState<number | null>(null);
     const [requestMotivo, setRequestMotivo] = useState('');
     const [isRequesting, setIsRequesting] = useState(false);
+    const [hasSolicitudesPermission, setHasSolicitudesPermission] = useState(false);
+
 
     // Filters
     // Filters
@@ -127,7 +129,9 @@ export default function RegistrosClient() {
         const user = await response.json();
         setUserName(user.nombre_completo);
         setUserRole(user.roles);
+        setHasSolicitudesPermission(user.hasSolicitudesPermission || false);
     };
+
 
     const loadGlobalPdfConfig = async () => {
         try {
@@ -180,14 +184,18 @@ export default function RegistrosClient() {
         setEditError('');
         setEditSuccess('');
 
-        if (userRole === 'administrador') {
+        // Direct edit if has specific permission (includes sadmin and authorized admins)
+        if (hasSolicitudesPermission) {
             setPendingEditRegistro(registro);
             setPasswordInput('');
             setPasswordModalOpen(true);
         } else {
+
+            // Otherwise, attempt to lock (will return canRequest if needed)
             executeEditLock(registro, '');
         }
     };
+
 
     const handlePasswordSubmit = () => {
         if (pendingEditRegistro) {
@@ -1510,42 +1518,76 @@ export default function RegistrosClient() {
                 selectedHistoryDetail && (
                     <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', zIndex: 2400 }}>
                         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                            <div className="modal-content border-0 shadow-lg">
-                                <div className="modal-header bg-light p-3 d-flex justify-content-between align-items-center" style={{ borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
-                                    <h5 className="mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" className="text-primary" viewBox="0 0 16 16">
-                                            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.02 8.02 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z" />
-                                            <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z" />
-                                        </svg>
-                                        Detalles de la Edición
-                                    </h5>
-                                    <button type="button" className="btn-close shadow-none m-0" onClick={() => setSelectedHistoryDetail(null)} aria-label="Close"></button>
+                            <div className="modal-content border-0 shadow-lg overflow-hidden">
+                                <div className="modal-header p-4" style={{
+                                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                                    borderBottom: '1px solid #e2e8f0',
+                                    flexShrink: 0
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                        <div style={{
+                                            width: '48px', height: '48px',
+                                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                                            borderRadius: '12px', display: 'flex', alignItems: 'center',
+                                            justifyContent: 'center', color: 'white', flexShrink: 0,
+                                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+                                        }}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.02 8.02 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z" />
+                                                <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h5 className="mb-0 fw-bold text-dark" style={{ fontSize: '1.25rem' }}>Detalles de la Edición</h5>
+                                            <p className="text-muted mb-0 small">Auditoría técnica del registro</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" className="btn-close shadow-none" onClick={() => setSelectedHistoryDetail(null)} aria-label="Close"></button>
                                 </div>
-                                <div className="modal-body p-4 bg-white">
-                                    <div className="mb-3 d-flex justify-content-between text-muted small border-bottom pb-2">
-                                        <span className="fw-medium text-dark"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="me-1 mb-1" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /></svg>
-                                            {selectedHistoryDetail.usuarios?.nombre_completo || 'Usuario'}</span>
-                                        <span className="bg-light px-2 rounded border">{new Date(selectedHistoryDetail.created_at).toLocaleString('es-PE')}</span>
+                                <div className="modal-body p-4 bg-light bg-opacity-50">
+                                    <div className="status-card mb-4 p-3 bg-white border rounded-3 shadow-sm d-flex align-items-center justify-content-between">
+                                        <div className="d-flex align-items-center gap-3">
+                                            <div className="p-2 rounded-circle bg-success bg-opacity-10 text-success">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div className="text-muted fw-bold text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>Responsable</div>
+                                                <div className="fw-bold text-dark" style={{ fontSize: '0.95rem' }}>{selectedHistoryDetail.usuarios?.nombre_completo || 'Usuario'}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-end border-start ps-4">
+                                            <div className="text-muted fw-bold text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>Fecha y Hora</div>
+                                            <div className="text-secondary small mt-1 bg-light px-2 py-1 rounded d-inline-block border fw-medium" style={{ fontSize: '0.8rem' }}>
+                                                {new Date(selectedHistoryDetail.created_at).toLocaleString('es-PE')}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {selectedHistoryDetail.field_changes && Object.keys(selectedHistoryDetail.field_changes).length > 0 && (
-                                        <div className="mb-4">
-                                            <h6 className="fw-bold fs-6 text-dark mb-3"><span className="badge bg-warning text-dark me-2">✎</span>Campos Modificados</h6>
-                                            <div className="table-responsive border rounded">
-                                                <table className="table table-sm table-bordered mb-0" style={{ fontSize: '0.85rem' }}>
-                                                    <thead className="table-light">
-                                                        <tr>
-                                                            <th>Campo</th>
-                                                            <th>Valor Anterior</th>
-                                                            <th>Valor Nuevo</th>
+                                        <div className="mb-4 bg-white p-3 rounded-3 border shadow-sm">
+                                            <h6 className="fw-bold fs-6 text-dark mb-3 d-flex align-items-center gap-2">
+                                                <span className="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1" style={{ fontSize: '0.7rem' }}>CAMBIOS</span>
+                                                Campos Modificados
+                                            </h6>
+                                            <div className="table-responsive border rounded-3 overflow-hidden">
+                                                <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.85rem' }}>
+                                                    <thead className="bg-dark text-white">
+                                                        <tr style={{ background: '#1e293b' }}>
+                                                            <th className="ps-3 py-2 fw-semibold text-white border-0">Campo</th>
+                                                            <th className="py-2 fw-semibold text-white border-0">Valor Anterior</th>
+                                                            <th className="pe-3 py-2 fw-semibold text-white border-0">Valor Nuevo</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {Object.entries(selectedHistoryDetail.field_changes).map(([field, vals]: [string, any]) => (
-                                                            <tr key={field}>
-                                                                <td className="fw-medium text-capitalize">{field.replace('_', ' ')}</td>
-                                                                <td className="text-danger bg-danger bg-opacity-10 text-decoration-line-through">{vals.old || '-'}</td>
-                                                                <td className="text-success bg-success bg-opacity-10 fw-bold">{vals.new || '-'}</td>
+                                                            <tr key={field} className="align-middle">
+                                                                <td className="ps-3 py-2 fw-bold text-dark text-capitalize">{field.replace('_', ' ')}</td>
+                                                                <td className="py-2 text-danger bg-danger bg-opacity-10">
+                                                                    <span className="text-decoration-line-through opacity-75">{vals.old || '-'}</span>
+                                                                </td>
+                                                                <td className="pe-3 py-2 text-success bg-success bg-opacity-10 fw-bold">{vals.new || '-'}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
@@ -1555,32 +1597,34 @@ export default function RegistrosClient() {
                                     )}
 
                                     {selectedHistoryDetail.photos_added && selectedHistoryDetail.photos_added.length > 0 && (
-                                        <div className="mb-4">
-                                            <h6 className="fw-bold fs-6 text-dark mb-3"><span className="badge bg-success me-2">+</span>Fotos Agregadas ({selectedHistoryDetail.photos_added.length})</h6>
-                                            <div className="d-flex flex-wrap gap-2">
+                                        <div className="mb-4 bg-white p-3 rounded-3 border shadow-sm">
+                                            <h6 className="fw-bold fs-6 text-dark mb-3 d-flex align-items-center" style={{ gap: '16px' }}>
+                                                <span className="badge shadow-sm px-2 py-1 me-2" style={{ fontSize: '0.65rem', fontWeight: '800', letterSpacing: '0.5px', borderRadius: '6px', backgroundColor: '#10b981', color: '#ffffff' }}>AGREGADO</span>
+                                                Fotos Agregadas ({selectedHistoryDetail.photos_added.length})
+                                            </h6>
+                                            <div className="d-flex flex-wrap gap-3">
                                                 {selectedHistoryDetail.photos_added.map((p: any, i: number) => {
-                                                    // Buscamos la data en cualquier propiedad posible
                                                     const raw = p?.data || p?.datos_base64 || p?.url || p?.path || (typeof p === 'string' ? p : '');
                                                     if (!raw || raw.length < 10) return null;
-
-                                                    // Limpieza profunda de espacios en blanco que rompen la URL
                                                     const clean = raw.trim().replace(/\s/g, '');
                                                     const src = (clean.startsWith('data:') || clean.startsWith('http')) ? clean : `data:image/jpeg;base64,${clean}`;
 
                                                     return (
                                                         <div
                                                             key={i}
-                                                            className="border rounded shadow-sm"
+                                                            className="border rounded-3 shadow-sm position-relative photo-entry"
                                                             style={{
-                                                                width: '80px',
-                                                                height: '80px',
+                                                                width: '100px',
+                                                                height: '100px',
                                                                 backgroundImage: `url("${src}")`,
                                                                 backgroundSize: 'cover',
                                                                 backgroundPosition: 'center',
                                                                 cursor: 'pointer',
-                                                                backgroundColor: '#f8f9fa'
+                                                                backgroundColor: '#f8fafc',
+                                                                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                                                             }}
                                                             onClick={() => setZoomImage({ url: src, description: 'Foto agregada' })}
+                                                            title="Ver imagen"
                                                         />
                                                     );
                                                 })}
@@ -1589,43 +1633,45 @@ export default function RegistrosClient() {
                                     )}
 
                                     {selectedHistoryDetail.photos_deleted && selectedHistoryDetail.photos_deleted.length > 0 && (
-                                        <div className="mb-4">
-                                            <h6 className="fw-bold fs-6 text-dark mb-2"><span className="badge bg-danger me-2">-</span>Fotos Eliminadas ({selectedHistoryDetail.photos_deleted.length})</h6>
-                                            <div className="d-flex flex-wrap gap-2">
+                                        <div className="mb-4 bg-white p-3 rounded-3 border shadow-sm">
+                                            <h6 className="fw-bold fs-6 text-dark mb-3 d-flex align-items-center" style={{ gap: '16px' }}>
+                                                <span className="badge shadow-sm px-2 py-1 me-2" style={{ fontSize: '0.65rem', fontWeight: '800', letterSpacing: '0.5px', borderRadius: '6px', backgroundColor: '#ef4444', color: '#ffffff' }}>ELIMINADO</span>
+                                                Fotos Eliminadas ({selectedHistoryDetail.photos_deleted.length})
+                                            </h6>
+                                            <div className="d-flex flex-wrap gap-3">
                                                 {selectedHistoryDetail.photos_deleted.map((p: any, i: number) => {
                                                     const raw = p?.data || p?.datos_base64 || p?.url || p?.path || (typeof p === 'string' ? p : '');
                                                     const id = p?.id || (typeof p === 'number' ? p : 'N/A');
 
                                                     if (!raw || raw.length < 20) {
                                                         return (
-                                                            <div key={i} className="border border-danger rounded d-flex flex-column align-items-center justify-content-center bg-danger bg-opacity-10 text-danger text-center px-1" style={{ width: '80px', height: '80px' }}>
-                                                                <span className="fw-bold" style={{ fontSize: '9px' }}>ID: {id}</span>
-                                                                <span style={{ fontSize: '8px' }}>SIN IMAGEN</span>
+                                                            <div key={i} className="border border-danger rounded-3 d-flex flex-column align-items-center justify-content-center bg-danger bg-opacity-10 text-danger text-center px-1" style={{ width: '100px', height: '100px' }}>
+                                                                <span className="fw-bold" style={{ fontSize: '10px' }}>ID: {id}</span>
+                                                                <span style={{ fontSize: '9px' }}>SIN VISTA PREVIA</span>
                                                             </div>
                                                         );
                                                     }
-
-                                                    // Limpieza profunda de espacios en blanco
                                                     const clean = raw.trim().replace(/\s/g, '');
                                                     const src = (clean.startsWith('data:') || clean.startsWith('http')) ? clean : `data:image/jpeg;base64,${clean}`;
 
                                                     return (
                                                         <div
                                                             key={i}
-                                                            className="border border-danger rounded shadow-sm position-relative overflow-hidden"
+                                                            className="border border-danger border-opacity-25 rounded-3 shadow-sm position-relative overflow-hidden photo-entry"
                                                             style={{
-                                                                width: '80px',
-                                                                height: '80px',
+                                                                width: '100px',
+                                                                height: '100px',
                                                                 backgroundImage: `url("${src}")`,
                                                                 backgroundSize: 'cover',
                                                                 backgroundPosition: 'center',
                                                                 cursor: 'pointer',
-                                                                backgroundColor: '#f8f9fa'
+                                                                backgroundColor: '#fef2f2',
+                                                                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                                                             }}
                                                             onClick={() => setZoomImage({ url: src, description: 'Foto eliminada' })}
                                                         >
-                                                            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 2, pointerEvents: 'none', backgroundColor: 'rgba(220, 53, 69, 0.15)' }}>
-                                                                <span className="badge bg-danger shadow-sm px-1 py-1" style={{ fontSize: '0.45rem' }}>ELIMINADA</span>
+                                                            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 2, pointerEvents: 'none', backgroundColor: 'rgba(220, 53, 69, 0.25)' }}>
+                                                                <span className="badge bg-danger shadow px-2 py-1" style={{ fontSize: '0.6rem', fontWeight: 'bold' }}>ELIMINADA</span>
                                                             </div>
                                                         </div>
                                                     );
@@ -1634,8 +1680,16 @@ export default function RegistrosClient() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="modal-footer border-0 p-3 bg-light d-flex justify-content-end" style={{ flexShrink: 0 }}>
-                                    <button className="btn btn-secondary px-4 fw-bold shadow-sm" onClick={() => setSelectedHistoryDetail(null)}>Cerrar</button>
+                                <div className="modal-footer border-0 p-4 bg-white d-flex justify-content-end" style={{ flexShrink: 0 }}>
+                                    <button
+                                        className="btn px-5 py-2 fw-bold shadow-sm rounded-3 text-white"
+                                        style={{ background: '#1e293b', border: 'none', transition: 'all 0.2s ease' }}
+                                        onClick={() => setSelectedHistoryDetail(null)}
+                                        onMouseOver={(e) => e.currentTarget.style.background = '#334155'}
+                                        onMouseOut={(e) => e.currentTarget.style.background = '#1e293b'}
+                                    >
+                                        Cerrar Detalles
+                                    </button>
                                 </div>
                             </div>
                         </div>

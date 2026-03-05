@@ -192,9 +192,15 @@ export default function ProductosClient() {
         setError('');
 
         try {
+            const parametrosInvalidos = parametrosForm.filter(p => !p.parametro_maestro_id);
+            if (parametrosInvalidos.length > 0) {
+                setError(`Todos los parámetros deben ser seleccionados del catálogo maestro. El parámetro "${parametrosInvalidos[0].nombre || currentParamIndex + 1}" es inválido.`);
+                setSaving(false);
+                return;
+            }
+
             // Prepare payload
             const parametros = parametrosForm
-                .filter((p) => p.nombre.trim())
                 .map((p) => ({
                     parametro_maestro_id: p.parametro_maestro_id,
                     nombre: p.nombre,
@@ -576,19 +582,6 @@ export default function ProductosClient() {
 
                                                             {parametrosForm[currentParamIndex].showDropdown && (
                                                                 <div className="smart-dropdown shadow-lg">
-                                                                    <div className="dropdown-section-title">OPCIONES</div>
-                                                                    <div
-                                                                        className={`dropdown-item-custom ${!parametrosForm[currentParamIndex].parametro_maestro_id ? 'active' : ''}`}
-                                                                        onClick={() => {
-                                                                            handleParametroChange(currentParamIndex, 'parametro_maestro_id', null);
-                                                                            handleParametroChange(currentParamIndex, 'showDropdown', false);
-                                                                            handleParametroChange(currentParamIndex, 'tempSearch', '');
-                                                                        }}
-                                                                    >
-                                                                        <i className="bi bi-plus-circle-dotted me-2 text-primary"></i>
-                                                                        Personalizado / Único
-                                                                    </div>
-
                                                                     <div className="dropdown-section-title">CATÁLOGO MAESTRO</div>
                                                                     {parametrosMaestros
                                                                         .filter(m => !parametrosForm[currentParamIndex].tempSearch || normalizeString(m.nombre).includes(normalizeString(parametrosForm[currentParamIndex].tempSearch)))
