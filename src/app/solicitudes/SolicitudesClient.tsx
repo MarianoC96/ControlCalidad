@@ -59,6 +59,12 @@ export default function SolicitudesClient() {
         return `S-${monthAbbr}${String(req.id).padStart(4, '0')}`;
     };
 
+    const buildHistorialId = (req: EditRequest): string => {
+        const d = new Date(req.registros.fecha_registro);
+        const mes = MONTH_ABBREVIATIONS[d.getMonth()];
+        return `${mes}${String(req.registro_id).padStart(4, '0')}`;
+    };
+
     const [realtimeNotification, setRealtimeNotification] = useState<{ show: boolean; message: string } | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -349,6 +355,7 @@ export default function SolicitudesClient() {
                                     <thead className="table-light text-secondary text-uppercase small">
                                         <tr>
                                             <th className="ps-3 fw-semibold text-secondary">ID</th>
+                                            <th className="fw-semibold text-secondary">ID Historial</th>
                                             <th className="fw-semibold text-secondary">Usuario</th>
                                             <th className="fw-semibold text-secondary">Producto</th>
                                             <th className="fw-semibold text-secondary">Lote</th>
@@ -369,7 +376,7 @@ export default function SolicitudesClient() {
                                             </tr>
                                         ) : filteredRequests.length === 0 ? (
                                             <tr>
-                                                <td colSpan={8} className="text-center py-5 text-muted">
+                                                <td colSpan={9} className="text-center py-5 text-muted">
                                                     No hay solicitudes que coincidan con los filtros.
                                                 </td>
                                             </tr>
@@ -377,6 +384,7 @@ export default function SolicitudesClient() {
                                             filteredRequests.map((req) => (
                                                 <tr key={req.id} className={req.status === 'pendiente' ? 'table-warning' : ''}>
                                                     <td className="ps-3 fw-bold text-primary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{buildDisplayId(req)}</td>
+                                                    <td className="fw-bold text-secondary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{buildHistorialId(req)}</td>
                                                     <td className="ps-3">
                                                         <div className="d-flex align-items-center gap-2">
                                                             <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -467,7 +475,10 @@ export default function SolicitudesClient() {
                                                     {req.usuarios.nombre_completo.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="fw-bold text-primary" style={{ fontSize: '0.8rem' }}>{buildDisplayId(req)}</div>
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <div className="fw-bold text-primary" style={{ fontSize: '0.8rem' }}>{buildDisplayId(req)}</div>
+                                                        <div className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>Hist: {buildHistorialId(req)}</div>
+                                                    </div>
                                                     <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
                                                 </div>
                                             </div>

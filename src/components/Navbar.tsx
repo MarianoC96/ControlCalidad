@@ -295,7 +295,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                       </span>
                       {!isCollapsed && <span className="nav-text">{link.label}</span>}
                       {!isCollapsed && badgeCount > 0 && (
-                        <div className="nav-badge-bell">
+                        <div className="nav-badge-bell" style={{ marginRight: 'auto' }}>
                           <i className="bi bi-bell-fill bell-icon"></i>
                           <span className="badge-count">{badgeCount > 99 ? '99+' : badgeCount}</span>
                         </div>
@@ -574,9 +574,9 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
 
                 /* Notification Bell (expanded sidebar) */
                 .nav-badge-bell {
-                    margin-left: auto;
+                    margin-left: 8px; /* Espacio pequeño después del texto */
                     position: relative;
-                    display: flex;
+                    display: inline-flex;
                     align-items: center;
                     justify-content: center;
                     width: 24px;
@@ -596,7 +596,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
                     right: -8px;
                     background: #dc2626;
                     color: white;
-                    font-size: 0.6rem;
+                    font-size: 0.65rem; /* Un poco más legible */
                     font-weight: 800;
                     min-width: 16px;
                     height: 16px;

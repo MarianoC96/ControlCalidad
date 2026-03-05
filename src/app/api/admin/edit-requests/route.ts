@@ -47,7 +47,7 @@ export async function GET() {
         const requestsResult = await supabase
             .from('edit_requests')
             .select(`
-                id, status, motivo, created_at, resolved_at,
+                id, registro_id, status, motivo, created_at, resolved_at,
                 registros (
                     lote_interno,
                     producto_nombre,
