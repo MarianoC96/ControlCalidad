@@ -147,9 +147,10 @@ export default function SolicitudesClient() {
         const user = await response.json();
         setUserName(user.nombre_completo);
         setUserRole(user.roles);
-        if (user.roles !== 'administrador') {
+        if (user.roles !== 'administrador' && !user.hasSolicitudesPermission) {
             router.push('/historial');
         }
+
     };
 
     const loadRequests = async () => {

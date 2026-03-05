@@ -40,22 +40,48 @@ export async function POST(request: Request) {
 
         const supabase = createServiceClient();
 
-        // Fetch User
-        const { data: user } = await supabase
-            .from('usuarios')
-            .select('id, roles, password')
-            .eq('id', parseInt(userId))
-            .single();
+        // Fetch User and Registro in PARALLEL
+        const [userResult, regResult] = await Promise.all([
+            supabase
+                .from('usuarios')
+                .select('id, usuario, roles, password, role_id')
+                .eq('id', parseInt(userId))
+                .single(),
+            supabase
+                .from('registros')
+                .select('id, lote_interno, lote_producto, guia, marca, cantidad, edit_started_by, edit_expires_at, fotos(id)')
+                .eq('id', registro_id)
+                .single()
+        ]);
 
-        if (!user) {
+        const { data: user, error: userError } = userResult;
+        const { data: registro, error: regError } = regResult;
+
+        if (userError || !user) {
             return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
         }
+        if (regError || !registro) {
+            return NextResponse.json({ error: 'Registro no encontrado' }, { status: 404 });
+        }
 
-        const isWorker = user.roles === 'trabajador';
-        const isAdmin = user.roles === 'administrador';
+        // 1. Determine if user has direct edit permission (Only sadmin, admins and those with 'solicitudes' module)
+        let hasDirectEditPermission = false;
+        if (user.usuario === 'sadmin' || user.roles === 'administrador') {
+            hasDirectEditPermission = true;
+        } else if (user.role_id) {
+            const { data: permisos } = await supabase
+                .from('role_permisos')
+                .select('modulo_key')
+                .eq('role_id', user.role_id)
+                .eq('habilitado', true)
+                .eq('modulo_key', 'solicitudes');
+            hasDirectEditPermission = !!(permisos && permisos.length > 0);
+        }
 
-        // Check Admin Password
-        if (isAdmin) {
+
+
+        // 2. Validate Password for anyone with direct edit permission
+        if (hasDirectEditPermission) {
             if (!password) {
                 return NextResponse.json({ error: 'Contraseña requerida', requirePassword: true }, { status: 401 });
             }
@@ -65,55 +91,38 @@ export async function POST(request: Request) {
             }
         }
 
-        // Fetch Registro Details (Lock & Existing Photos)
-        const { data: registro, error: regError } = await supabase
-            .from('registros')
-            .select('id, lote_interno, lote_producto, guia, marca, cantidad, edit_started_by, edit_expires_at, fotos(id)')
-            .eq('id', registro_id)
-            .single();
-
-        if (regError || !registro) {
-            return NextResponse.json({ error: 'Registro no encontrado' }, { status: 404 });
-        }
-
-        // Validate Lock
+        // 3. Validate Lock Ownership and Expiry
         if (registro.edit_started_by !== user.id) {
             return NextResponse.json({ error: 'No tienes el bloqueo de edición de este registro.' }, { status: 403 });
         }
 
         const now = new Date();
         const expiresAt = registro.edit_expires_at ? new Date(registro.edit_expires_at) : null;
-        const isExpired = expiresAt && expiresAt < now;
-
-        if (isWorker && isExpired) {
+        if (expiresAt && expiresAt < now) {
             return NextResponse.json({ error: 'El tiempo de edición ha expirado.' }, { status: 403 });
         }
 
-        // Validate Worker Logic (One Edit Rule)
+        // 4. Validate Request for those WITHOUT direct permission
         let approvedRequestId = null;
-        if (isWorker) {
-            // Run both checks in parallel
-            const [approvedResult, historyResult] = await Promise.all([
-                supabase
-                    .from('edit_requests')
-                    .select('id')
-                    .eq('registro_id', registro_id)
-                    .eq('usuario_id', user.id)
-                    .eq('status', 'aprobado')
-                    .maybeSingle(),
-                supabase
-                    .from('history_edits')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('registro_id', registro_id)
-                    .eq('role', 'trabajador')
-            ]);
+        if (!hasDirectEditPermission) {
+            const { data: approvedRequest } = await supabase
+                .from('edit_requests')
+                .select('id')
+                .eq('registro_id', registro_id)
+                .eq('usuario_id', user.id)
+                .eq('status', 'aprobado')
+                .maybeSingle();
 
-            if (approvedResult.data) {
-                approvedRequestId = approvedResult.data.id;
-            } else if (historyResult.count !== null && historyResult.count > 0) {
-                return NextResponse.json({ error: 'Ya realizaste una edición previa en este registro.' }, { status: 403 });
+            if (!approvedRequest) {
+                return NextResponse.json(
+                    { error: 'No tienes una solicitud de edición aprobada para guardar estos cambios.' },
+                    { status: 403 }
+                );
             }
+            approvedRequestId = approvedRequest.id;
         }
+
+
 
         // Validate Max Photos
         const currentPhotosCount = registro.fotos ? registro.fotos.length : 0;

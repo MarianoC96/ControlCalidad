@@ -20,11 +20,11 @@ export async function POST(request: Request) {
 
         const supabase = createServiceClient();
 
-        // Fetch User and Registro in PARALLEL (instead of sequential)
+        // Fetch User and Registro in PARALLEL
         const [userResult, regResult] = await Promise.all([
             supabase
                 .from('usuarios')
-                .select('id, usuario, roles, password')
+                .select('id, usuario, roles, password, role_id')
                 .eq('id', parseInt(userId))
                 .single(),
             supabase
@@ -45,10 +45,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Registro no encontrado' }, { status: 404 });
         }
 
-        const isWorker = user.roles === 'trabajador';
-        const isAdmin = user.roles === 'administrador';
-
-        // Lock Logic
+        // Base Variables for Lock Logic
         const now = new Date();
         const expiresAt = registro.edit_expires_at ? new Date(registro.edit_expires_at) : null;
 
@@ -65,57 +62,56 @@ export async function POST(request: Request) {
             );
         }
 
-        // Worker Restrictions
-        if (isWorker) {
-            // Run both checks in parallel
-            const [approvedResult, historyResult] = await Promise.all([
+        // 1. Check if user has direct edit permission (Only sadmin and those with 'solicitudes' module)
+        let hasDirectEditPermission = false;
+
+        if (user.usuario === 'sadmin' || user.roles === 'administrador') {
+            hasDirectEditPermission = true;
+        } else if (user.role_id) {
+
+            const { data: permisos } = await supabase
+                .from('role_permisos')
+                .select('modulo_key')
+                .eq('role_id', user.role_id)
+                .eq('habilitado', true)
+                .eq('modulo_key', 'solicitudes');
+
+            hasDirectEditPermission = !!(permisos && permisos.length > 0);
+        }
+
+
+        // 2. Logic for those WITHOUT direct edit permission (must have approved request)
+        if (!hasDirectEditPermission) {
+            const [approvedResult] = await Promise.all([
                 supabase
                     .from('edit_requests')
-                    .select('id', { count: 'exact', head: false })
+                    .select('id')
                     .eq('registro_id', registro_id)
                     .eq('usuario_id', user.id)
                     .eq('status', 'aprobado')
-                    .limit(1),
-                supabase
-                    .from('history_edits')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('registro_id', registro_id)
-                    .eq('role', 'trabajador')
+                    .limit(1)
             ]);
 
             const hasApprovedRequest = approvedResult.data && approvedResult.data.length > 0;
 
-            if (!hasApprovedRequest) {
-                const editCount = historyResult.count;
-
-                if (editCount !== null && editCount > 0) {
-                    return NextResponse.json(
-                        {
-                            error: 'Este registro ya fue editado por un trabajador. Solo un administrador puede realizar más cambios.',
-                            canRequest: true
-                        },
-                        { status: 403 }
-                    );
-                }
-
-                // Check if previously locked by me but expired
-                if (registro.edit_started_by === user.id && expiresAt && expiresAt <= now) {
-                    return NextResponse.json(
-                        {
-                            error: 'El tiempo de edición ha expirado. Solo un administrador puede reactivar la edición.',
-                            canRequest: true
-                        },
-                        { status: 403 }
-                    );
-                }
+            // Rule: No direct permission AND no approved request AND no active lock = Must Request
+            if (!hasApprovedRequest && !isLockedByMe) {
+                return NextResponse.json(
+                    {
+                        error: 'Para realizar cambios en este registro debe enviar primero una solicitud de edición.',
+                        canRequest: true
+                    },
+                    { status: 403 }
+                );
             }
         }
 
-        // Admin Re-Auth
-        if (isAdmin) {
+
+        // 3. Direct edit or active lock re-auth requires password check
+        if (hasDirectEditPermission) {
             if (!password) {
                 return NextResponse.json(
-                    { error: 'Contraseña requerida para editar como administrador', requirePassword: true },
+                    { error: 'Contraseña requerida', requirePassword: true },
                     { status: 401 }
                 );
             }
@@ -162,3 +158,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
     }
 }
+
