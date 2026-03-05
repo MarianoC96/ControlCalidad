@@ -2,8 +2,9 @@
 
 import Head from 'next/head';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 
 interface EditRequest {
@@ -58,9 +59,62 @@ export default function SolicitudesClient() {
         return `S-${monthAbbr}${String(req.id).padStart(4, '0')}`;
     };
 
+    const buildHistorialId = (req: EditRequest): string => {
+        const d = new Date(req.registros.fecha_registro);
+        const mes = MONTH_ABBREVIATIONS[d.getMonth()];
+        return `${mes}${String(req.registro_id).padStart(4, '0')}`;
+    };
+
+    const [realtimeNotification, setRealtimeNotification] = useState<{ show: boolean; message: string } | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
     useEffect(() => {
         checkAuth();
         loadRequests();
+
+        // 🔊 Setup notification sound
+        audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+        // 🔥 Realtime Subscription
+        const supabase = createClient();
+        const channel = supabase
+            .channel('edit_requests_changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen to INSERT, UPDATE, DELETE
+                    schema: 'public',
+                    table: 'edit_requests'
+                },
+                (payload) => {
+                    console.log('Realtime change detected:', payload);
+
+                    // Reload data to ensure everything is fresh
+                    loadRequests();
+
+                    // If it's a new request, show notification
+                    if (payload.eventType === 'INSERT') {
+                        // Play sound
+                        audioRef.current?.play().catch(() => { });
+
+                        // Show toast
+                        setRealtimeNotification({
+                            show: true,
+                            message: '¡Nueva solicitud de edición recibida!'
+                        });
+
+                        // Hide toast after 5 seconds
+                        setTimeout(() => {
+                            setRealtimeNotification(null);
+                        }, 5000);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const filteredRequests = requests.filter(req => {
@@ -301,6 +355,7 @@ export default function SolicitudesClient() {
                                     <thead className="table-light text-secondary text-uppercase small">
                                         <tr>
                                             <th className="ps-3 fw-semibold text-secondary">ID</th>
+                                            <th className="fw-semibold text-secondary">ID Historial</th>
                                             <th className="fw-semibold text-secondary">Usuario</th>
                                             <th className="fw-semibold text-secondary">Producto</th>
                                             <th className="fw-semibold text-secondary">Lote</th>
@@ -321,7 +376,7 @@ export default function SolicitudesClient() {
                                             </tr>
                                         ) : filteredRequests.length === 0 ? (
                                             <tr>
-                                                <td colSpan={8} className="text-center py-5 text-muted">
+                                                <td colSpan={9} className="text-center py-5 text-muted">
                                                     No hay solicitudes que coincidan con los filtros.
                                                 </td>
                                             </tr>
@@ -329,6 +384,7 @@ export default function SolicitudesClient() {
                                             filteredRequests.map((req) => (
                                                 <tr key={req.id} className={req.status === 'pendiente' ? 'table-warning' : ''}>
                                                     <td className="ps-3 fw-bold text-primary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{buildDisplayId(req)}</td>
+                                                    <td className="fw-bold text-secondary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{buildHistorialId(req)}</td>
                                                     <td className="ps-3">
                                                         <div className="d-flex align-items-center gap-2">
                                                             <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -419,7 +475,10 @@ export default function SolicitudesClient() {
                                                     {req.usuarios.nombre_completo.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="fw-bold text-primary" style={{ fontSize: '0.8rem' }}>{buildDisplayId(req)}</div>
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <div className="fw-bold text-primary" style={{ fontSize: '0.8rem' }}>{buildDisplayId(req)}</div>
+                                                        <div className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>Hist: {buildHistorialId(req)}</div>
+                                                    </div>
                                                     <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
                                                 </div>
                                             </div>
@@ -579,6 +638,22 @@ export default function SolicitudesClient() {
                                 )}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* REALTIME TOAST NOTIFICATION */}
+            {realtimeNotification?.show && (
+                <div className="realtime-toast" onClick={() => setRealtimeNotification(null)}>
+                    <div className="toast-content">
+                        <div className="toast-icon">
+                            <i className="bi bi-bell-fill"></i>
+                        </div>
+                        <div className="toast-text">
+                            <span className="toast-title">Nueva Notificación</span>
+                            <span className="toast-msg">{realtimeNotification.message}</span>
+                        </div>
+                        <button className="toast-close">&times;</button>
                     </div>
                 </div>
             )}
@@ -799,6 +874,241 @@ export default function SolicitudesClient() {
                     position: fixed;
                     inset: 0;
                     background: rgba(15, 23, 42, 0.7);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 2000;
+                    padding: 20px;
+                    backdrop-filter: blur(4px);
+                }
+
+                /* Realtime Toast Styles */
+                .realtime-toast {
+                    position: fixed;
+                    top: 24px;
+                    right: 24px;
+                    z-index: 3000;
+                    background: white;
+                    border-radius: 12px;
+                    padding: 16px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+                    border-left: 4px solid #2563eb;
+                    cursor: pointer;
+                    animation: slideInRight 0.3s ease-out;
+                    min-width: 280px;
+                    border: 1px solid #e2e8f0;
+                }
+
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+
+                .toast-content {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .toast-icon {
+                    width: 40px;
+                    height: 40px;
+                    background: #eff6ff;
+                    color: #2563eb;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.2rem;
+                    animation: bell-shake 0.5s ease-in-out infinite alternate;
+                }
+
+                @keyframes bell-shake {
+                    from { transform: rotate(-10deg); }
+                    to { transform: rotate(10deg); }
+                }
+
+                .toast-text {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .toast-title {
+                    font-weight: 800;
+                    color: #1e293b;
+                    font-size: 0.9rem;
+                }
+
+                .toast-msg {
+                    color: #64748b;
+                    font-size: 0.8rem;
+                }
+
+                .toast-close {
+                    background: none;
+                    border: none;
+                    color: #94a3b8;
+                    font-size: 1.2rem;
+                    margin-left: auto;
+                    padding: 0 4px;
+                }
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 2000;
+                    padding: 20px;
+                    backdrop-filter: blur(4px);
+                }
+
+                /* Realtime Toast Styles */
+                .realtime-toast {
+                    position: fixed;
+                    top: 24px;
+                    right: 24px;
+                    z-index: 3000;
+                    background: white;
+                    border-radius: 12px;
+                    padding: 16px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+                    border-left: 4px solid #2563eb;
+                    cursor: pointer;
+                    animation: slideInRight 0.3s ease-out;
+                    min-width: 280px;
+                    border-bottom: 1px solid #e2e8f0;
+                    border-top: 1px solid #e2e8f0;
+                    border-right: 1px solid #e2e8f0;
+                }
+
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+
+                .toast-content {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .toast-icon {
+                    width: 40px;
+                    height: 40px;
+                    background: #eff6ff;
+                    color: #2563eb;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.2rem;
+                    animation: bell-shake 0.5s ease-in-out infinite alternate;
+                }
+
+                @keyframes bell-shake {
+                    from { transform: rotate(-10deg); }
+                    to { transform: rotate(10deg); }
+                }
+
+                .toast-text {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .toast-title {
+                    font-weight: 800;
+                    color: #1e293b;
+                    font-size: 0.9rem;
+                }
+
+                .toast-msg {
+                    color: #64748b;
+                    font-size: 0.8rem;
+                }
+
+                .toast-close {
+                    background: none;
+                    border: none;
+                    color: #94a3b8;
+                    font-size: 1.2rem;
+                    margin-left: auto;
+                    padding: 0 4px;
+                }
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 2000;
+                    padding: 20px;
+                    backdrop-filter: blur(4px);
+                }
+
+                /* Realtime Toast Styles */
+                .realtime-toast {
+                    position: fixed;
+                    top: 24px;
+                    right: 24px;
+                    z-index: 3000;
+                    background: white;
+                    border-radius: 12px;
+                    padding: 16px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+                    border-left: 4px solid #2563eb;
+                    cursor: pointer;
+                    animation: slideInRight 0.3s ease-out;
+                    min-width: 280px;
+                }
+
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+
+                .toast-content {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .toast-icon {
+                    width: 40px;
+                    height: 40px;
+                    background: #eff6ff;
+                    color: #2563eb;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.2rem;
+                    animation: bell-shake 0.5s ease-in-out infinite alternate;
+                }
+
+                @keyframes bell-shake {
+                    from { transform: rotate(-10deg); }
+                    to { transform: rotate(10deg); }
+                }
+
+                .toast-text {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .toast-title {
+                    font-weight: 800;
+                    color: #1e293b;
+                    font-size: 0.9rem;
+                }
+
+                .toast-msg {
+                    color: #64748b;
+                    font-size: 0.8rem;
+                }
+
+                .toast-close {
+                    background: none;
+                    border: none;
+                    color: #94a3b8;
+                    font-size: 1.2rem;
+                    margin-left: auto;
+                    padding: 0 4px;
+                }
                     display: flex;
                     align-items: center;
                     justify-content: center;
