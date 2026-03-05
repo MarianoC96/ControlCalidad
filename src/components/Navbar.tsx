@@ -112,6 +112,14 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       ),
     },
     {
+      href: '/registros-modificados',
+      label: 'Registros Modificados',
+      moduleKey: 'registros-modificados',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+      ),
+    },
+    {
       href: '/historial-descargas',
       label: 'Historial de descargas masivas',
       moduleKey: 'historial-descargas',
@@ -230,8 +238,8 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
               <img src="/logo.png" alt="Logo El Olivar" />
             </div>
             {!isCollapsed && <span className="brand-name">
-                <span className="block text-sm">Control Calidad</span>
-                <span className="block text-xs text-[#969836] font-semibold">El Olivar</span>
+              <span className="block text-sm">Control Calidad</span>
+              <span className="block text-xs text-[#969836] font-semibold">El Olivar</span>
             </span>}
           </div>
         </div>

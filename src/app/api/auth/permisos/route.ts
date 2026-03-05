@@ -12,7 +12,7 @@ export const GET = withAuth(async (_request, user) => {
     if (user.usuario === 'sadmin') {
         return NextResponse.json({
             allowedModules: [
-                'registro-productos', 'historial', 'historial-descargas',
+                'registro-productos', 'historial', 'registros-modificados', 'historial-descargas',
                 'solicitudes', 'productos', 'parametros-maestros',
                 'usuarios', 'admin/config-pdf', 'accesos',
                 'temporal',
@@ -27,7 +27,7 @@ export const GET = withAuth(async (_request, user) => {
         if (user.roles === 'administrador') {
             return NextResponse.json({
                 allowedModules: [
-                    'registro-productos', 'historial', 'historial-descargas',
+                    'registro-productos', 'historial', 'registros-modificados', 'historial-descargas',
                     'solicitudes', 'productos', 'parametros-maestros',
                     'usuarios', 'admin/config-pdf', 'temporal',
                 ],
@@ -37,7 +37,7 @@ export const GET = withAuth(async (_request, user) => {
         }
 
         return NextResponse.json({
-            allowedModules: ['registro-productos', 'historial', 'historial-descargas', 'temporal'],
+            allowedModules: ['registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'temporal'],
             isSadmin: false,
             roleName: 'trabajador',
         });
