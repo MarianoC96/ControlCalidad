@@ -2,15 +2,16 @@
 
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Navbar';
+import ScannerSidebar from '@/components/ScannerSidebar';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 // Pages that should NOT show the sidebar
-const PUBLIC_PATHS = ['/', '/olvide-password', '/restablecer-password'];
+const PUBLIC_PATHS = ['/', '/olvide-password', '/restablecer-password', '/dashboard'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isPublicPage = PUBLIC_PATHS.includes(pathname);
+    const isScannerPath = pathname.startsWith('/escaneo');
 
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
@@ -55,7 +56,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     return (
         <>
-            <Sidebar userName={userName} userRole={userRole} />
+            {isScannerPath ? (
+                <ScannerSidebar userName={userName} userRole={userRole} />
+            ) : (
+                <Sidebar userName={userName} userRole={userRole} />
+            )}
             {children}
         </>
     );

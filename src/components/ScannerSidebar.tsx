@@ -1,0 +1,514 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+interface ScannerSidebarProps {
+    userName?: string;
+    userRole?: string;
+}
+
+export default function ScannerSidebar({ userName, userRole }: ScannerSidebarProps) {
+    const pathname = usePathname();
+    const router = useRouter();
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+    const isActive = (path: string) => pathname === path;
+
+    // Adjust main content margin based on sidebar state exactly like the main Navbar
+    useEffect(() => {
+        const root = document.documentElement;
+        if (window.innerWidth > 992) {
+            root.style.setProperty('--sidebar-width', isCollapsed ? '72px' : '260px');
+        }
+    }, [isCollapsed]);
+
+    const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+    const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
+
+    const navLinks = [
+        {
+            href: '/escaneo',
+            label: 'Escáner Central',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+            ),
+        },
+        {
+            href: '/escaneo/productos',
+            label: 'Agregar Producto',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+            ),
+        },
+        {
+            href: '/escaneo/cajas',
+            label: 'Agregar Caja',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+            ),
+        },
+        {
+            href: '/escaneo/historial',
+            label: 'Historial',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            ),
+        },
+    ];
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/');
+            router.refresh();
+        } catch (error) {
+            console.error('Error during logout:', error);
+        }
+    };
+
+    return (
+        <>
+            {/* Mobile Header Toggle */}
+            <div className="mobile-header">
+                <Link href="/dashboard" className="mobile-brand">Módulo Escaneo</Link>
+                <button className="mobile-toggle" onClick={toggleMobile} aria-label="Abrir menú">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                </button>
+            </div>
+
+            {/* Backdrop for Mobile */}
+            {isMobileOpen && (
+                <div className="mobile-backdrop" onClick={() => setIsMobileOpen(false)} />
+            )}
+
+            {/* Sidebar Container */}
+            <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
+
+                {/* Header / Brand */}
+                <div className="sidebar-header">
+                    <div className="brand-wrapper">
+                        <div className="logo-box">
+                            <img src="/logo.png" alt="Logo El Olivar" />
+                        </div>
+                        {!isCollapsed && <span className="brand-name">
+                            <span className="block text-sm">Módulo Escaneo</span>
+                            <span className="block text-xs text-blue-400 font-semibold italic">FastTrack QR/1D</span>
+                        </span>}
+                    </div>
+                </div>
+
+                {/* Collapser (Desktop Only) */}
+                <button className="collapse-btn" onClick={toggleSidebar} title={isCollapsed ? "Expandir" : "Colapsar"} aria-label={isCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {isCollapsed ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        )}
+                    </svg>
+                </button>
+
+                {/* Navigation Links */}
+                <div className="sidebar-content">
+                    <nav className="sidebar-nav">
+                        <ul className="nav-list">
+                            {navLinks.map((link) => (
+                                <li key={link.href} className="nav-item">
+                                    <Link
+                                        href={link.href}
+                                        className={`nav-link ${isActive(link.href) ? 'active' : ''}`}
+                                        title={isCollapsed ? link.label : ''}
+                                        onClick={() => setIsMobileOpen(false)}
+                                    >
+                                        <span className="nav-icon">
+                                            {link.icon}
+                                        </span>
+                                        {!isCollapsed && <span className="nav-text">{link.label}</span>}
+                                        {isCollapsed && isActive(link.href) && <div className="active-dot" />}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                </div>
+
+                {/* User Footer */}
+                {userName && (
+                    <div className="sidebar-footer">
+                        <div className="user-profile-container">
+                            <div className="user-profile-link" title="Módulo Operario">
+                                <div className="avatar bg-blue-600">
+                                    {userName.charAt(0).toUpperCase()}
+                                </div>
+
+                                {!isCollapsed && (
+                                    <div className="user-details">
+                                        <span className="user-name">{userName.split(' ')[0]}</span>
+                                        <span className="user-role">{userRole === 'administrador' ? 'Admin' : 'Operario'}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button className="logout-btn" onClick={handleLogout} title="Cerrar Sesión" aria-label="Cerrar sesión">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </aside>
+
+            {/* Global Styles for Scanner Sidebar Structure */}
+            <style jsx>{`
+                /* Mobile Header */
+                .mobile-header {
+                    display: none;
+                    background: white;
+                    border-bottom: 1px solid #e2e8f0;
+                    padding: 0.75rem 1rem;
+                    align-items: center;
+                    justify-content: space-between;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    z-index: 1000;
+                    height: 60px;
+                }
+
+                .mobile-brand {
+                    font-weight: 700;
+                    font-size: 1.25rem;
+                    color: #1e293b;
+                    text-decoration: none;
+                }
+
+                .mobile-toggle {
+                    background: none;
+                    border: none;
+                    color: #475569;
+                    cursor: pointer;
+                    padding: 0.25rem;
+                }
+
+                .mobile-backdrop {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0,0,0,0.5);
+                    z-index: 1001;
+                    backdrop-filter: blur(2px);
+                }
+
+                /* Sidebar Base */
+                .sidebar {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    bottom: 0;
+                    width: 260px;
+                    background-color: var(--sidebar-bg, #0f172a);
+                    color: var(--sidebar-text, #f1f5f9);
+                    z-index: 1002;
+                    display: flex;
+                    flex-direction: column;
+                    transition: width 0.3s ease, transform 0.3s ease;
+                    box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+                }
+
+                .sidebar.collapsed {
+                    width: 72px;
+                }
+
+                /* Header */
+                .sidebar-header {
+                    height: 70px;
+                    display: flex;
+                    align-items: center;
+                    padding: 0 1.5rem;
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                }
+
+                .sidebar.collapsed .sidebar-header {
+                    padding: 0;
+                    justify-content: center;
+                }
+
+                .brand-wrapper {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    overflow: hidden;
+                }
+
+                .logo-box {
+                    min-width: 36px;
+                    height: 36px;
+                    background: #ffffff;
+                    color: var(--sidebar-bg);
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                    padding: 4px;
+                }
+                
+                .logo-box img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                }
+
+                .brand-name {
+                    font-weight: 700;
+                    font-size: 1.05rem;
+                    white-space: nowrap;
+                    color: #fff;
+                    opacity: 1;
+                    transition: opacity 0.2s;
+                    line-height: 1.2;
+                }
+
+                /* Collapse Button */
+                .collapse-btn {
+                    position: absolute;
+                    top: 24px;
+                    right: -12px;
+                    width: 24px;
+                    height: 24px;
+                    background: #fff;
+                    color: #475569;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    z-index: 10;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                }
+
+                .sidebar:hover .collapse-btn {
+                    opacity: 1;
+                }
+
+                /* Nav List */
+                .sidebar-content {
+                    flex: 1;
+                    padding: 2rem 0;
+                    overflow-y: auto;
+                    scrollbar-width: none;
+                }
+
+                .nav-list {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0 1.25rem;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .sidebar.collapsed .nav-list {
+                    padding: 0 0.75rem;
+                }
+
+                .nav-item {
+                    width: 100%;
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                    padding-bottom: 0.75rem;
+                    margin-bottom: 0.75rem;
+                }
+
+                .nav-item:last-child {
+                    border-bottom: none;
+                    padding-bottom: 0;
+                    margin-bottom: 0;
+                }
+
+                .nav-link {
+                    display: flex !important;
+                    align-items: center;
+                    flex-direction: row !important;
+                    flex-wrap: nowrap;
+                    gap: 16px;
+                    padding: 0 20px;
+                    text-decoration: none;
+                    color: #94a3b8;
+                    border-radius: 12px;
+                    transition: all 0.2s ease;
+                    position: relative;
+                    height: 52px;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+
+                .sidebar.collapsed .nav-link {
+                    padding: 0;
+                    justify-content: center;
+                    height: 48px;
+                }
+
+                .nav-link:hover {
+                    color: #f1f5f9;
+                    background: rgba(255,255,255,0.08);
+                    transform: translateX(4px);
+                }
+
+                .nav-link.active {
+                    color: #fff;
+                    background: var(--primary-color, #2563eb);
+                    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+                }
+                
+                .nav-link.active:hover {
+                    transform: none;
+                }
+
+                .nav-icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    width: 24px;
+                    height: 24px;
+                    position: relative;
+                }
+                
+                .nav-icon svg { 
+                    width: 22px; 
+                    height: 22px; 
+                }
+
+                .nav-text {
+                    font-weight: 500;
+                    font-size: 1rem;
+                    white-space: nowrap;
+                    opacity: 1;
+                    line-height: 1.2;
+                    letter-spacing: 0.01em;
+                }
+
+                .active-dot {
+                    position: absolute;
+                    right: 4px;
+                    top: 4px;
+                    width: 6px;
+                    height: 6px;
+                    background: #fff;
+                    border-radius: 50%;
+                }
+
+                /* Footer */
+                .sidebar-footer {
+                    padding: 1.5rem 1rem;
+                    border-top: 1px solid rgba(255,255,255,0.05);
+                }
+
+                .sidebar.collapsed .sidebar-footer {
+                    padding: 1.5rem 0;
+                    display: flex;
+                    justify-content: center;
+                }
+
+                .user-profile-container {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 0.5rem;
+                    background: rgba(0,0,0,0.2);
+                    padding: 0.5rem;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    transition: background 0.2s;
+                }
+
+                .user-profile-link {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    flex: 1;
+                    overflow: hidden;
+                }
+                
+                .sidebar.collapsed .user-profile-container {
+                    background: transparent;
+                    padding: 0.5rem 0;
+                    justify-content: center;
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+
+                .avatar {
+                    width: 40px;
+                    height: 40px;
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 600;
+                    font-size: 1rem;
+                    flex-shrink: 0;
+                    transition: transform 0.2s;
+                }
+
+                .user-details {
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+
+                .user-name {
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    color: #fff;
+                    white-space: nowrap;
+                    transition: color 0.2s;
+                }
+
+                .user-role {
+                    font-size: 0.75rem;
+                    color: #94a3b8;
+                    white-space: nowrap;
+                }
+
+                .logout-btn {
+                    background: transparent;
+                    border: none;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    border-radius: 8px;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    margin-left: 4px;
+                }
+
+                .logout-btn:hover {
+                    color: #ef4444;
+                    background: rgba(239, 68, 68, 0.1);
+                }
+
+                /* Mobile Styles */
+                @media (max-width: 992px) {
+                    .mobile-header { display: flex; }
+                    .collapse-btn { display: none; }
+                    
+                    .sidebar {
+                        transform: translateX(-100%);
+                        width: 280px;
+                    }
+
+                    .sidebar.mobile-open {
+                        transform: translateX(0);
+                    }
+                }
+            `}</style>
+        </>
+    );
+}

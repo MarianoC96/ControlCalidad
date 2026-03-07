@@ -32,7 +32,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'Usuario o contraseña incorrectos');
       }
 
-      router.push('/registro-productos');
+      router.push('/dashboard');
       router.refresh();
 
     } catch (err: unknown) {
