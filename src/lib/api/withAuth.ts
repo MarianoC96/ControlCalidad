@@ -16,6 +16,7 @@ export interface AuthenticatedUser {
     readonly role_id: number | null;
     readonly activo: boolean;
     readonly two_factor_secret?: string | null;
+    readonly dos_pasos_habilitado?: boolean;
 }
 
 type RouteHandler = (

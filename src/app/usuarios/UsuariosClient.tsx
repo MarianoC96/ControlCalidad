@@ -37,6 +37,10 @@ export default function UsuariosClient() {
         roles: 'trabajador' as 'administrador' | 'trabajador',
         role_id: null as number | null,
         activo: true,
+        permiso_escaneo: false,
+        permiso_escaneo_productos: false,
+        permiso_escaneo_cajas: false,
+        permiso_escaneo_historial: false,
     });
 
     // Custom Confirmation Modal State
@@ -200,7 +204,22 @@ export default function UsuariosClient() {
                             <span className="val">{usuarios.length}</span>
                             <span className="lab">TOTAL</span>
                         </div>
-                        <button className="btn-add-premium shadow-sm" onClick={() => { setEditingUser(null); setFormData({ nombre_completo: '', usuario: '', password: '', roles: 'trabajador', role_id: null, activo: true }); setShowModal(true); }}>
+                        <button className="btn-add-premium shadow-sm" onClick={() => {
+                            setEditingUser(null);
+                            setFormData({
+                                nombre_completo: '',
+                                usuario: '',
+                                password: '',
+                                roles: 'trabajador',
+                                role_id: null,
+                                activo: true,
+                                permiso_escaneo: false,
+                                permiso_escaneo_productos: false,
+                                permiso_escaneo_cajas: false,
+                                permiso_escaneo_historial: false
+                            });
+                            setShowModal(true);
+                        }}>
                             <i className="bi bi-person-plus-fill me-2"></i>
                             <span>Nuevo Personal</span>
                         </button>
@@ -253,7 +272,11 @@ export default function UsuariosClient() {
                                                 password: '',
                                                 roles: user.roles,
                                                 role_id: user.role_id,
-                                                activo: user.activo
+                                                activo: user.activo,
+                                                permiso_escaneo: user.permiso_escaneo,
+                                                permiso_escaneo_productos: user.permiso_escaneo_productos,
+                                                permiso_escaneo_cajas: user.permiso_escaneo_cajas,
+                                                permiso_escaneo_historial: user.permiso_escaneo_historial
                                             });
                                             setError('');
                                             setShowModal(true);
@@ -430,6 +453,96 @@ export default function UsuariosClient() {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* MODULOS LOGÍSTICOS - ESCANEO DE BARRAS */}
+                            {formData.roles !== 'administrador' && (
+                                <div className="logistic-modules-section mt-4 mb-3">
+                                    <div className="section-title-tag mb-3">
+                                        <i className="bi bi-box-seam-fill text-blue-500 me-2"></i>
+                                        <span className="font-bold text-slate-700 text-sm uppercase tracking-wider">Permisos: Módulo Logístico</span>
+                                    </div>
+
+                                    <div className="permissions-container bg-slate-50 border border-slate-200 rounded-xl p-4">
+                                        {/* Permiso Padre */}
+                                        <label className="permission-item parent bg-white border border-slate-200 p-3 rounded-lg shadow-sm flex items-center justify-between cursor-pointer hover:border-blue-400 transition-colors mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${formData.permiso_escaneo ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                                    <i className="bi bi-upc-scan"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-slate-800 text-sm">Escaneo de Códigos</div>
+                                                    <div className="text-xs text-slate-500">Acceso general al módulo de pistoleo</div>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                className="premium-checkbox"
+                                                checked={formData.permiso_escaneo}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setFormData({
+                                                        ...formData,
+                                                        permiso_escaneo: checked,
+                                                        // Si desmarca el padre, desmarca todos los hijos
+                                                        ...(!checked ? {
+                                                            permiso_escaneo_productos: false,
+                                                            permiso_escaneo_cajas: false,
+                                                            permiso_escaneo_historial: false,
+                                                        } : {})
+                                                    });
+                                                }}
+                                            />
+                                        </label>
+
+                                        {/* Permisos Hijos */}
+                                        <div className={`children-permissions pl-6 border-l-2 ml-5 space-y-2 transition-all duration-300 ${formData.permiso_escaneo ? 'border-blue-200 opacity-100' : 'border-slate-200 opacity-50 pointer-events-none'}`}>
+
+                                            <label className="permission-item child bg-white border border-slate-100 p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="bi bi-journal-check text-green-500"></i>
+                                                    <span className="font-semibold text-slate-700 text-sm">Crear / Editar Productos</span>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    className="premium-checkbox-small"
+                                                    checked={formData.permiso_escaneo_productos}
+                                                    onChange={(e) => setFormData({ ...formData, permiso_escaneo_productos: e.target.checked, permiso_escaneo: true })}
+                                                    disabled={!formData.permiso_escaneo}
+                                                />
+                                            </label>
+
+                                            <label className="permission-item child bg-white border border-slate-100 p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="bi bi-archive-fill text-indigo-500"></i>
+                                                    <span className="font-semibold text-slate-700 text-sm">Crear / Editar Cajas</span>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    className="premium-checkbox-small"
+                                                    checked={formData.permiso_escaneo_cajas}
+                                                    onChange={(e) => setFormData({ ...formData, permiso_escaneo_cajas: e.target.checked, permiso_escaneo: true })}
+                                                    disabled={!formData.permiso_escaneo}
+                                                />
+                                            </label>
+
+                                            <label className="permission-item child bg-white border border-slate-100 p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="bi bi-clock-history text-amber-500"></i>
+                                                    <span className="font-semibold text-slate-700 text-sm">Ver Historial de Escaneos</span>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    className="premium-checkbox-small"
+                                                    checked={formData.permiso_escaneo_historial}
+                                                    onChange={(e) => setFormData({ ...formData, permiso_escaneo_historial: e.target.checked, permiso_escaneo: true })}
+                                                    disabled={!formData.permiso_escaneo}
+                                                />
+                                            </label>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {error && (
                                 <div className="error-banner">
@@ -661,6 +774,65 @@ export default function UsuariosClient() {
                 .btn-confirm { background: #1e293b; border: none; color: white; padding: 10px 25px; border-radius: 50px; font-weight: 700; cursor: pointer; }
 
                 .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; font-weight: 900; color: #2563eb; letter-spacing: 2px; }
+
+                /* Premium Checkboxes */
+                .premium-checkbox {
+                    appearance: none;
+                    width: 24px;
+                    height: 24px;
+                    border: 2px solid #cbd5e1;
+                    border-radius: 6px;
+                    background-color: white;
+                    cursor: pointer;
+                    position: relative;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .premium-checkbox:checked {
+                    background-color: #3b82f6;
+                    border-color: #3b82f6;
+                }
+                .premium-checkbox:checked::after {
+                    content: '';
+                    position: absolute;
+                    left: 7px;
+                    top: 3px;
+                    width: 6px;
+                    height: 12px;
+                    border: solid white;
+                    border-width: 0 2px 2px 0;
+                    transform: rotate(45deg);
+                }
+                .premium-checkbox-small {
+                    appearance: none;
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 4px;
+                    background-color: white;
+                    cursor: pointer;
+                    position: relative;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .premium-checkbox-small:checked {
+                    background-color: #10b981;
+                    border-color: #10b981;
+                }
+                .premium-checkbox-small:checked::after {
+                    content: '';
+                    position: absolute;
+                    left: 6px;
+                    top: 2px;
+                    width: 5px;
+                    height: 10px;
+                    border: solid white;
+                    border-width: 0 2px 2px 0;
+                    transform: rotate(45deg);
+                }
+                .premium-checkbox-small:disabled {
+                    background-color: #f1f5f9;
+                    border-color: #e2e8f0;
+                    cursor: not-allowed;
+                }
 
                 /* ===== RESPONSIVE ===== */
                 @media (max-width: 640px) {

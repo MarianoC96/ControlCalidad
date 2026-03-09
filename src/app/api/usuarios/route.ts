@@ -58,7 +58,9 @@ export async function POST(request: NextRequest) {
         if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
         const body = await request.json();
-        const { nombre_completo, usuario, password, roles, role_id } = body;
+        const {
+            nombre_completo, usuario, password, roles, role_id
+        } = body;
 
         // 2. Crear usuario en Supabase Auth
         // WHY: Supabase Auth requires an email. We auto-generate it from the
@@ -122,7 +124,9 @@ export async function PUT(request: NextRequest) {
         if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
         const body = await request.json();
-        const { id, nombre_completo, usuario, password, roles, role_id, activo, is_deleted } = body;
+        const {
+            id, nombre_completo, usuario, password, roles, role_id, activo, is_deleted,
+        } = body;
 
         if (id === 1) return NextResponse.json({ error: 'sadmin no modificable' }, { status: 403 });
 
@@ -154,7 +158,9 @@ export async function PUT(request: NextRequest) {
         }
 
         // Actualizar local
-        const updateData: Record<string, unknown> = { nombre_completo, roles, role_id, activo, is_deleted };
+        const updateData: Record<string, unknown> = {
+            nombre_completo, roles, role_id, activo, is_deleted,
+        };
         if (is_deleted) {
             // Clear auth_uid so the record is fully disconnected from Auth
             updateData.auth_uid = null;

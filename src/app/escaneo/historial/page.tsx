@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { BarcodeRepository } from '@/lib/repositories/barcode.repository';
 
 export default function HistorialPage() {
     const [activeTab, setActiveTab] = useState<'productos' | 'cajas'>('productos');
@@ -10,28 +10,29 @@ export default function HistorialPage() {
     const [historialList, setHistorialList] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const supabase = createClient();
-
     useEffect(() => {
         const fetchHistorial = async () => {
             setIsLoading(true);
             try {
-                // TODO: Reemplazar con llamadas reales a las nuevas tablas `historial_escaneos_productos` / `cajas`
-                // Por ahora usamos un mock interactivo para simular el diseño
-                setTimeout(() => {
-                    const mockData = activeTab === 'productos' ? [
-                        { id: 1, barcode: '7751234567890', nombre: 'Aceituna Verde 200g', lote: 'L-2024-001', fecha: '2023-10-25T14:30:00Z', operador: 'Juan P.' },
-                        { id: 2, barcode: '7750987654321', nombre: 'Aceite de Oliva Extra Virgen', lote: 'AOV-055', fecha: '2023-10-25T15:15:00Z', operador: 'Juan P.' },
-                        { id: 3, barcode: '7751122334455', nombre: 'Aceituna Negra Deshuesada', lote: 'L-2024-002', fecha: '2023-10-26T09:00:00Z', operador: 'María L.' },
-                    ] : [
-                        { id: 1, barcode: 'CAJ-998877', tipo: 'Caja Master Cartón', lote: 'EMP-A1', fecha: '2023-10-25T16:00:00Z', operador: 'Carlos D.' },
-                        { id: 2, barcode: 'CAJ-665544', tipo: 'Pack Termoencogible x6', lote: 'EMP-B2', fecha: '2023-10-26T10:30:00Z', operador: 'Carlos D.' },
-                    ];
-                    setHistorialList(mockData);
-                    setIsLoading(false);
-                }, 800);
+                const { data, error } = await BarcodeRepository.getHistory(activeTab);
+
+                if (error) throw error;
+
+                // Mapear los datos para que coincidan con la estructura esperada por la UI
+                const mappedData = data.map((item: any) => ({
+                    id: item.id,
+                    barcode: item.barcode,
+                    lote: item.lote,
+                    fecha: item.created_at,
+                    nombre: activeTab === 'productos' ? item.productos_barcode?.presentacion : item.cajas_barcode?.tipo_caja,
+                    tipo: activeTab === 'productos' ? item.productos_barcode?.presentacion : item.cajas_barcode?.tipo_caja,
+                    operador: item.usuarios?.nombre_completo || 'Sistema'
+                }));
+
+                setHistorialList(mappedData);
             } catch (error) {
                 console.error("Error fetching historial", error);
+            } finally {
                 setIsLoading(false);
             }
         };

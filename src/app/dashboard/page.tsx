@@ -2,9 +2,28 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function DashboardGateway() {
     const router = useRouter();
+    const [hasEscaneo, setHasEscaneo] = useState(false);
+
+    useEffect(() => {
+        const fetchPermissions = async () => {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.roles === 'administrador' || data.permiso_escaneo) {
+                        setHasEscaneo(true);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching permissions", err);
+            }
+        };
+        fetchPermissions();
+    }, []);
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--primary-400)_0%,_transparent_25%),_radial-gradient(circle_at_bottom_left,_var(--accent-400)_0%,_transparent_25%)]">
@@ -50,32 +69,34 @@ export default function DashboardGateway() {
                 </Link>
 
                 {/* Card 2: Escaneo de Códigos */}
-                <Link href="/escaneo" className="group">
-                    <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">
-                        {/* Background Image with Overlay */}
-                        <div
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                            style={{ backgroundImage: 'url("/barcode-scanner.png")' }}
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/50 to-transparent group-hover:from-slate-900 transition-all duration-500"></div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="absolute inset-0 flex flex-col justify-end p-8">
-                            <div className="bg-blue-500/20 backdrop-blur-md w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-white/20 group-hover:bg-blue-500/40 transition-colors">
-                                <i className="bi bi-qr-code-scan text-white text-3xl"></i>
+                {hasEscaneo && (
+                    <Link href="/escaneo" className="group">
+                        <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">
+                            {/* Background Image with Overlay */}
+                            <div
+                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                                style={{ backgroundImage: 'url("/barcode-scanner.png")' }}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/50 to-transparent group-hover:from-slate-900 transition-all duration-500"></div>
                             </div>
-                            <h2 className="text-3xl font-bold text-white mb-3">Escaneo de Códigos</h2>
-                            <p className="text-slate-200 text-lg opacity-90 group-hover:opacity-100 transition-opacity">
-                                Identificación rápida de productos y lotes mediante cámara para agilizar la captura de datos.
-                            </p>
 
-                            <div className="mt-6 flex items-center text-blue-400 font-semibold text-lg group-hover:translate-x-2 transition-transform">
-                                Ingresar al módulo <i className="bi bi-arrow-right ml-2"></i>
+                            {/* Content */}
+                            <div className="absolute inset-0 flex flex-col justify-end p-8">
+                                <div className="bg-blue-500/20 backdrop-blur-md w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-white/20 group-hover:bg-blue-500/40 transition-colors">
+                                    <i className="bi bi-qr-code-scan text-white text-3xl"></i>
+                                </div>
+                                <h2 className="text-3xl font-bold text-white mb-3">Escaneo de Códigos</h2>
+                                <p className="text-slate-200 text-lg opacity-90 group-hover:opacity-100 transition-opacity">
+                                    Identificación rápida de productos y lotes mediante cámara para agilizar la captura de datos.
+                                </p>
+
+                                <div className="mt-6 flex items-center text-blue-400 font-semibold text-lg group-hover:translate-x-2 transition-transform">
+                                    Ingresar al módulo <i className="bi bi-arrow-right ml-2"></i>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
+                )}
 
             </div>
 

@@ -13,6 +13,10 @@ const ALL_MODULES = [
     'usuarios',
     'admin/config-pdf',
     'accesos',
+    'escaneo',
+    'escaneo-productos',
+    'escaneo-cajas',
+    'escaneo-historial',
 ];
 
 async function getAuthUser(supabase: ReturnType<typeof createAdminClient>) {
@@ -172,7 +176,7 @@ export async function PUT(request: NextRequest) {
         const permRecords = ALL_MODULES.map(mod => ({
             role_id: id,
             modulo_key: mod,
-            habilitado: Array.isArray(filteredPermisos) && filteredPermisos.includes(mod),
+            habilitado: Array.isArray(filteredPermisos) ? filteredPermisos.includes(mod) : false,
         }));
 
         const [updateResult, permsResult] = await Promise.all([

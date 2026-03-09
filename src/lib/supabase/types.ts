@@ -25,6 +25,10 @@ export type Database = {
                     is_deleted: boolean;
                     two_factor_secret: string | null;
                     role_id: number | null;
+                    permiso_escaneo: boolean;
+                    permiso_escaneo_productos: boolean;
+                    permiso_escaneo_cajas: boolean;
+                    permiso_escaneo_historial: boolean;
                 };
                 Insert: {
                     id?: number;
@@ -41,6 +45,10 @@ export type Database = {
                     is_deleted?: boolean;
                     two_factor_secret?: string | null;
                     role_id?: number | null;
+                    permiso_escaneo?: boolean;
+                    permiso_escaneo_productos?: boolean;
+                    permiso_escaneo_cajas?: boolean;
+                    permiso_escaneo_historial?: boolean;
                 };
                 Update: {
                     id?: number;
@@ -57,6 +65,10 @@ export type Database = {
                     is_deleted?: boolean;
                     two_factor_secret?: string | null;
                     role_id?: number | null;
+                    permiso_escaneo?: boolean;
+                    permiso_escaneo_productos?: boolean;
+                    permiso_escaneo_cajas?: boolean;
+                    permiso_escaneo_historial?: boolean;
                 };
             };
             productos: {

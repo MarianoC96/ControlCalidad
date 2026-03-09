@@ -8,22 +8,27 @@ import { withAuth, createServiceClient } from '@/lib/api/withAuth';
 export const GET = withAuth(async (_request, user) => {
     const supabase = createServiceClient();
 
-    // Check for 'solicitudes' permission
     let hasSolicitudesPermission = false;
+    let permisos_list: string[] = [];
 
     if (user.usuario === 'sadmin' || user.roles === 'administrador') {
         hasSolicitudesPermission = true;
+        permisos_list = [
+            'registro-productos', 'historial', 'historial-descargas', 'solicitudes',
+            'productos', 'parametros-maestros', 'usuarios', 'admin/config-pdf', 'accesos',
+            'escaneo', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial'
+        ];
     } else if (user.role_id) {
-
-
         const { data: permisos } = await supabase
             .from('role_permisos')
             .select('modulo_key')
             .eq('role_id', user.role_id)
-            .eq('habilitado', true)
-            .eq('modulo_key', 'solicitudes');
+            .eq('habilitado', true);
 
-        hasSolicitudesPermission = !!(permisos && permisos.length > 0);
+        if (permisos) {
+            permisos_list = permisos.map(p => p.modulo_key);
+            hasSolicitudesPermission = permisos_list.includes('solicitudes');
+        }
     }
 
     return NextResponse.json({
@@ -34,7 +39,12 @@ export const GET = withAuth(async (_request, user) => {
         email: user.email,
         activo: user.activo,
         two_factor_enabled: !!user.two_factor_secret,
-        hasSolicitudesPermission
+        hasSolicitudesPermission,
+        role_permisos: permisos_list,
+        permiso_escaneo: permisos_list.includes('escaneo'),
+        permiso_escaneo_productos: permisos_list.includes('escaneo-productos'),
+        permiso_escaneo_cajas: permisos_list.includes('escaneo-cajas'),
+        permiso_escaneo_historial: permisos_list.includes('escaneo-historial')
     });
 });
 

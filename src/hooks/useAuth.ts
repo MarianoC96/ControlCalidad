@@ -9,6 +9,7 @@ interface AuthState {
     readonly userId: number | null;
     readonly isLoading: boolean;
     readonly isAdmin: boolean;
+    readonly user?: any;
 }
 
 interface UseAuthOptions {
@@ -24,6 +25,7 @@ const AUTH_DEFAULTS: AuthState = {
     userId: null,
     isLoading: true,
     isAdmin: false,
+    user: null,
 };
 
 /**
@@ -65,6 +67,7 @@ export function useAuth(options: UseAuthOptions = {}): AuthState {
                 userId: user.id ?? null,
                 isLoading: false,
                 isAdmin,
+                user: user,
             });
         } catch {
             // Network failure — cannot verify auth

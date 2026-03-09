@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ScannerSidebarProps {
     userName?: string;
@@ -25,6 +26,12 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
         }
     }, [isCollapsed]);
 
+    const { user } = useAuth();
+    const isAdmin = user?.roles === 'administrador' || user?.roles === 'sadmin';
+    const canManageProducts = isAdmin || user?.permiso_escaneo_productos === true;
+    const canManageBoxes = isAdmin || user?.permiso_escaneo_cajas === true;
+    const canViewHistory = isAdmin || user?.permiso_escaneo_historial === true;
+
     const toggleSidebar = () => setIsCollapsed(!isCollapsed);
     const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
 
@@ -35,6 +42,7 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
             ),
+            show: true
         },
         {
             href: '/escaneo/productos',
@@ -42,6 +50,7 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
             ),
+            show: canManageProducts
         },
         {
             href: '/escaneo/cajas',
@@ -49,6 +58,7 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
             ),
+            show: canManageBoxes
         },
         {
             href: '/escaneo/historial',
@@ -56,8 +66,11 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             ),
+            show: canViewHistory
         },
     ];
+
+    const filteredNavLinks = navLinks.filter(link => link.show);
 
     const handleLogout = async () => {
         try {
@@ -115,7 +128,7 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                 <div className="sidebar-content">
                     <nav className="sidebar-nav">
                         <ul className="nav-list">
-                            {navLinks.map((link) => (
+                            {filteredNavLinks.map((link) => (
                                 <li key={link.href} className="nav-item">
                                     <Link
                                         href={link.href}
@@ -152,9 +165,16 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                                 )}
                             </div>
 
-                            <button className="logout-btn" onClick={handleLogout} title="Cerrar Sesión" aria-label="Cerrar sesión">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <Link href="/dashboard" className="logout-btn mx-1" title="Ir al Dashboard" aria-label="Ir al dashboard">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+                                    </svg>
+                                </Link>
+                                <button className="logout-btn" onClick={handleLogout} title="Cerrar Sesión" aria-label="Cerrar sesión">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

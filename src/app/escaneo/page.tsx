@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { createClient } from '@/lib/supabase/client';
+import { BarcodeRepository } from '@/lib/repositories/barcode.repository';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ScanInfo {
     barcode: string;
@@ -15,10 +17,13 @@ interface ScanInfo {
 }
 
 export default function EscaneoPage() {
+    const router = useRouter();
     // --- ESTADOS PRINCIPALES ---
     const [scanModeState, setScanModeState] = useState<'producto' | 'caja' | null>(null);
     const scanModeRef = useRef<'producto' | 'caja' | null>(null);
     const scanMode = scanModeState;
+
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const setScanMode = useCallback((mode: 'producto' | 'caja' | null) => {
         scanModeRef.current = mode;
@@ -35,7 +40,6 @@ export default function EscaneoPage() {
     const [error, setError] = useState<string | null>(null);
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
-    const supabase = createClient();
 
     // --- LÓGICA DE ESCANEO ---
     const stopScanner = useCallback(async () => {
@@ -55,12 +59,7 @@ export default function EscaneoPage() {
         if (!currentMode) return;
 
         try {
-            const table = currentMode === 'producto' ? 'productos_barcode' : 'cajas_barcode';
-            const { data, error } = await supabase
-                .from(table)
-                .select('*')
-                .eq('barcode', barcode)
-                .single();
+            const { data, error } = await BarcodeRepository.findByBarcode(barcode, currentMode);
 
             // Resolvemos data basado en el módulo
             let presentacionText = 'No encontrado';
@@ -94,7 +93,7 @@ export default function EscaneoPage() {
             console.error("Lookup error:", err);
             setError("Error al consultar base de datos");
         }
-    }, [supabase]);
+    }, []);
 
     const startScanner = useCallback(async (modeToStart?: 'producto' | 'caja') => {
         if (modeToStart) setScanMode(modeToStart);
@@ -152,6 +151,14 @@ export default function EscaneoPage() {
         };
     }, [stopScanner]);
 
+    const { userId, user } = useAuth();
+
+    // Auth Helper Variables
+    const isAdmin = user?.roles === 'administrador';
+    const canManageProducts = isAdmin || user?.permiso_escaneo_productos;
+    const canManageBoxes = isAdmin || user?.permiso_escaneo_cajas;
+    const canViewHistory = isAdmin || user?.permiso_escaneo_historial;
+
     // --- ACCIONES DE USUARIO ---
     const handleDiscard = () => {
         setLastScanned(null);
@@ -170,18 +177,22 @@ export default function EscaneoPage() {
 
         setIsSaving(true);
         try {
-            // Lógica pendiente de Supabase - simulación de delay de red temporal
-            await new Promise(resolve => setTimeout(resolve, 800));
-            // Ej: await supabase.from(`historial_escaneos_${scanMode}s`).insert({ ... });
+            const { error } = await BarcodeRepository.saveTransaction({
+                barcode: lastScanned.barcode,
+                lote: loteValue.trim().toUpperCase(),
+                usuario_id: userId
+            }, scanMode);
+
+            if (error) throw error;
 
             // Transición post-guardado
             setLastScanned(null);
             setLoteValue('');
             setScanMode(null);
             alert('Transacción guardada exitosamente.');
-        } catch (error) {
-            console.error(error);
-            alert('Error guardando la transacción.');
+        } catch (err) {
+            console.error(err);
+            alert('Error guardando la transacción en la base de datos.');
         } finally {
             setIsSaving(false);
         }
@@ -205,7 +216,7 @@ export default function EscaneoPage() {
                                     <h4 className="text-white font-black text-sm uppercase tracking-tighter">
                                         Escaneo de {scanMode}
                                     </h4>
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enfoca el código QR / EAN</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enfoca el código de barras</p>
                                 </div>
                             </div>
                             <button onClick={() => { stopScanner(); setScanMode(null); }} className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-transform active:scale-90"><i className="bi bi-x-lg text-lg"></i></button>
@@ -245,9 +256,13 @@ export default function EscaneoPage() {
                     </div>
                 ) : (
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center shadow-lg border border-white/5">
-                            <i className="bi bi-qr-code text-lg"></i>
-                        </div>
+                        <button
+                            onClick={() => router.push('/dashboard')}
+                            className="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center shadow-lg border border-white/5 hover:bg-slate-700 hover:-translate-x-1 transition-all group"
+                            title="Volver al Menú Principal (Dashboard)"
+                        >
+                            <i className="bi bi-box-arrow-left text-lg group-hover:text-blue-400"></i>
+                        </button>
                         <div>
                             <h1 className="text-white font-black tracking-tighter text-base leading-none">EL OLIVAR</h1>
                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Escáner Logístico</p>
@@ -273,10 +288,10 @@ export default function EscaneoPage() {
                             <i className="bi bi-box-seam-fill relative top-[2px]"></i>
                         </div>
                         <div className="text-left flex-1">
-                            <h3 className="text-white font-black text-xl uppercase tracking-tight mb-1">Productos</h3>
-                            <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Escanear ítems y lotes</p>
+                            <h3 className="text-white font-black text-xl uppercase tracking-tight mb-1">Escaneado de Productos</h3>
+                            <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Registrar lotes de producción</p>
                         </div>
-                        <i className="bi bi-chevron-right text-slate-600 group-hover:text-green-500 group-hover:translate-x-1 transition-all text-xl"></i>
+                        <i className="bi bi-qr-code-scan text-slate-600 group-hover:text-green-500 group-hover:translate-x-1 transition-all text-xl"></i>
                     </button>
 
                     <button
@@ -287,11 +302,71 @@ export default function EscaneoPage() {
                             <i className="bi bi-box-fill relative top-[2px]"></i>
                         </div>
                         <div className="text-left flex-1">
-                            <h3 className="text-white font-black text-xl uppercase tracking-tight mb-1">Cajas</h3>
-                            <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Escanear empaques</p>
+                            <h3 className="text-white font-black text-xl uppercase tracking-tight mb-1">Escaneado de Cajas</h3>
+                            <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Trazabilidad de empaques</p>
                         </div>
-                        <i className="bi bi-chevron-right text-slate-600 group-hover:text-blue-500 group-hover:translate-x-1 transition-all text-xl"></i>
+                        <i className="bi bi-qr-code-scan text-slate-600 group-hover:text-blue-500 group-hover:translate-x-1 transition-all text-xl"></i>
                     </button>
+
+                    {/* CRUD DE PRODUCTOS Y CAJAS */}
+                    <div className="w-full grid grid-cols-2 gap-4 mt-4">
+                        {canManageProducts ? (
+                            <button
+                                onClick={() => router.push('/escaneo/productos')}
+                                className="bg-slate-900/50 border border-white/5 hover:border-green-500/30 p-5 rounded-[2rem] flex flex-col items-center gap-3 transition-all active:scale-95 text-center group"
+                            >
+                                <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 group-hover:text-green-400 flex items-center justify-center text-xl transition-all">
+                                    <i className="bi bi-journal-check"></i>
+                                </div>
+                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest group-hover:text-white">Productos</span>
+                            </button>
+                        ) : (
+                            <button className="bg-slate-900/30 border border-white/5 p-5 rounded-[2rem] flex flex-col items-center gap-3 text-center opacity-50 cursor-not-allowed">
+                                <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center text-xl">
+                                    <i className="bi bi-lock-fill"></i>
+                                </div>
+                                <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Productos</span>
+                            </button>
+                        )}
+
+                        {canManageBoxes ? (
+                            <button
+                                onClick={() => router.push('/escaneo/cajas')}
+                                className="bg-slate-900/50 border border-white/5 hover:border-blue-500/30 p-5 rounded-[2rem] flex flex-col items-center gap-3 transition-all active:scale-95 text-center group"
+                            >
+                                <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 group-hover:text-blue-400 flex items-center justify-center text-xl transition-all">
+                                    <i className="bi bi-archive-fill"></i>
+                                </div>
+                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest group-hover:text-white">Cajas</span>
+                            </button>
+                        ) : (
+                            <button className="bg-slate-900/30 border border-white/5 p-5 rounded-[2rem] flex flex-col items-center gap-3 text-center opacity-50 cursor-not-allowed">
+                                <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center text-xl">
+                                    <i className="bi bi-lock-fill"></i>
+                                </div>
+                                <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Cajas</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* BOTÓN AL HISTORIAL */}
+                    {canViewHistory ? (
+                        <button
+                            onClick={() => router.push('/escaneo/historial')}
+                            className="w-full mt-2 py-4 rounded-2xl bg-slate-950 border border-white/10 text-slate-400 font-bold text-xs uppercase tracking-[0.3em] hover:text-white hover:border-white/30 transition-all flex items-center justify-center gap-3"
+                        >
+                            <i className="bi bi-clock-history"></i>
+                            Ver Historial de Escaneos
+                        </button>
+                    ) : (
+                        <button
+                            disabled
+                            className="w-full mt-2 py-4 rounded-2xl bg-slate-950 border border-transparent text-slate-600 font-bold text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 opacity-50 cursor-not-allowed"
+                        >
+                            <i className="bi bi-lock-fill"></i>
+                            Historial Bloqueado
+                        </button>
+                    )}
                 </main>
             )}
 

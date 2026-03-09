@@ -29,6 +29,10 @@ const MODULE_LABELS: Record<string, string> = {
     'usuarios': 'Usuarios',
     'admin/config-pdf': 'Edición de PDF',
     'accesos': 'Accesos a Sistema',
+    'escaneo': 'Escaneo de Códigos (Principal)',
+    'escaneo-productos': 'Sección: Agregar Productos',
+    'escaneo-cajas': 'Sección: Agregar Cajas',
+    'escaneo-historial': 'Historial Logístico',
 };
 
 export default function AccesosClient() {
@@ -87,22 +91,31 @@ export default function AccesosClient() {
         if (!selectedRole || selectedRole.is_system) return;
         if (moduleKey === 'accesos' && !isSadmin) return;
 
-        const existingPermission = selectedRole.permisos.find(p => p.modulo_key === moduleKey);
-        let newPermisos;
+        let newPermisos = selectedRole.permisos.map(p => ({ ...p }));
 
-        if (existingPermission) {
-            newPermisos = selectedRole.permisos.map(p => {
-                if (p.modulo_key === moduleKey) return { ...p, habilitado: !p.habilitado };
-                return p;
-            });
+        const existingIndex = newPermisos.findIndex(p => p.modulo_key === moduleKey);
+        const nextState = existingIndex >= 0 ? !newPermisos[existingIndex].habilitado : true;
+
+        if (existingIndex >= 0) {
+            newPermisos[existingIndex].habilitado = nextState;
         } else {
-            // Si el permiso no existe, lo agregamos habilitado
-            newPermisos = [...selectedRole.permisos, {
-                id: Date.now(), // ID temporal
-                role_id: selectedRole.id,
-                modulo_key: moduleKey,
-                habilitado: true
-            }];
+            newPermisos.push({ id: Date.now(), role_id: selectedRole.id, modulo_key: moduleKey, habilitado: true });
+        }
+
+        // Parent/Child Cascade Logic
+        if (moduleKey === 'escaneo' && !nextState) {
+            ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'].forEach(child => {
+                const cIdx = newPermisos.findIndex(p => p.modulo_key === child);
+                if (cIdx >= 0) newPermisos[cIdx].habilitado = false;
+            });
+        }
+        if (moduleKey.startsWith('escaneo-') && nextState) {
+            const pIdx = newPermisos.findIndex(p => p.modulo_key === 'escaneo');
+            if (pIdx >= 0) {
+                newPermisos[pIdx].habilitado = true;
+            } else {
+                newPermisos.push({ id: Date.now() + 1, role_id: selectedRole.id, modulo_key: 'escaneo', habilitado: true });
+            }
         }
 
         setSelectedRole({ ...selectedRole, permisos: newPermisos });
@@ -142,9 +155,18 @@ export default function AccesosClient() {
     }, []);
 
     const handleToggleNewRolePermission = useCallback((mod: string) => {
-        setNewRolePermisos(prev =>
-            prev.includes(mod) ? prev.filter(p => p !== mod) : [...prev, mod]
-        );
+        setNewRolePermisos(prev => {
+            const nextState = !prev.includes(mod);
+            let nextPerms = nextState ? [...prev, mod] : prev.filter(p => p !== mod);
+
+            if (mod === 'escaneo' && !nextState) {
+                nextPerms = nextPerms.filter(p => !p.startsWith('escaneo-'));
+            }
+            if (mod.startsWith('escaneo-') && nextState) {
+                if (!nextPerms.includes('escaneo')) nextPerms.push('escaneo');
+            }
+            return nextPerms;
+        });
     }, []);
 
     const handleCreateRole = async () => {
@@ -373,7 +395,7 @@ export default function AccesosClient() {
                                     )}
 
                                     <div className="modules-grid-main">
-                                        {modules.map(mod => {
+                                        {modules.filter(m => !m.startsWith('escaneo')).map(mod => {
                                             const perm = selectedRole.permisos.find(p => p.modulo_key === mod);
                                             const isEnabled = perm?.habilitado ?? false;
                                             const isLocked = selectedRole.is_system || (mod === 'accesos' && !isSadmin);
@@ -406,6 +428,95 @@ export default function AccesosClient() {
                                                 </div>
                                             );
                                         })}
+                                    </div>
+
+                                    {/* Módulo Logístico: Sección Enorme */}
+                                    <div className="logistics-section-wrapper">
+                                        <div className="logistics-header-bar">
+                                            <h3>
+                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="inline mr-2 -translate-y-0.5 text-blue-500"><path d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zM9 16V8M13 16V8M17 12h-8" /></svg>
+                                                Permisos: Escaneo de Códigos y Módulos Logísticos
+                                            </h3>
+                                        </div>
+                                        <div className="logistics-content-area">
+                                            {/* PADRE */}
+                                            {(() => {
+                                                const mod = 'escaneo';
+                                                const perm = selectedRole.permisos.find(p => p.modulo_key === mod);
+                                                const isEnabled = perm?.habilitado ?? false;
+                                                const isLocked = selectedRole.is_system;
+                                                return (
+                                                    <div
+                                                        key={mod}
+                                                        className={`main-module-card logi-parent ${isEnabled ? 'enabled' : ''} ${isLocked ? 'locked' : ''}`}
+                                                        onClick={() => !isLocked && handleTogglePermission(mod)}
+                                                        style={isEnabled ? { borderColor: '#3b82f6', background: '#eff6ff', boxShadow: '0 4px 15px -3px rgba(59,130,246,0.1)' } : {}}
+                                                    >
+                                                        <div className="main-module-icon" style={isEnabled ? { background: '#dbeafe', color: '#3b82f6' } : {}}>
+                                                            {isEnabled ? (
+                                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                            ) : (
+                                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                            )}
+                                                        </div>
+                                                        <div className="main-module-info">
+                                                            <span className="main-module-name">{MODULE_LABELS[mod]}</span>
+                                                            <span className="main-module-status" style={isEnabled ? { color: '#3b82f6' } : {}}>{isEnabled ? 'Módulo Logístico Activo' : 'Deshabilitado y bloqueado'}</span>
+                                                        </div>
+                                                        <div className="main-module-action">
+                                                            {isLocked ? (
+                                                                <svg className="lock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                            ) : (
+                                                                <div className={`toggle-switch ${isEnabled ? 'on' : ''}`} style={isEnabled ? { background: '#2563eb' } : {}}>
+                                                                    <div className="toggle-thumb" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {/* HIJOS */}
+                                            <div className="logistics-children-grid">
+                                                {['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'].map(mod => {
+                                                    const perm = selectedRole.permisos.find(p => p.modulo_key === mod);
+                                                    const isEnabled = perm?.habilitado ?? false;
+                                                    const parentEnabled = selectedRole.permisos.find(p => p.modulo_key === 'escaneo')?.habilitado ?? false;
+                                                    const isLocked = selectedRole.is_system;
+                                                    // Only interactive if parent is enabled, or if we want to enable the parent by clicking the child
+                                                    const isLockedLocal = isLocked || !parentEnabled;
+
+                                                    return (
+                                                        <div
+                                                            key={mod}
+                                                            className={`main-module-card child-card ${isEnabled ? 'enabled' : ''} ${isLocked ? 'locked' : ''}`}
+                                                            style={{ opacity: isLockedLocal && !isLocked ? 0.5 : 1, filter: isLockedLocal && !isLocked ? 'grayscale(1)' : 'none' }}
+                                                            onClick={() => !isLocked && parentEnabled && handleTogglePermission(mod)}
+                                                        >
+                                                            <div className="main-module-icon">
+                                                                {isEnabled ? (
+                                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                                ) : (
+                                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+                                                                )}
+                                                            </div>
+                                                            <div className="main-module-info">
+                                                                <span className="main-module-name" style={{ fontSize: '0.85rem' }}>{MODULE_LABELS[mod]}</span>
+                                                            </div>
+                                                            <div className="main-module-action">
+                                                                {isLocked ? (
+                                                                    <svg className="lock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                                ) : (
+                                                                    <div className={`toggle-switch ${isEnabled ? 'on' : ''}`} style={{ transform: 'scale(0.8)' }}>
+                                                                        <div className="toggle-thumb" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {!selectedRole.is_system && (
@@ -491,7 +602,8 @@ export default function AccesosClient() {
                                     </span>
                                 </div>
                                 <div className="toggle-list">
-                                    {modules.filter(m => isSadmin || m !== 'accesos').map(mod => {
+                                    {/* Módulos regulares */}
+                                    {modules.filter(m => !m.startsWith('escaneo') && (isSadmin || m !== 'accesos')).map(mod => {
                                         const isChecked = newRolePermisos.includes(mod);
                                         return (
                                             <div
@@ -513,6 +625,59 @@ export default function AccesosClient() {
                                             </div>
                                         );
                                     })}
+
+                                    {/* Separador logístico */}
+                                    <div className="mt-4 mb-2 pt-4 border-t border-slate-200">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Módulo Logístico Integrado</h4>
+                                        {/* Escaneo Padre */}
+                                        {(() => {
+                                            const mod = 'escaneo';
+                                            const isChecked = newRolePermisos.includes(mod);
+                                            return (
+                                                <div
+                                                    key={mod}
+                                                    className={`toggle-item mb-2 ${isChecked ? 'active' : ''}`}
+                                                    onClick={() => handleToggleNewRolePermission(mod)}
+                                                    style={isChecked ? { borderColor: '#bfdbfe', background: '#eff6ff' } : {}}
+                                                >
+                                                    <div className="toggle-info">
+                                                        <div className={`toggle-dot ${isChecked ? 'on' : ''}`} style={isChecked ? { background: '#3b82f6' } : {}}>
+                                                            {isChecked ? <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : null}
+                                                        </div>
+                                                        <span style={isChecked ? { color: '#1e3a8a', fontWeight: 'bold' } : {}}>{MODULE_LABELS[mod]}</span>
+                                                    </div>
+                                                    <div className={`toggle-switch ${isChecked ? 'on' : ''}`} style={isChecked ? { background: '#2563eb' } : {}}>
+                                                        <div className="toggle-thumb" />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })()}
+                                        {/* Hijos */}
+                                        <div className="pl-8 grid gap-2">
+                                            {['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'].map(mod => {
+                                                const isChecked = newRolePermisos.includes(mod);
+                                                const parentChecked = newRolePermisos.includes('escaneo');
+                                                return (
+                                                    <div
+                                                        key={mod}
+                                                        className={`toggle-item border-none py-2 px-3 ${isChecked ? 'active' : ''}`}
+                                                        style={{ opacity: !parentChecked ? 0.5 : 1, filter: !parentChecked ? 'grayscale(1)' : 'none' }}
+                                                        onClick={() => parentChecked && handleToggleNewRolePermission(mod)}
+                                                    >
+                                                        <div className="toggle-info gap-3">
+                                                            <div className={`toggle-dot ${isChecked ? 'on' : ''}`} style={{ width: '18px', height: '18px' }}>
+                                                                {isChecked ? <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="10" height="10"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : null}
+                                                            </div>
+                                                            <span style={{ fontSize: '0.8rem' }}>{MODULE_LABELS[mod]}</span>
+                                                        </div>
+                                                        <div className={`toggle-switch ${isChecked ? 'on' : ''}`} style={{ transform: 'scale(0.7)' }}>
+                                                            <div className="toggle-thumb" />
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -623,6 +788,16 @@ export default function AccesosClient() {
 
                 .main-module-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #f1f5f9; transition: all 0.3s; flex-shrink: 0; }
                 .main-module-card.enabled .main-module-icon { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #6366f1; }
+
+                /* Logistics Section Extra Styles */
+                .logistics-section-wrapper { margin: 32px 24px 24px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+                .logistics-header-bar { padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+                .logistics-header-bar h3 { font-size: 1rem; font-weight: 800; color: #0f172a; margin: 0; }
+                .logistics-content-area { padding: 24px; }
+                .logi-parent { margin-bottom: 20px; border-width: 2px; }
+                .logistics-children-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding-left: 16px; border-left: 2px dashed #cbd5e1; margin-left: 22px; }
+                .child-card { padding: 12px 16px; border-radius: 14px; box-shadow: none; border-color: #f1f5f9; }
+                .child-card .main-module-icon { width: 32px; height: 32px; border-radius: 8px; }
 
                 .main-module-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
                 .main-module-name { font-weight: 700; font-size: 0.95rem; color: #1e293b; }
