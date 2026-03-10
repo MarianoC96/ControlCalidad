@@ -162,7 +162,10 @@ export const BarcodeRepository = {
                 barcode,
                 lote,
                 created_at,
-                usuarios(nombre_completo),
+                edit_started_at,
+                edit_expires_at,
+                edit_started_by,
+                usuarios!usuario_id(nombre_completo),
                 ${masterTable}(${masterField})
             `)
             .order('created_at', { ascending: false });

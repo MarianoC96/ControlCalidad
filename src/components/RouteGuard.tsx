@@ -9,6 +9,7 @@ const PATH_TO_MODULE: Record<string, string> = {
     '/historial': 'historial',
     '/historial-descargas': 'historial-descargas',
     '/solicitudes': 'solicitudes',
+    '/escaneo/solicitudes': 'solicitudes',
     '/productos': 'productos',
     '/parametros-maestros': 'parametros-maestros',
     '/usuarios': 'usuarios',

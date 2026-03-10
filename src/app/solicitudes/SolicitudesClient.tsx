@@ -28,6 +28,8 @@ interface EditRequest {
         nombre_completo: string;
         usuario: string;
     } | null;
+    origen?: 'calidad' | 'escaneo';
+    scan_mode?: 'productos' | 'cajas';
 }
 
 export default function SolicitudesClient() {
@@ -44,7 +46,8 @@ export default function SolicitudesClient() {
         requestId: number | null;
         userName: string;
         productName: string;
-    }>({ show: false, type: 'aprobar', requestId: null, userName: '', productName: '' });
+        origen: string;
+    }>({ show: false, type: 'aprobar', requestId: null, userName: '', productName: '', origen: 'calidad' });
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -180,7 +183,8 @@ export default function SolicitudesClient() {
             type,
             requestId: req.id,
             userName: req.usuarios.nombre_completo,
-            productName: req.registros.producto_nombre
+            productName: req.registros.producto_nombre,
+            origen: req.origen || 'calidad'
         });
     };
 
@@ -189,6 +193,7 @@ export default function SolicitudesClient() {
         if (!confirmModal.requestId) return;
         const id = confirmModal.requestId;
         const status = confirmModal.type === 'aprobar' ? 'aprobado' : 'rechazado';
+        const origen = confirmModal.origen;
 
         setConfirmModal({ ...confirmModal, show: false });
         setActionLoading(id);
@@ -197,7 +202,7 @@ export default function SolicitudesClient() {
             const response = await fetch('/api/admin/edit-requests', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, status })
+                body: JSON.stringify({ id, status, origen })
             });
             if (response.ok) loadRequests();
             else alert('Error al procesar la solicitud');
@@ -361,6 +366,7 @@ export default function SolicitudesClient() {
                                             <th className="fw-semibold text-secondary">Lote</th>
                                             <th className="fw-semibold text-secondary">Fecha</th>
                                             <th className="fw-semibold text-secondary">Motivo</th>
+                                            <th className="fw-semibold text-secondary">Origen</th>
                                             <th className="fw-semibold text-secondary">Aprobado por</th>
                                             <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
                                         </tr>
@@ -396,7 +402,9 @@ export default function SolicitudesClient() {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="text-dark" style={{ fontSize: '0.9rem' }}>{req.registros.producto_nombre}</td>
+                                                    <td className="text-dark" style={{ fontSize: '0.9rem' }}>
+                                                        {req.registros.producto_nombre}
+                                                    </td>
                                                     <td className="fw-bold text-dark">{req.registros.lote_interno}</td>
                                                     <td className="text-muted small">{new Date(req.created_at).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}</td>
                                                     <td className="text-dark" style={{ fontSize: '0.85rem', maxWidth: '200px' }}>
@@ -404,6 +412,17 @@ export default function SolicitudesClient() {
                                                             <span style={{ lineHeight: '1.4' }}>{req.motivo}</span>
                                                         ) : (
                                                             <span className="text-muted small">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="text-center align-middle">
+                                                        {req.origen === 'escaneo' ? (
+                                                            <span className="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-2 py-1" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                                                <i className="bi bi-upc-scan me-1"></i> Escaneo
+                                                            </span>
+                                                        ) : (
+                                                            <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary rounded-pill px-2 py-1" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                                                <i className="bi bi-box-seam me-1"></i> Calidad
+                                                            </span>
                                                         )}
                                                     </td>
                                                     <td>
@@ -489,8 +508,24 @@ export default function SolicitudesClient() {
                                                 <span className="value" style={{ fontSize: '0.8rem' }}>{req.motivo || '—'}</span>
                                             </div>
                                             <div className="mobile-card-row">
+                                                <span className="label">Origen:</span>
+                                                <span className="value">
+                                                    {req.origen === 'escaneo' ? (
+                                                        <span className="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-2 py-1" style={{ fontSize: '0.65rem' }}>
+                                                            <i className="bi bi-upc-scan me-1"></i> Escaneo
+                                                        </span>
+                                                    ) : (
+                                                        <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary rounded-pill px-2 py-1" style={{ fontSize: '0.65rem' }}>
+                                                            <i className="bi bi-box-seam me-1"></i> Calidad
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <div className="mobile-card-row">
                                                 <span className="label">Producto:</span>
-                                                <span className="value">{req.registros.producto_nombre}</span>
+                                                <span className="value">
+                                                    {req.registros.producto_nombre}
+                                                </span>
                                             </div>
                                             <div className="mobile-card-row">
                                                 <span className="label">Lote:</span>
