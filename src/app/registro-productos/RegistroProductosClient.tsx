@@ -453,129 +453,171 @@ export default function RegistroProductosClient() {
                     )}
                 </form>
             </main>
-
-            {/* Camera Modal */}
+                      {/* Camera Modal - Estilo Historial */}
             {camera.showCamera && (
-                <div className="camera-modal">
-                    <div className="camera-content">
-                        <div className="camera-header">
-                            <h5>Tomar Foto</h5>
-                            <button type="button" className="btn-close-camera" onClick={camera.stopCamera}>×</button>
+                <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={camera.stopCamera}></div>
+                    <div className="relative bg-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-lg" style={{ zIndex: 10 }}>
+                        <div className="p-4 sm:p-5 bg-[#1e293b] flex justify-between items-center flex-shrink-0">
+                            <h5 className="text-white font-black uppercase tracking-widest text-sm m-0 flex items-center gap-2">
+                                <i className="bi bi-camera-fill"></i> Tomar Evidencia
+                            </h5>
+                            <button type="button" className="w-8 h-8 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors border-0" onClick={camera.stopCamera}>
+                                <i className="bi bi-x-lg text-xs"></i>
+                            </button>
                         </div>
-                        <div className="video-container">
+                        <div className="relative aspect-[4/3] bg-black flex items-center justify-center overflow-hidden">
                             {!camera.cameraError ? (
-                                <video ref={camera.videoRef} autoPlay playsInline muted className="camera-video"></video>
+                                <video ref={camera.videoRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
                             ) : (
-                                <div className="camera-error-msg">{camera.cameraError}</div>
+                                <div className="p-8 text-center">
+                                    <i className="bi bi-exclamation-triangle text-amber-500 text-4xl mb-4 block"></i>
+                                    <p className="text-white text-sm font-medium">{camera.cameraError}</p>
+                                </div>
                             )}
-                            <canvas ref={camera.canvasRef} className="d-none"></canvas>
+                            <canvas ref={camera.canvasRef} className="hidden"></canvas>
                         </div>
-                        <div className="camera-footer">
-                            <button type="button" className="btn btn-secondary me-2" onClick={camera.stopCamera}>Cancelar</button>
-                            <button type="button" className="btn btn-primary" onClick={camera.capturePhoto} disabled={!!camera.cameraError}>Capturar</button>
+                        <div className="p-4 sm:p-5 bg-[#1a1c1e] flex justify-end gap-3 flex-shrink-0">
+                            <button type="button" className="px-5 py-2 rounded-xl font-bold text-xs text-white bg-white/10 hover:bg-white/20 transition-colors border-0" onClick={camera.stopCamera}>
+                                Cancelar
+                            </button>
+                            <button type="button" className="px-6 py-2 rounded-xl font-bold text-xs bg-white text-black hover:bg-slate-200 transition-colors border-0 flex items-center gap-2 shadow-lg" onClick={camera.capturePhoto} disabled={!!camera.cameraError}>
+                                <i className="bi bi-camera"></i> Capturar Foto
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Preview Modal */}
+            {/* Preview Modal - Estilo Historial */}
             {showPreviewModal && (
-                <div className="preview-modal-overlay">
-                    <div className="preview-modal-content shadow-lg">
-                        <div className={`preview-header ${!isOnline ? 'offline-header' : ''}`}>
-                            <h4 className="m-0 d-flex align-items-center gap-2">
-                                {!isOnline ? (
-                                    <svg className="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                ) : (
-                                    <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                )}
-                                {isOnline ? 'Resumen del Registro' : 'Modo Offline: Guardado Temporal'}
-                            </h4>
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={() => setShowPreviewModal(false)}></div>
+                    <div className="relative bg-[#f1f5f9] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-2xl max-h-[90vh]" style={{ zIndex: 10 }}>
+                        
+                        {/* Header Estilo Historial */}
+                        <div className={`p-5 sm:p-6 flex justify-between items-start border-b border-[#e2e8f0] flex-shrink-0 rounded-t-3xl ${!isOnline ? 'bg-amber-50' : 'bg-white'}`}>
+                            <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0 ${!isOnline ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                                    <i className={`bi ${!isOnline ? 'bi-cloud-slash-fill' : 'bi-clipboard-check-fill'}`}></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-[#1e293b] uppercase tracking-tighter m-0">
+                                        {isOnline ? 'Resumen del Registro' : 'Guardado Temporal'}
+                                    </h3>
+                                    <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 mb-0 ${!isOnline ? 'text-amber-600' : 'text-[#64748b]'}`}>
+                                        {isOnline ? 'Control de Calidad' : 'Offline - Se sincronizará luego'}
+                                    </p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowPreviewModal(false)} className="w-10 h-10 rounded-full bg-[#f8fafc] hover:bg-red-50 hover:text-red-500 flex items-center justify-center text-[#1e293b] transition-all border-0 shadow-sm active:scale-95">
+                                <i className="bi bi-x-lg text-sm"></i>
+                            </button>
                         </div>
-                        <div className="preview-body p-4">
+
+                        {/* Body Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar">
                             {!isOnline && (
-                                <div className="offline-notice-box mb-4">
-                                    <div className="offline-notice-icon">
-                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    </div>
-                                    <div className="offline-notice-text">
-                                        <h5 className="m-0 mb-1 fw-bold text-dark">Alerta de conexión</h5>
-                                        <p className="m-0 text-muted" style={{ fontSize: '0.85rem' }}>
-                                            Actualmente no tienes conexión a internet. Este registro será guardado
-                                            <strong> localmente (temporal) </strong> en este dispositivo.
-                                            Recuerda sincronizarlo manualmente desde el panel de &quot;Temporal&quot; cuando recuperes la conexión.
+                                <div className="bg-amber-100/50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-4 animate-pulse">
+                                    <i className="bi bi-info-circle-fill text-amber-600 text-xl shrink-0"></i>
+                                    <div>
+                                        <p className="text-amber-900 font-bold text-sm mb-1 leading-tight uppercase tracking-tight">Sin Conexión a Internet</p>
+                                        <p className="text-amber-800 text-xs font-medium leading-relaxed m-0">
+                                            Este registro se guardará **localmente**. No olvides sincronizarlo desde el módulo "Temporal" cuando tengas conexión.
                                         </p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Summary Grid */}
-                            <div className="summary-grid">
-                                <div className="summary-card product-card">
-                                    <div className="summary-content">
-                                        <span className="preview-label">Producto</span>
-                                        <span className="preview-value fw-bold">
-                                            {productos.find((p) => p.id === parseInt(form.formData.productoId))?.nombre || 'N/A'}
-                                        </span>
-                                    </div>
+                            {/* Info Principal */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                                <div className="col-span-2 bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm flex flex-col justify-center">
+                                    <span className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest leading-tight block mb-1">Carga Producto</span>
+                                    <span className="text-sm font-black text-[#1e293b] truncate uppercase">
+                                        {productos.find((p) => p.id === parseInt(form.formData.productoId))?.nombre || 'N/A'}
+                                    </span>
                                 </div>
-                                <div className="summary-card"><div className="summary-content"><span className="preview-label">Lote Producto</span><span className="preview-value">{form.formData.loteProducto}</span></div></div>
-                                <div className="summary-card"><div className="summary-content"><span className="preview-label">Lote Interno</span><span className="preview-value">{form.formData.loteInterno}</span></div></div>
-                                <div className="summary-card"><div className="summary-content"><span className="preview-label">Guía</span><span className="preview-value">{form.formData.guia}</span></div></div>
-                                <div className="summary-card"><div className="summary-content"><span className="preview-label">Marca</span><span className="preview-value">{form.formData.marca}</span></div></div>
-                                <div className="summary-card"><div className="summary-content"><span className="preview-label">Cantidad</span><span className="preview-value">{form.formData.cantidad} unidades</span></div></div>
+                                <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm flex flex-col justify-center items-center text-center">
+                                    <span className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest leading-tight block mb-1">Cantidad</span>
+                                    <span className="text-sm font-black text-[#1e293b]">{form.formData.cantidad} <span className="text-[10px] text-slate-400">UND</span></span>
+                                </div>
+                                
+                                <div className="bg-white p-3 rounded-2xl border border-[#e2e8f0] shadow-sm text-center">
+                                    <span className="text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest leading-tight block mb-1">Lote Interno</span>
+                                    <span className="text-xs font-bold text-slate-700">{form.formData.loteInterno}</span>
+                                </div>
+                                <div className="bg-white p-3 rounded-2xl border border-[#e2e8f0] shadow-sm text-center">
+                                    <span className="text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest leading-tight block mb-1">Lote Producto</span>
+                                    <span className="text-xs font-bold text-slate-700">{form.formData.loteProducto}</span>
+                                </div>
+                                <div className="bg-white p-3 rounded-2xl border border-[#e2e8f0] shadow-sm text-center">
+                                    <span className="text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest leading-tight block mb-1">Marca / Guía</span>
+                                    <span className="text-xs font-bold text-slate-700 truncate block">{form.formData.marca} / {form.formData.guia}</span>
+                                </div>
                             </div>
 
-                            {/* Out of range warnings */}
+                            {/* Alerta de parámetros fuera de rango */}
                             {form.controles.some((c) => c.fueraDeRango) && (
-                                <div className="alert alert-danger d-flex align-items-center gap-2 mb-3">
-                                    <i className="bi bi-exclamation-triangle-fill fs-5"></i>
+                                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 mb-6 flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-rose-500 text-white rounded-full flex items-center justify-center text-lg shrink-0 shadow-lg shadow-rose-500/20">
+                                        <i className="bi bi-exclamation-triangle"></i>
+                                    </div>
                                     <div>
-                                        <strong>Atención:</strong> Hay {form.controles.filter((c) => c.fueraDeRango).length} parámetro(s) fuera de rango.
+                                        <p className="text-rose-900 font-black text-sm uppercase tracking-tighter leading-none m-0">¡Alerta de Calidad!</p>
+                                        <p className="text-rose-600 text-[10px] font-bold uppercase mt-1 tracking-widest m-0">
+                                            {form.controles.filter((c) => c.fueraDeRango).length} Parámetros Críticos Detectados
+                                        </p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Controls Preview Table */}
-                            <div className="table-responsive mb-4">
-                                <table className="table table-sm table-bordered preview-table">
-                                    <thead>
-                                        <tr><th>Parámetro</th><th>Resultado</th><th>Estado</th></tr>
+                            {/* Tabla de Parámetros */}
+                            <div className="bg-white rounded-2xl border border-[#e2e8f0] overflow-hidden shadow-sm mb-6">
+                                <div className="p-3 bg-slate-50 border-b border-[#e2e8f0] flex items-center gap-2">
+                                    <i className="bi bi-list-check text-slate-500 font-bold"></i>
+                                    <span className="font-bold text-[#1e293b] text-[10px] uppercase tracking-widest">Resultado de Parámetros</span>
+                                </div>
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                                        <tr>
+                                            <th className="px-4 py-2 font-bold text-[#64748b] text-[9px] uppercase tracking-widest">Variable</th>
+                                            <th className="px-4 py-2 font-bold text-[#64748b] text-[9px] uppercase tracking-widest">Resultado</th>
+                                            <th className="px-4 py-2 font-bold text-center text-[#64748b] text-[9px] uppercase tracking-widest w-[80px]">Estado</th>
+                                        </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-[#f1f5f9]">
                                         {form.controles.map((c, i) => {
-                                            const isVacio = c.parametroTipo === 'texto'
-                                                ? !c.textoControl || c.textoControl.trim() === ''
-                                                : c.valorControl === null || c.valorControl === undefined || c.valorControl.toString().trim() === '';
-
+                                            const isVacio = c.parametroTipo === 'texto' 
+                                                ? !c.textoControl?.trim() 
+                                                : c.valorControl === null || c.valorControl?.toString().trim() === '';
+                                            
                                             return (
-                                                <tr key={i} className={c.fueraDeRango ? 'table-danger' : isVacio ? 'table-warning' : ''}>
-                                                    <td className="fw-medium">{c.parametroNombre}</td>
-                                                    <td>
+                                                <tr key={i} className={`hover:bg-slate-50 transition-colors ${c.fueraDeRango ? 'bg-rose-50/30' : ''}`}>
+                                                    <td className="px-4 py-3 font-bold text-[#1a2b3c]">{c.parametroNombre}</td>
+                                                    <td className="px-4 py-3 font-medium">
                                                         {c.fueraDeRango ? (
-                                                            <div className="d-flex flex-column align-items-start">
-                                                                <span className="text-danger fw-bold fs-6">
-                                                                    {c.parametroTipo === 'texto' ? (c.textoControl || '(Vacío)') : (c.valorControl ?? '(Vacío)')}
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="text-rose-600 font-black text-sm uppercase">
+                                                                    {c.parametroTipo === 'texto' ? c.textoControl : c.valorControl}
                                                                 </span>
-                                                                <div className="alert alert-danger p-2 mt-2 mb-0 d-flex align-items-center gap-1" style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
-                                                                    <i className="bi bi-x-circle-fill"></i>
-                                                                    <span>{c.mensajeAlerta}</span>
-                                                                </div>
+                                                                <span className="bg-rose-100 text-rose-700 text-[9px] font-bold px-2 py-0.5 rounded-full inline-block w-fit">
+                                                                    {c.mensajeAlerta}
+                                                                </span>
                                                             </div>
                                                         ) : isVacio ? (
-                                                            <span className="text-warning fw-bold fst-italic">(Vacío)</span>
+                                                            <span className="text-amber-500 font-black italic uppercase text-[9px]">Omitido</span>
                                                         ) : (
-                                                            <span>{c.parametroTipo === 'texto' ? c.textoControl : c.valorControl}</span>
+                                                            <span className="text-slate-600 font-bold">
+                                                                {c.parametroTipo === 'texto' ? c.textoControl : c.valorControl}
+                                                            </span>
                                                         )}
                                                     </td>
-                                                    <td className="align-middle text-center">
-                                                        {c.fueraDeRango ? (
-                                                            <span className="status-badge badge-error"><i className="bi bi-x-circle-fill me-1"></i> Revisar</span>
-                                                        ) : isVacio ? (
-                                                            <span className="status-badge badge-warning"><i className="bi bi-exclamation-triangle-fill me-1"></i> Incompleto</span>
-                                                        ) : (
-                                                            <span className="status-badge badge-success"><i className="bi bi-check-circle-fill me-1"></i> Correcto</span>
-                                                        )}
+                                                    <td className="px-4 py-3 text-center">
+                                                        <div className={`w-6 h-6 rounded-full mx-auto flex items-center justify-center text-xs shadow-sm ${
+                                                            c.fueraDeRango ? 'bg-rose-500 text-white' : isVacio ? 'bg-amber-400 text-white' : 'bg-emerald-500 text-white'
+                                                        }`}>
+                                                            <i className={`bi ${c.fueraDeRango ? 'bi-x' : isVacio ? 'bi-exclamation' : 'bi-check'}`}></i>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             );
@@ -584,26 +626,50 @@ export default function RegistroProductosClient() {
                                 </table>
                             </div>
 
-                            <div className="preview-footer-info">
-                                <div><strong>Conclusión:</strong> {form.formData.observacionesGenerales || 'Ninguna'}</div>
-                                <div><strong>Verificado por:</strong> {userName}</div>
-                                <div><strong>Evidencias:</strong> {camera.fotos.filter((f) => f?.preview).length} foto(s) adjuntas</div>
+                            {/* Footer del body info */}
+                            <div className="space-y-4">
+                                <div className="bg-[#f8fafc] p-4 rounded-2xl border border-[#e2e8f0]">
+                                    <span className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest block mb-1">Conclusión General</span>
+                                    <p className="text-sm font-bold text-[#334155] m-0 italic">
+                                        "{form.formData.observacionesGenerales || 'Sin observaciones adicionales'}"
+                                    </p>
+                                </div>
+                                <div className="flex items-center justify-between px-2">
+                                    <span className="text-[10px] text-[#64748b] font-bold uppercase tracking-widest">
+                                        Inspector: <span className="text-[#1e293b]">{userName}</span>
+                                    </span>
+                                    <span className="bg-slate-100 text-[#475569] px-3 py-1 rounded-full text-[9px] font-black uppercase border border-slate-200">
+                                        {camera.fotos.filter(f => f?.preview).length} Evidencias
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div className="preview-actions">
-                            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPreviewModal(false)} disabled={saving}>
-                                Editar y Corregir
+
+                        {/* Modal Footer */}
+                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
+                            <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() => setShowPreviewModal(false)}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                            >
+                                Regresar
                             </button>
-                            <button type="button" className={`btn ${isOnline ? 'btn-primary' : 'btn-warning-offline'}`} onClick={confirmAndSave} disabled={saving}>
+                            <button
+                                type="button"
+                                disabled={saving}
+                                onClick={confirmAndSave}
+                                className={`px-8 py-2.5 rounded-xl font-black text-sm text-white transition-all shadow-lg border-0 flex items-center gap-2 ${
+                                    isOnline ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' : 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/30'
+                                }`}
+                            >
                                 {saving ? (
-                                    <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...</span>
+                                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Procesando...</>
                                 ) : (
-                                    isOnline ? 'Confirmar y Guardar' : (
-                                        <span className="d-flex align-items-center gap-2">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                                            Guardar Registro Temporal
-                                        </span>
-                                    )
+                                    <>
+                                        <i className={`bi ${isOnline ? 'bi-cloud-upload' : 'bi-cloud-minus'}`}></i>
+                                        {isOnline ? 'Confirmar Registro' : 'Guardar Temporal'}
+                                    </>
                                 )}
                             </button>
                         </div>

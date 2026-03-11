@@ -548,150 +548,171 @@ export default function AccesosClient() {
                 </div>
             </div>
 
-            {/* New Role Modal */}
-            {showNewRoleModal && (
-                <div className="modal-overlay" onClick={handleCloseModal}>
-                    <div className="modal-box" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header-fancy">
-                            <div className="modal-header-icon">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                     {showNewRoleModal && (
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={handleCloseModal}></div>
+                    <div className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-2xl max-h-[90vh]" style={{ zIndex: 10 }} onClick={e => e.stopPropagation()}>
+                        
+                        {/* Header Estilo Historial */}
+                        <div className="p-5 sm:p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] flex-shrink-0 rounded-t-3xl">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                                    <i className="bi bi-shield-lock-fill"></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-[#1e293b] uppercase tracking-tighter m-0">
+                                        Crear Nuevo Rol
+                                    </h3>
+                                    <p className="text-[#64748b] text-[10px] font-bold uppercase tracking-widest mt-1 mb-0">Gestión de Privilegios y Accesos</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3>Crear Nuevo Rol</h3>
-                                <p className="modal-header-sub">Configura el nombre y asigna los permisos correspondientes</p>
-                            </div>
-                            <button className="modal-close" onClick={handleCloseModal}>
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            <button onClick={handleCloseModal} className="w-10 h-10 rounded-full bg-[#f8fafc] hover:bg-[#f1f5f9] flex items-center justify-center text-[#1e293b] transition-transform active:scale-90 border-0 shadow-sm">
+                                <i className="bi bi-x-lg text-sm"></i>
                             </button>
                         </div>
-                        <div className="modal-body">
-                            <div className="field">
-                                <label>
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                    Nombre del Rol <span className="required">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newRoleName}
-                                    onChange={e => setNewRoleName(e.target.value)}
-                                    placeholder="Ej: supervisor, auditor..."
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="field">
-                                <label>
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                    Descripción
-                                </label>
-                                <textarea
-                                    className="desc-textarea"
-                                    value={newRoleDesc}
-                                    onChange={e => setNewRoleDesc(e.target.value)}
-                                    placeholder="Describe brevemente el propósito de este rol..."
-                                    rows={2}
-                                />
-                            </div>
-                            <div className="field">
-                                <div className="modules-label-row">
-                                    <label>
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                                        Módulos habilitados
-                                    </label>
-                                    <span className={`modules-counter ${newRolePermisos.length > 0 ? 'has-selected' : ''}`}>
-                                        {newRolePermisos.length} / {modules.filter(m => isSadmin || m !== 'accesos').length}
-                                    </span>
-                                </div>
-                                <div className="toggle-list">
-                                    {/* Módulos regulares */}
-                                    {modules.filter(m => !m.startsWith('escaneo') && (isSadmin || m !== 'accesos')).map(mod => {
-                                        const isChecked = newRolePermisos.includes(mod);
-                                        return (
-                                            <div
-                                                key={mod}
-                                                className={`toggle-item ${isChecked ? 'active' : ''}`}
-                                                onClick={() => handleToggleNewRolePermission(mod)}
-                                            >
-                                                <div className="toggle-info">
-                                                    <div className={`toggle-dot ${isChecked ? 'on' : ''}`}>
-                                                        {isChecked ? (
-                                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                                        ) : null}
-                                                    </div>
-                                                    <span>{MODULE_LABELS[mod] || mod}</span>
-                                                </div>
-                                                <div className={`toggle-switch ${isChecked ? 'on' : ''}`}>
-                                                    <div className="toggle-thumb" />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
 
-                                    {/* Separador logístico */}
-                                    <div className="mt-4 mb-2 pt-4 border-t border-slate-200">
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Módulo Logístico Integrado</h4>
-                                        {/* Escaneo Padre */}
-                                        {(() => {
-                                            const mod = 'escaneo';
+                        {/* Body Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar">
+                            <div className="space-y-6">
+                                {/* Nombre del Rol */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Nombre del Rol <span className="text-rose-500">*</span></label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={newRoleName}
+                                            onChange={e => setNewRoleName(e.target.value)}
+                                            className="w-full bg-white border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] font-bold focus:border-[#0f172a] outline-none transition-all uppercase tracking-wider"
+                                            placeholder="Ej: SUPERVISOR, AUDITOR..."
+                                            autoFocus
+                                        />
+                                        <i className="bi bi-person-badge absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+                                    </div>
+                                </div>
+
+                                {/* Descripción */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Descripción</label>
+                                    <textarea
+                                        value={newRoleDesc}
+                                        onChange={e => setNewRoleDesc(e.target.value)}
+                                        rows={2}
+                                        className="w-full bg-white border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] outline-none transition-all resize-none"
+                                        placeholder="Describe el propósito de este rol..."
+                                    />
+                                </div>
+
+                                {/* Módulos habilitados */}
+                                <div className="space-y-4 pt-2">
+                                    <div className="flex justify-between items-center px-1">
+                                        <div className="flex items-center gap-2">
+                                            <i className="bi bi-grid-fill text-[#0f172a]"></i>
+                                            <span className="text-xs font-black text-[#1e293b] uppercase tracking-widest">Módulos Habilitados</span>
+                                        </div>
+                                        <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full uppercase">
+                                            {newRolePermisos.length} / {modules.filter(m => isSadmin || m !== 'accesos').length} seleccionados
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden divide-y divide-[#f1f5f9]">
+                                        {/* Módulos regulares */}
+                                        {modules.filter(m => !m.startsWith('escaneo') && (isSadmin || m !== 'accesos')).map(mod => {
                                             const isChecked = newRolePermisos.includes(mod);
                                             return (
                                                 <div
                                                     key={mod}
-                                                    className={`toggle-item mb-2 ${isChecked ? 'active' : ''}`}
+                                                    className={`p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer ${isChecked ? 'bg-indigo-50/10' : ''}`}
                                                     onClick={() => handleToggleNewRolePermission(mod)}
-                                                    style={isChecked ? { borderColor: '#bfdbfe', background: '#eff6ff' } : {}}
                                                 >
-                                                    <div className="toggle-info">
-                                                        <div className={`toggle-dot ${isChecked ? 'on' : ''}`} style={isChecked ? { background: '#3b82f6' } : {}}>
-                                                            {isChecked ? <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : null}
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${isChecked ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                                            <i className={`bi ${mod === 'dashboard' ? 'bi-speedometer2' : mod === 'usuarios' ? 'bi-people' : mod === 'accesos' ? 'bi-shield-lock' : 'bi-gear'}`}></i>
                                                         </div>
-                                                        <span style={isChecked ? { color: '#1e3a8a', fontWeight: 'bold' } : {}}>{MODULE_LABELS[mod]}</span>
+                                                        <span className={`text-sm font-bold ${isChecked ? 'text-indigo-900' : 'text-slate-600'}`}>{MODULE_LABELS[mod] || mod}</span>
                                                     </div>
-                                                    <div className={`toggle-switch ${isChecked ? 'on' : ''}`} style={isChecked ? { background: '#2563eb' } : {}}>
-                                                        <div className="toggle-thumb" />
+                                                    <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${isChecked ? 'bg-indigo-600' : 'bg-slate-300'}`}>
+                                                        <div className={`absolute top-1 bottom-1 w-4 bg-white rounded-full transition-all duration-300 shadow-sm ${isChecked ? 'right-1' : 'left-1'}`}></div>
                                                     </div>
                                                 </div>
-                                            )
-                                        })()}
-                                        {/* Hijos */}
-                                        <div className="pl-8 grid gap-2">
-                                            {['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'].map(mod => {
-                                                const isChecked = newRolePermisos.includes(mod);
-                                                const parentChecked = newRolePermisos.includes('escaneo');
-                                                return (
-                                                    <div
-                                                        key={mod}
-                                                        className={`toggle-item border-none py-2 px-3 ${isChecked ? 'active' : ''}`}
-                                                        style={{ opacity: !parentChecked ? 0.5 : 1, filter: !parentChecked ? 'grayscale(1)' : 'none' }}
-                                                        onClick={() => parentChecked && handleToggleNewRolePermission(mod)}
-                                                    >
-                                                        <div className="toggle-info gap-3">
-                                                            <div className={`toggle-dot ${isChecked ? 'on' : ''}`} style={{ width: '18px', height: '18px' }}>
-                                                                {isChecked ? <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="10" height="10"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : null}
+                                            );
+                                        })}
+
+                                        {/* Separador logístico */}
+                                        <div className="bg-slate-50 p-4">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <i className="bi bi-box-seam-fill text-blue-600"></i>
+                                                <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Módulo Logístico</span>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {/* Parent Escaneo */}
+                                                {(() => {
+                                                    const mod = 'escaneo';
+                                                    const isChecked = newRolePermisos.includes(mod);
+                                                    return (
+                                                        <div
+                                                            className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${isChecked ? 'bg-white border-blue-200 shadow-sm' : 'bg-slate-100/50 border-slate-200 opacity-60'}`}
+                                                            onClick={() => handleToggleNewRolePermission(mod)}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${isChecked ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                                                                    <i className="bi bi-upc-scan"></i>
+                                                                </div>
+                                                                <span className={`text-sm font-black ${isChecked ? 'text-blue-900' : 'text-slate-600'}`}>{MODULE_LABELS[mod]}</span>
                                                             </div>
-                                                            <span style={{ fontSize: '0.8rem' }}>{MODULE_LABELS[mod]}</span>
+                                                            <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isChecked ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                                                                <div className={`absolute top-0.5 bottom-0.5 w-4 bg-white rounded-full transition-all duration-300 shadow-sm ${isChecked ? 'right-0.5' : 'left-0.5'}`}></div>
+                                                            </div>
                                                         </div>
-                                                        <div className={`toggle-switch ${isChecked ? 'on' : ''}`} style={{ transform: 'scale(0.7)' }}>
-                                                            <div className="toggle-thumb" />
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
+                                                    );
+                                                })()}
+
+                                                {/* Permisos Hijos */}
+                                                <div className={`logistics-children-grid transition-all duration-300 ${newRolePermisos.includes('escaneo') ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+                                                    {modules.filter(m => m.startsWith('escaneo-')).map(mod => {
+                                                        const isChecked = newRolePermisos.includes(mod);
+                                                        return (
+                                                            <div
+                                                                key={mod}
+                                                                className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all group ${isChecked ? 'bg-white border-blue-400 shadow-sm' : 'bg-white border-slate-100'}`}
+                                                                onClick={() => handleToggleNewRolePermission(mod)}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isChecked ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
+                                                                        {isChecked ? <i className="bi bi-check-lg text-xs"></i> : <i className="bi bi-dash text-sm"></i>}
+                                                                    </div>
+                                                                    <span className={`text-[11px] font-black uppercase tracking-tighter leading-none ${isChecked ? 'text-blue-900' : 'text-slate-500'}`}>
+                                                                        {MODULE_LABELS[mod]?.replace('Sección: ', '') || mod}
+                                                                    </span>
+                                                                </div>
+                                                                <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isChecked ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                                                                    <div className={`absolute top-0.5 bottom-0.5 w-4 bg-white rounded-full transition-all duration-300 shadow-sm ${isChecked ? 'right-0.5' : 'left-0.5'}`}></div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="modal-footer">
-                            <button className="btn-cancel" onClick={handleCloseModal}>Cancelar</button>
-                            <button className="btn-confirm" onClick={handleCreateRole} disabled={saving}>
-                                {saving ? (
-                                    <><span className="spinner" /> Creando...</>
-                                ) : (
-                                    <>
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                                        Crear Rol
-                                    </>
-                                )}
+
+                        {/* Footer Fijo */}
+                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
+                            <button
+                                onClick={handleCloseModal}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleCreateRole}
+                                disabled={saving || !newRoleName.trim() || newRolePermisos.length === 0}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#0f172a] text-white hover:bg-[#334155] transition-all shadow-lg shadow-[#0f172a]/20 border-0 disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {saving ? 'Guardando...' : <><i className="bi bi-check-circle-fill"></i> Crear Rol</>}
                             </button>
                         </div>
                     </div>

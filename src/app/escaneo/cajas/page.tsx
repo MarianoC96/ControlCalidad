@@ -272,71 +272,80 @@ export default function CajasMasterPage() {
 
             {/* Modal Form */}
             {showModal && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#1e293b]/70 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-                    <form onSubmit={handleSubmit} className="relative w-full max-w-xl bg-[#ffffff] border border-[#cbd5e1] rounded-[2.5rem] p-8 sm:p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-200">
-
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-[#b5b74b]/5 rounded-full blur-3xl"></div>
-
-                        <header className="mb-8 relative z-10">
-                            <h2 className="text-2xl font-black text-[#1e293b] uppercase tracking-tight">
-                                {editingCaja ? 'Editar Caja' : 'Nueva Caja'}
-                            </h2>
-                            <p className="text-[#64748b] text-sm mt-1">Configure los parámetros del empaque.</p>
-                        </header>
-
-                        <div className="space-y-6 relative z-10">
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Código de Caja (ID Único)</label>
-                                <div className="relative">
-                                    <input
-                                        required
-                                        disabled={!!editingCaja}
-                                        value={formData.barcode}
-                                        onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                                        className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#969836] outline-none transition-all font-mono disabled:opacity-50"
-                                        placeholder="CAJA-001..."
-                                    />
-                                    <i className="bi bi-qr-code absolute right-5 top-1/2 -translate-y-1/2 text-[#e2e8f0]"></i>
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <form onSubmit={handleSubmit} className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-xl max-h-[90vh]" style={{ zIndex: 10 }}>
+                        <div className="p-5 sm:p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] flex-shrink-0 rounded-t-3xl">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-[#b5b74b]/10 text-[#b5b74b] rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                                    <i className="bi bi-box2"></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-[#1e293b] uppercase tracking-tighter m-0 flex items-center gap-2">
+                                        {editingCaja ? 'Editar Caja' : 'Nueva Caja'}
+                                    </h3>
+                                    <p className="text-[#64748b] text-sm mt-1 mb-0">Configure los parámetros del empaque.</p>
                                 </div>
                             </div>
+                            <button type="button" onClick={() => setShowModal(false)} className="w-10 h-10 rounded-full bg-[#f8fafc] hover:bg-[#f1f5f9] flex items-center justify-center text-[#1e293b] transition-transform active:scale-90 border-0 shadow-sm">
+                                <i className="bi bi-x-lg text-sm"></i>
+                            </button>
+                        </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Nombre / Tipo de Caja</label>
-                                <input
-                                    required
-                                    value={formData.tipo_caja}
-                                    onChange={(e) => setFormData({ ...formData, tipo_caja: e.target.value })}
-                                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#969836] outline-none transition-all font-medium"
-                                    placeholder="Ej: Caja Master Corrugada 12x1L"
-                                />
-                            </div>
+                        <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar">
+                            <div className="space-y-6 w-full">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Código de Caja (ID Único)</label>
+                                    <div className="relative">
+                                        <input
+                                            required
+                                            disabled={!!editingCaja}
+                                            value={formData.barcode}
+                                            onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-mono disabled:opacity-50"
+                                            placeholder="CAJA-001..."
+                                        />
+                                        <i className="bi bi-qr-code absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+                                    </div>
+                                </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Capacidad Máxima (Unidades)</label>
-                                <input
-                                    type="number"
-                                    value={formData.capacidad_max}
-                                    onChange={(e) => setFormData({ ...formData, capacidad_max: e.target.value })}
-                                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#969836] outline-none transition-all font-bold"
-                                />
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Nombre / Tipo de Caja</label>
+                                    <input
+                                        required
+                                        value={formData.tipo_caja}
+                                        onChange={(e) => setFormData({ ...formData, tipo_caja: e.target.value })}
+                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-medium"
+                                        placeholder="Ej: Caja Master Corrugada 12x1L"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Capacidad Máxima (Unidades)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.capacidad_max}
+                                        onChange={(e) => setFormData({ ...formData, capacidad_max: e.target.value })}
+                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-bold"
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="mt-10 flex gap-4">
+                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
                             <button
                                 type="button"
                                 onClick={() => setShowModal(false)}
-                                className="flex-1 bg-[#f1f5f9] hover:bg-[#e2e8f0] text-[#1e293b] py-5 rounded-2xl font-bold transition-all text-xs uppercase tracking-widest"
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
                             >
-                                CANCELAR
+                                Cancelar
                             </button>
                             <button
                                 disabled={isSaving}
                                 type="submit"
-                                className="flex-[1.5] bg-[#7b7c2b] hover:bg-[#969836] text-white py-5 px-10 rounded-2xl font-black transition-all text-xs uppercase tracking-widest shadow-xl shadow-[#969836]/20"
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#7b7c2b] hover:bg-[#969836] text-white transition-all shadow-lg shadow-[#969836]/20 border-0 disabled:opacity-50 flex items-center gap-2"
                             >
-                                {isSaving ? 'GUARDANDO...' : editingCaja ? 'ACTUALIZAR' : 'REGISTRAR'}
+                                {isSaving ? 'Guardando...' : editingCaja ? 'Actualizar Caja' : 'Registrar Caja'}
                             </button>
                         </div>
                     </form>

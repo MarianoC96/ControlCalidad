@@ -37,10 +37,6 @@ export default function UsuariosClient() {
         roles: 'trabajador' as 'administrador' | 'trabajador',
         role_id: null as number | null,
         activo: true,
-        permiso_escaneo: false,
-        permiso_escaneo_productos: false,
-        permiso_escaneo_cajas: false,
-        permiso_escaneo_historial: false,
     });
 
     // Custom Confirmation Modal State
@@ -213,10 +209,6 @@ export default function UsuariosClient() {
                                 roles: 'trabajador',
                                 role_id: null,
                                 activo: true,
-                                permiso_escaneo: false,
-                                permiso_escaneo_productos: false,
-                                permiso_escaneo_cajas: false,
-                                permiso_escaneo_historial: false
                             });
                             setShowModal(true);
                         }}>
@@ -273,10 +265,6 @@ export default function UsuariosClient() {
                                                 roles: user.roles,
                                                 role_id: user.role_id,
                                                 activo: user.activo,
-                                                permiso_escaneo: user.permiso_escaneo,
-                                                permiso_escaneo_productos: user.permiso_escaneo_productos,
-                                                permiso_escaneo_cajas: user.permiso_escaneo_cajas,
-                                                permiso_escaneo_historial: user.permiso_escaneo_historial
                                             });
                                             setError('');
                                             setShowModal(true);
@@ -300,276 +288,163 @@ export default function UsuariosClient() {
 
             {/* MODAL DE EDICIÓN - DISEÑO PREMIUM */}
             {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal-content shadow-lg border-0" onClick={e => e.stopPropagation()}>
-                        {/* Header con Avatar Dinámico */}
-                        <div className="modal-header-premium">
-                            <div className="modal-header-bg"></div>
-                            <div className="modal-avatar-section">
-                                <div className={`modal-avatar ${formData.roles === 'administrador' ? 'avatar-admin' : 'avatar-worker'}`}>
-                                    {formData.nombre_completo ? formData.nombre_completo.charAt(0).toUpperCase() : '?'}
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <div className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-xl max-h-[90vh]" style={{ zIndex: 10 }} onClick={e => e.stopPropagation()}>
+                        
+                        {/* Header Estilo Historial */}
+                        <div className="p-5 sm:p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] flex-shrink-0 rounded-t-3xl">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0 ${formData.roles === 'administrador' ? 'bg-indigo-100 text-indigo-600' : 'bg-blue-100 text-blue-600'}`}>
+                                    <i className={`bi ${editingUser ? 'bi-pencil-square' : 'bi-person-plus-fill'}`}></i>
                                 </div>
-                                <div className="modal-user-preview">
-                                    <span className="preview-name">{formData.nombre_completo || 'Nuevo Usuario'}</span>
-                                    <span className="preview-handle">@{formData.usuario || 'usuario'}</span>
+                                <div>
+                                    <h3 className="text-xl font-black text-[#1e293b] uppercase tracking-tighter m-0">
+                                        {editingUser ? 'Editar Personal' : 'Registrar Personal'}
+                                    </h3>
+                                    <p className="text-[#64748b] text-sm mt-1 mb-0">
+                                        {formData.nombre_completo || 'Nuevo Usuario'} (@{formData.usuario || 'usuario'})
+                                    </p>
                                 </div>
                             </div>
-                            <button className="close-modal-btn" onClick={() => setShowModal(false)}>
-                                ×
+                            <button onClick={() => setShowModal(false)} className="w-10 h-10 rounded-full bg-[#f8fafc] hover:bg-[#f1f5f9] flex items-center justify-center text-[#1e293b] transition-transform active:scale-90 border-0 shadow-sm">
+                                <i className="bi bi-x-lg text-sm"></i>
                             </button>
                         </div>
 
-                        <div className="modal-body-premium">
-                            {/* Título dinámico */}
-                            <div className="modal-section-title">
-                                <i className={`bi ${editingUser ? 'bi-pencil-square' : 'bi-person-plus-fill'}`}></i>
-                                <span>{editingUser ? 'Editar Información' : 'Registrar Personal'}</span>
-                            </div>
-
-                            {/* Nombre Completo */}
-                            <div className="premium-input-group">
-                                <div className="input-icon"><i className="bi bi-person-fill"></i></div>
-                                <div className="input-content">
-                                    <label>Nombre Completo</label>
-                                    <input
-                                        type="text"
-                                        value={formData.nombre_completo}
-                                        onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
-                                        placeholder="Ingresa el nombre completo"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Usuario y Rol en Grid */}
-                            <div className="input-grid">
-                                <div className="premium-input-group">
-                                    <div className="input-icon"><i className="bi bi-at"></i></div>
-                                    <div className="input-content">
-                                        <label>Usuario</label>
+                        {/* Body Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar">
+                            <div className="space-y-6">
+                                {/* Nombre Completo */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Nombre Completo</label>
+                                    <div className="relative">
                                         <input
                                             type="text"
-                                            value={formData.usuario}
-                                            onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
-                                            placeholder="nombre_usuario"
+                                            value={formData.nombre_completo}
+                                            onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
+                                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-medium"
+                                            placeholder="Ingresa el nombre completo"
                                         />
+                                        <i className="bi bi-person absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
                                     </div>
                                 </div>
 
-                                <div className="premium-input-group">
-                                    <div className="input-icon"><i className="bi bi-shield-fill"></i></div>
-                                    <div className="input-content">
-                                        <label>Rol de Acceso</label>
-                                        <select
-                                            value={formData.role_id || ''}
-                                            onChange={(e) => {
-                                                const selectedRoleId = e.target.value ? parseInt(e.target.value) : null;
-                                                const selectedRole = rolesList.find(r => r.id === selectedRoleId);
-                                                // Asignamos 'administrador' dinámicamente si el rol contiene esa palabra clave o permisos plenos, de resto 'trabajador' para mantener retrocompatibilidad con Supabase ENUM.
-                                                const internalRoleTag = selectedRole?.nombre.toLowerCase().includes('admin') ? 'administrador' : 'trabajador';
+                                {/* Usuario y Rol en Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Nombre de Usuario</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={formData.usuario}
+                                                onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
+                                                className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-mono"
+                                                placeholder="usuario123"
+                                            />
+                                            <i className="bi bi-at absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+                                        </div>
+                                    </div>
 
-                                                setFormData({
-                                                    ...formData,
-                                                    role_id: selectedRoleId,
-                                                    roles: internalRoleTag
-                                                });
-                                            }}
-                                        >
-                                            <option value="" disabled>Seleccione un rol...</option>
-                                            {rolesList
-                                                .filter(r => !r.is_system)
-                                                .map(r => (
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Rol de Acceso</label>
+                                        <div className="relative">
+                                            <select
+                                                value={formData.role_id || ''}
+                                                onChange={(e) => {
+                                                    const selectedRoleId = e.target.value ? parseInt(e.target.value) : null;
+                                                    const selectedRole = rolesList.find(r => r.id === selectedRoleId);
+                                                    const internalRoleTag = selectedRole?.nombre.toLowerCase().includes('admin') ? 'administrador' : 'trabajador';
+                                                    setFormData({
+                                                        ...formData,
+                                                        role_id: selectedRoleId,
+                                                        roles: internalRoleTag
+                                                    });
+                                                }}
+                                                className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all appearance-none"
+                                            >
+                                                <option value="" disabled>Seleccione un rol...</option>
+                                                {rolesList.filter(r => !r.is_system).map(r => (
                                                     <option key={r.id} value={r.id}>
                                                         {r.nombre.toLowerCase().includes('admin') ? '👑' : '👷'} {r.nombre}
                                                     </option>
                                                 ))}
-                                        </select>
+                                            </select>
+                                            <i className="bi bi-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none"></i>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Contraseña */}
-                            <div className="premium-input-group">
-                                <div className="input-icon"><i className="bi bi-key-fill"></i></div>
-                                <div className="input-content">
-                                    <label>Contraseña {editingUser && <span className="optional-tag">Opcional</span>}</label>
-                                    <div className="password-field-wrapper">
+                                {/* Contraseña */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">
+                                        Contraseña {editingUser && <span className="text-orange-500 lowercase font-normal italic">(Opcional para mantener)</span>}
+                                    </label>
+                                    <div className="relative">
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             value={formData.password}
                                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            placeholder={editingUser ? "Dejar vacío para mantener" : "Contraseña segura"}
+                                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all"
+                                            placeholder={editingUser ? "••••••••" : "Contraseña segura"}
                                         />
                                         <button
                                             type="button"
-                                            className="toggle-pass-btn"
+                                            className="absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#1e293b] bg-transparent border-0"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                                         >
                                             <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
                                         </button>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* ESTADO DE CUENTA - DISEÑO PREMIUM CON ANIMACIONES */}
-                            <div className={`status-card ${formData.activo ? 'status-active' : 'status-inactive'}`}>
-                                <div className="status-visual">
-                                    <div className="status-icon-container">
-                                        <div className="status-icon-bg"></div>
-                                        <i className={`bi ${formData.activo ? 'bi-shield-check' : 'bi-shield-x'}`}></i>
-                                    </div>
-                                </div>
-                                <div className="status-info">
-                                    <div className="status-title">Estado de Cuenta</div>
-                                    <div className="status-description">
-                                        {formData.activo ? (
-                                            <>
-                                                <span className="status-badge active">
-                                                    <i className="bi bi-check-circle-fill"></i> ACTIVA
-                                                </span>
-                                                <p>El usuario puede acceder al sistema normalmente</p>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span className="status-badge inactive">
-                                                    <i className="bi bi-x-circle-fill"></i> BLOQUEADA
-                                                </span>
-                                                <p>El acceso al sistema está restringido</p>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="status-toggle">
-                                    <button
-                                        type="button"
-                                        className={`toggle-btn ${formData.activo ? 'toggle-on' : 'toggle-off'}`}
-                                        onClick={() => setFormData({ ...formData, activo: !formData.activo })}
-                                    >
-                                        <span className="toggle-track">
-                                            <span className="toggle-thumb">
-                                                <i className={`bi ${formData.activo ? 'bi-check' : 'bi-x'}`}></i>
-                                            </span>
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* MODULOS LOGÍSTICOS - ESCANEO DE BARRAS */}
-                            {formData.roles !== 'administrador' && (
-                                <div className="logistic-modules-section mt-4 mb-3">
-                                    <div className="section-title-tag mb-3">
-                                        <i className="bi bi-box-seam-fill text-blue-500 me-2"></i>
-                                        <span className="font-bold text-slate-700 text-sm uppercase tracking-wider">Permisos: Módulo Logístico</span>
-                                    </div>
-
-                                    <div className="permissions-container bg-slate-50 border border-slate-200 rounded-xl p-4">
-                                        {/* Permiso Padre */}
-                                        <label className="permission-item parent bg-white border border-slate-200 p-3 rounded-lg shadow-sm flex items-center justify-between cursor-pointer hover:border-blue-400 transition-colors mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${formData.permiso_escaneo ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                                    <i className="bi bi-upc-scan"></i>
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-slate-800 text-sm">Escaneo de Códigos</div>
-                                                    <div className="text-xs text-slate-500">Acceso general al módulo de pistoleo</div>
-                                                </div>
+                                {/* Estado de Cuenta */}
+                                <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${formData.activo ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${formData.activo ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                                            <i className={`bi ${formData.activo ? 'bi-shield-check' : 'bi-shield-x'}`}></i>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none">Estado de Cuenta</div>
+                                            <div className={`font-black uppercase tracking-tight text-sm mt-1 ${formData.activo ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                                {formData.activo ? 'ACTIVA / ACCESO TOTAL' : 'BLOQUEADA / SIN ACCESO'}
                                             </div>
-                                            <input
-                                                type="checkbox"
-                                                className="premium-checkbox"
-                                                checked={formData.permiso_escaneo}
-                                                onChange={(e) => {
-                                                    const checked = e.target.checked;
-                                                    setFormData({
-                                                        ...formData,
-                                                        permiso_escaneo: checked,
-                                                        // Si desmarca el padre, desmarca todos los hijos
-                                                        ...(!checked ? {
-                                                            permiso_escaneo_productos: false,
-                                                            permiso_escaneo_cajas: false,
-                                                            permiso_escaneo_historial: false,
-                                                        } : {})
-                                                    });
-                                                }}
-                                            />
-                                        </label>
-
-                                        {/* Permisos Hijos */}
-                                        <div className={`children-permissions pl-6 border-l-2 ml-5 space-y-2 transition-all duration-300 ${formData.permiso_escaneo ? 'border-blue-200 opacity-100' : 'border-slate-200 opacity-50 pointer-events-none'}`}>
-
-                                            <label className="permission-item child bg-white border border-slate-100 p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
-                                                <div className="flex items-center gap-2">
-                                                    <i className="bi bi-journal-check text-green-500"></i>
-                                                    <span className="font-semibold text-slate-700 text-sm">Crear / Editar Productos</span>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    className="premium-checkbox-small"
-                                                    checked={formData.permiso_escaneo_productos}
-                                                    onChange={(e) => setFormData({ ...formData, permiso_escaneo_productos: e.target.checked, permiso_escaneo: true })}
-                                                    disabled={!formData.permiso_escaneo}
-                                                />
-                                            </label>
-
-                                            <label className="permission-item child bg-white border border-slate-100 p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
-                                                <div className="flex items-center gap-2">
-                                                    <i className="bi bi-archive-fill text-indigo-500"></i>
-                                                    <span className="font-semibold text-slate-700 text-sm">Crear / Editar Cajas</span>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    className="premium-checkbox-small"
-                                                    checked={formData.permiso_escaneo_cajas}
-                                                    onChange={(e) => setFormData({ ...formData, permiso_escaneo_cajas: e.target.checked, permiso_escaneo: true })}
-                                                    disabled={!formData.permiso_escaneo}
-                                                />
-                                            </label>
-
-                                            <label className="permission-item child bg-white border border-slate-100 p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
-                                                <div className="flex items-center gap-2">
-                                                    <i className="bi bi-clock-history text-amber-500"></i>
-                                                    <span className="font-semibold text-slate-700 text-sm">Ver Historial de Escaneos</span>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    className="premium-checkbox-small"
-                                                    checked={formData.permiso_escaneo_historial}
-                                                    onChange={(e) => setFormData({ ...formData, permiso_escaneo_historial: e.target.checked, permiso_escaneo: true })}
-                                                    disabled={!formData.permiso_escaneo}
-                                                />
-                                            </label>
-
                                         </div>
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, activo: !formData.activo })}
+                                        className={`w-14 h-8 rounded-full relative transition-colors duration-300 border-0 ${formData.activo ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                    >
+                                        <div className={`absolute top-1 bottom-1 w-6 bg-white rounded-full transition-all duration-300 shadow-sm ${formData.activo ? 'right-1' : 'left-1'}`}></div>
+                                    </button>
                                 </div>
-                            )}
 
-                            {error && (
-                                <div className="error-banner">
-                                    <i className="bi bi-exclamation-triangle-fill"></i>
-                                    <span>{error}</span>
-                                </div>
-                            )}
+
+
+                                {error && (
+                                    <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex items-center gap-3 text-rose-600 animate-pulse">
+                                        <i className="bi bi-exclamation-triangle-fill"></i>
+                                        <span className="text-xs font-bold uppercase tracking-tight">{error}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Footer con botones premium */}
-                        <div className="modal-footer-premium">
-                            <button className="btn-modal-cancel" onClick={() => setShowModal(false)}>
-                                <i className="bi bi-arrow-left"></i>
-                                <span>Cancelar</span>
+                        {/* Footer Fijo */}
+                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                            >
+                                Cancelar
                             </button>
-                            <button className="btn-modal-save" onClick={handleSave} disabled={saving}>
-                                {saving ? (
-                                    <>
-                                        <div className="spinner-save"></div>
-                                        <span>Guardando...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="bi bi-check2-circle"></i>
-                                        <span>Guardar Cambios</span>
-                                    </>
-                                )}
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#0f172a] text-white hover:bg-[#334155] transition-all shadow-lg shadow-[#0f172a]/20 border-0 disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {saving ? 'Guardando...' : <><i className="bi bi-check-circle-fill"></i> Guardar Usuario</>}
                             </button>
                         </div>
                     </div>
@@ -578,16 +453,27 @@ export default function UsuariosClient() {
 
             {/* MODAL DE CONFIRMACIÓN CUSTOM (Sustituye a Confirm del navegador) */}
             {confirmModal.show && (
-                <div className="modal-overlay" style={{ zIndex: 1100 }}>
-                    <div className="confirm-box shadow-xl border-0 p-4 text-center">
-                        <div className={`icon-circle mb-3 mx-auto i-${confirmModal.type}`}>
-                            <i className={`bi ${confirmModal.type === 'danger' ? 'bi-trash3' : 'bi-exclamation-triangle'}`}></i>
+                <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={() => setConfirmModal({ ...confirmModal, show: false })}></div>
+                    <div className="relative bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 text-center" style={{ zIndex: 10 }}>
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-4 mx-auto shadow-inner ${confirmModal.type === 'danger' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
+                            <i className={`bi ${confirmModal.type === 'danger' ? 'bi-trash3-fill' : 'bi-exclamation-triangle-fill'}`}></i>
                         </div>
-                        <h5 className="fw-black mb-2">{confirmModal.title}</h5>
-                        <p className="text-muted small mb-4">{confirmModal.message}</p>
-                        <div className="d-flex gap-2 justify-content-center">
-                            <button className="btn-cancel" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>No, Cancelar</button>
-                            <button className={`btn-confirm bg-${confirmModal.type === 'danger' ? 'danger' : 'warning'}`} onClick={confirmModal.action}>Sí, Continuar</button>
+                        <h3 className="text-xl font-black text-[#1e293b] mb-2 uppercase tracking-tighter">{confirmModal.title}</h3>
+                        <p className="text-[#64748b] text-sm mb-6 leading-relaxed">{confirmModal.message}</p>
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                                className="flex-1 px-5 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                            >
+                                No, Cancelar
+                            </button>
+                            <button 
+                                onClick={confirmModal.action}
+                                className={`flex-1 px-5 py-2.5 rounded-xl font-bold text-sm text-white transition-all shadow-lg border-0 ${confirmModal.type === 'danger' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'}`}
+                            >
+                                Sí, Continuar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -775,64 +661,7 @@ export default function UsuariosClient() {
 
                 .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; font-weight: 900; color: #2563eb; letter-spacing: 2px; }
 
-                /* Premium Checkboxes */
-                .premium-checkbox {
-                    appearance: none;
-                    width: 24px;
-                    height: 24px;
-                    border: 2px solid #cbd5e1;
-                    border-radius: 6px;
-                    background-color: white;
-                    cursor: pointer;
-                    position: relative;
-                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-                .premium-checkbox:checked {
-                    background-color: #3b82f6;
-                    border-color: #3b82f6;
-                }
-                .premium-checkbox:checked::after {
-                    content: '';
-                    position: absolute;
-                    left: 7px;
-                    top: 3px;
-                    width: 6px;
-                    height: 12px;
-                    border: solid white;
-                    border-width: 0 2px 2px 0;
-                    transform: rotate(45deg);
-                }
-                .premium-checkbox-small {
-                    appearance: none;
-                    width: 20px;
-                    height: 20px;
-                    border: 2px solid #e2e8f0;
-                    border-radius: 4px;
-                    background-color: white;
-                    cursor: pointer;
-                    position: relative;
-                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-                .premium-checkbox-small:checked {
-                    background-color: #10b981;
-                    border-color: #10b981;
-                }
-                .premium-checkbox-small:checked::after {
-                    content: '';
-                    position: absolute;
-                    left: 6px;
-                    top: 2px;
-                    width: 5px;
-                    height: 10px;
-                    border: solid white;
-                    border-width: 0 2px 2px 0;
-                    transform: rotate(45deg);
-                }
-                .premium-checkbox-small:disabled {
-                    background-color: #f1f5f9;
-                    border-color: #e2e8f0;
-                    cursor: not-allowed;
-                }
+
 
                 /* ===== RESPONSIVE ===== */
                 @media (max-width: 640px) {

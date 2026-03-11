@@ -333,78 +333,93 @@ export default function ParametrosMaestrosClient() {
 
             {/* Premium Modal */}
             {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal-content premium-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header-premium border-bottom shadow-sm">
-                            <div className="d-flex flex-column">
-                                <span className="text-uppercase small fw-bold text-muted mb-1" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>
-                                    {editingParam ? 'Modificando Registro' : 'Definiendo Nuevo'}
-                                </span>
-                                <h3 className="mb-0 fw-bold text-dark" style={{ fontSize: '1.4rem' }}>
-                                    {editingParam ? 'Editar Parámetro' : 'Nuevo Parámetro Maestro'}
-                                </h3>
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <div className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-lg max-h-[90vh]" style={{ zIndex: 10 }} onClick={e => e.stopPropagation()}>
+                        
+                        {/* Header Estilo Historial */}
+                        <div className="p-5 sm:p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] flex-shrink-0 rounded-t-3xl">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                                    <i className={`bi ${editingParam ? 'bi-pencil-square' : 'bi-plus-circle-fill'}`}></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-[#1e293b] uppercase tracking-tighter m-0">
+                                        {editingParam ? 'Editar Parámetro' : 'Nuevo Parámetro'}
+                                    </h3>
+                                    <p className="text-[#64748b] text-[10px] font-bold uppercase tracking-widest mt-1 mb-0">Configuración de Inspección</p>
+                                </div>
                             </div>
-                            <button className="btn-close-custom" onClick={() => setShowModal(false)}>
-                                <i className="bi bi-x-lg"></i>
+                            <button onClick={() => setShowModal(false)} className="w-10 h-10 rounded-full bg-[#f8fafc] hover:bg-[#f1f5f9] flex items-center justify-center text-[#1e293b] transition-transform active:scale-90 border-0 shadow-sm">
+                                <i className="bi bi-x-lg text-sm"></i>
                             </button>
                         </div>
 
-                        <div className="modal-body-premium p-4">
-                            <div className="form-group mb-4">
-                                <label className="form-label fw-bold text-dark small text-uppercase">Nombre del Parámetro <span className="text-danger">*</span></label>
-                                <input
-                                    type="text"
-                                    className="form-control form-control-lg border-0 bg-light fw-semibold"
-                                    value={formData.nombre}
-                                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                                    placeholder="Ej: Humedad Relativa"
-                                    autoFocus
-                                />
-                                <div className="form-text mt-2 small text-muted">Use un nombre descriptivo (ej. Presión, Color, Temperatura).</div>
-                            </div>
+                        {/* Body Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar">
+                            <div className="space-y-6">
+                                {/* Nombre del Parámetro */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Nombre del Parámetro <span className="text-rose-500">*</span></label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={formData.nombre}
+                                            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                                            className="w-full bg-white border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] font-bold focus:border-[#0f172a] outline-none transition-all"
+                                            placeholder="Ej: Humedad Relativa, Color, etc."
+                                            autoFocus
+                                        />
+                                        <i className="bi bi-tag-fill absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+                                    </div>
+                                    <p className="text-[10px] text-[#64748b] italic ml-1">Use nombres claros para el reporte de inspección.</p>
+                                </div>
 
-                            <div className="form-group">
-                                <label className="form-label fw-bold text-dark small text-uppercase">Tipo de Evaluación <span className="text-danger">*</span></label>
-                                <div className="row g-3">
-                                    {(['texto', 'numero', 'rango'] as const).map((t) => (
-                                        <div className="col-4" key={t}>
-                                            <div
-                                                className={`type-selector-card ${formData.tipo === t ? 'active' : ''}`}
+                                {/* Tipo de Evaluación */}
+                                <div className="space-y-3">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Tipo de Evaluación <span className="text-rose-500">*</span></label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {(['texto', 'numero', 'rango'] as const).map((t) => (
+                                            <button
+                                                key={t}
+                                                type="button"
                                                 onClick={() => setFormData({ ...formData, tipo: t })}
+                                                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all group ${formData.tipo === t ? 'border-[#0f172a] bg-[#0f172a] text-white' : 'border-[#e2e8f0] bg-white text-slate-400 hover:border-slate-300'}`}
                                             >
-                                                <div className="type-icon">
+                                                <div className={`text-xl transition-transform group-hover:scale-110 ${formData.tipo === t ? 'text-white' : 'text-slate-400'}`}>
                                                     {t === 'texto' && <i className="bi bi-fonts"></i>}
                                                     {t === 'numero' && <i className="bi bi-123"></i>}
                                                     {t === 'rango' && <i className="bi bi-arrows-expand"></i>}
                                                 </div>
-                                                <span className="type-label">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
-                                            </div>
-                                        </div>
-                                    ))}
+                                                <span className="text-[10px] font-black uppercase tracking-widest">{t}</span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {error && (
-                                <div className="alert alert-danger mt-4 d-flex align-items-center gap-2 border-0 bg-danger bg-opacity-10 text-danger rounded-3">
-                                    <i className="bi bi-exclamation-triangle-fill"></i>
-                                    <span className="small fw-semibold">{error}</span>
-                                </div>
-                            )}
+                                {error && (
+                                    <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex items-center gap-3 text-rose-600 animate-pulse">
+                                        <i className="bi bi-exclamation-triangle-fill"></i>
+                                        <span className="text-xs font-bold uppercase tracking-tight">{error}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="modal-footer-premium p-3 border-top bg-light d-flex justify-content-end gap-2">
-                            <button className="btn btn-link text-decoration-none text-secondary fw-bold px-4" onClick={() => setShowModal(false)}>
+                        {/* Footer Fijo */}
+                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                            >
                                 Cancelar
                             </button>
                             <button
-                                className="btn btn-primary fw-bold px-5 rounded-pill shadow-sm"
                                 onClick={handleSave}
                                 disabled={saving}
-                                style={{ background: 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)', border: 'none' }}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 border-0 disabled:opacity-50 flex items-center gap-2"
                             >
-                                {saving ? (
-                                    <><span className="spinner-border spinner-border-sm me-2"></span>Guardando...</>
-                                ) : 'Guardar Parámetro'}
+                                {saving ? 'Guardando...' : <><i className="bi bi-check-circle-fill"></i> Guardar Parámetro</>}
                             </button>
                         </div>
                     </div>

@@ -416,11 +416,11 @@ export default function SolicitudesClient() {
                                                     </td>
                                                     <td className="text-center align-middle">
                                                         {req.origen === 'escaneo' ? (
-                                                            <span className="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-2 py-1" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                                            <span className="bg-info bg-opacity-10 border border-info rounded-pill px-2 py-1 d-inline-flex align-items-center text-nowrap" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0dcaf0', whiteSpace: 'nowrap' }}>
                                                                 <i className="bi bi-upc-scan me-1"></i> Escaneo
                                                             </span>
                                                         ) : (
-                                                            <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary rounded-pill px-2 py-1" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                                            <span className="bg-secondary bg-opacity-10 border border-secondary rounded-pill px-2 py-1 d-inline-flex align-items-center text-nowrap" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6c757d', whiteSpace: 'nowrap' }}>
                                                                 <i className="bi bi-box-seam me-1"></i> Calidad
                                                             </span>
                                                         )}
@@ -511,11 +511,11 @@ export default function SolicitudesClient() {
                                                 <span className="label">Origen:</span>
                                                 <span className="value">
                                                     {req.origen === 'escaneo' ? (
-                                                        <span className="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-2 py-1" style={{ fontSize: '0.65rem' }}>
+                                                        <span className="bg-info bg-opacity-10 border border-info rounded-pill px-2 py-1 d-inline-flex align-items-center text-nowrap" style={{ fontSize: '0.65rem', fontWeight: 600, color: '#0dcaf0', whiteSpace: 'nowrap' }}>
                                                             <i className="bi bi-upc-scan me-1"></i> Escaneo
                                                         </span>
                                                     ) : (
-                                                        <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary rounded-pill px-2 py-1" style={{ fontSize: '0.65rem' }}>
+                                                        <span className="bg-secondary bg-opacity-10 border border-secondary rounded-pill px-2 py-1 d-inline-flex align-items-center text-nowrap" style={{ fontSize: '0.65rem', fontWeight: 600, color: '#6c757d', whiteSpace: 'nowrap' }}>
                                                             <i className="bi bi-box-seam me-1"></i> Calidad
                                                         </span>
                                                     )}
@@ -595,75 +595,106 @@ export default function SolicitudesClient() {
                 </div>
             </main>
 
-            {/* Modal - Plain Background */}
+            {/* Modal de Detalle de Motivo */}
             {viewingMotivo && (
-                <div className="custom-modal" onClick={() => setViewingMotivo(null)}>
-                    <div className="modal-box shadow-lg" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h5>Detalle del Motivo</h5>
-                            <button className="close-btn" onClick={() => setViewingMotivo(null)}>&times;</button>
+                <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setViewingMotivo(null)}></div>
+                    <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-lg">
+                        <div className="p-4 sm:p-5 bg-white border-b border-[#e2e8f0] flex justify-between items-center">
+                            <h5 className="font-black uppercase tracking-widest text-[#1e293b] text-sm m-0 flex items-center gap-2">
+                                <i className="bi bi-info-circle text-blue-500"></i> Detalle del Motivo
+                            </h5>
+                            <button
+                                type="button"
+                                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors border-0"
+                                onClick={() => setViewingMotivo(null)}
+                            >
+                                <i className="bi bi-x-lg text-xs"></i>
+                            </button>
                         </div>
-                        <div className="modal-body">
-                            <p>"{viewingMotivo}"</p>
+                        <div className="p-5 sm:p-8">
+                            <div className="bg-[#f8fafc] p-6 rounded-2xl border border-[#e2e8f0]">
+                                <p className="text-base font-bold text-[#334155] m-0 italic leading-relaxed">
+                                    "{viewingMotivo}"
+                                </p>
+                            </div>
+                        </div>
+                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setViewingMotivo(null)}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                            >
+                                Cerrar
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* MODAL DE CONFIRMACIÓN PREMIUM */}
+            {/* MODAL DE CONFIRMACIÓN - ESTILO HISTORIAL */}
             {confirmModal.show && (
-                <div className="confirm-overlay" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>
-                    <div className={`confirm-modal ${confirmModal.type}`} onClick={e => e.stopPropagation()}>
-                        {/* Icono animado */}
-                        <div className={`confirm-icon-wrapper ${confirmModal.type}`}>
-                            <div className="confirm-icon-bg"></div>
-                            {confirmModal.type === 'aprobar' ? (
-                                <svg className="confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                    <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-                                    <circle cx="12" cy="12" r="10" />
-                                </svg>
-                            ) : (
-                                <svg className="confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <path d="M15 9l-6 6M9 9l6 6" strokeLinecap="round" />
-                                </svg>
-                            )}
-                        </div>
-
-                        {/* Contenido */}
-                        <div className="confirm-content">
-                            <h3 className="confirm-title">
+                <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setConfirmModal({ ...confirmModal, show: false })}></div>
+                    <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-md">
+                        {/* Header con icono circular */}
+                        <div className="p-8 pb-4 text-center">
+                            <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4 transition-transform ${
+                                confirmModal.type === 'aprobar' 
+                                    ? 'bg-emerald-100 text-emerald-600 shadow-emerald-100' 
+                                    : 'bg-rose-100 text-rose-600 shadow-rose-100'
+                            }`} style={{ boxShadow: '0 0 40px -10px currentColor' }}>
+                                {confirmModal.type === 'aprobar' ? (
+                                    <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                                        <circle cx="12" cy="12" r="10" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M15 9l-6 6M9 9l6 6" strokeLinecap="round" />
+                                    </svg>
+                                )}
+                            </div>
+                            <h3 className="text-xl font-black text-[#1e293b] tracking-tight m-0">
                                 {confirmModal.type === 'aprobar' ? '¿Aprobar Solicitud?' : '¿Rechazar Solicitud?'}
                             </h3>
-                            <p className="confirm-subtitle">
+                            <p className="text-[#64748b] text-sm mt-2 font-medium">
                                 {confirmModal.type === 'aprobar'
                                     ? 'El usuario podrá editar el registro una vez.'
                                     : 'Esta acción no se puede deshacer.'}
                             </p>
+                        </div>
 
-                            {/* Info card */}
-                            <div className="confirm-info-card">
-                                <div className="info-row">
-                                    <span className="info-label">Usuario</span>
-                                    <span className="info-value">{confirmModal.userName}</span>
+                        {/* Info card */}
+                        <div className="px-8 py-4">
+                            <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-4 space-y-3">
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-[#94a3b8] font-bold uppercase tracking-widest">Usuario</span>
+                                    <span className="text-[#334155] font-black">{confirmModal.userName}</span>
                                 </div>
-                                <div className="info-row">
-                                    <span className="info-label">Producto</span>
-                                    <span className="info-value">{confirmModal.productName}</span>
+                                <div className="h-px bg-[#e2e8f0]"></div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-[#94a3b8] font-bold uppercase tracking-widest">Producto</span>
+                                    <span className="text-[#334155] font-black">{confirmModal.productName}</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Botones */}
-                        <div className="confirm-actions">
+                        {/* Acciones */}
+                        <div className="p-8 pt-4 flex gap-3">
                             <button
-                                className="confirm-btn-cancel"
+                                className="flex-1 px-6 py-3.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-all border-0"
                                 onClick={() => setConfirmModal({ ...confirmModal, show: false })}
                             >
                                 Cancelar
                             </button>
                             <button
-                                className={`confirm-btn-action ${confirmModal.type}`}
+                                className={`flex-1 px-6 py-3.5 rounded-xl font-black text-sm text-white transition-all shadow-lg border-0 flex items-center justify-center gap-2 ${
+                                    confirmModal.type === 'aprobar'
+                                        ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30'
+                                        : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30'
+                                }`}
                                 onClick={executeAction}
                             >
                                 {confirmModal.type === 'aprobar' ? (
@@ -898,24 +929,6 @@ export default function SolicitudesClient() {
                 .badge-used { background: #dbeafe; color: #1e40af; }
 
                 /* Modal */
-                .custom-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-                .modal-box { background: white; border-radius: 24px; width: 100%; max-width: 500px; }
-                .modal-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-                .modal-header h5 { margin: 0; font-weight: 800; }
-                .close-btn { background: none; border: none; font-size: 1.5rem; color: #94a3b8; }
-                .modal-body { padding: 24px; font-size: 1.1rem; color: #334155; font-style: italic; }
-                /* MODAL DE CONFIRMACIÓN PREMIUM */
-                .confirm-overlay {
-                    position: fixed;
-                    inset: 0;
-                    background: rgba(15, 23, 42, 0.7);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 2000;
-                    padding: 20px;
-                    backdrop-filter: blur(4px);
-                }
 
                 /* Realtime Toast Styles */
                 .realtime-toast {
@@ -1143,163 +1156,6 @@ export default function SolicitudesClient() {
                     font-size: 1.2rem;
                     margin-left: auto;
                     padding: 0 4px;
-                }
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 1100;
-                    padding: 20px;
-                }
-
-                .confirm-modal {
-                    background: white;
-                    border-radius: 24px;
-                    width: 100%;
-                    max-width: 400px;
-                    padding: 32px;
-                    text-align: center;
-                    animation: modalIn 0.2s ease-out;
-                }
-
-                @keyframes modalIn {
-                    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-                    to { opacity: 1; transform: scale(1) translateY(0); }
-                }
-
-                .confirm-icon-wrapper {
-                    width: 80px;
-                    height: 80px;
-                    margin: 0 auto 24px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    position: relative;
-                }
-
-                .confirm-icon-wrapper.aprobar {
-                    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-                }
-
-                .confirm-icon-wrapper.rechazar {
-                    background: linear-gradient(135deg, #fee2e2, #fecaca);
-                }
-
-                .confirm-icon {
-                    width: 40px;
-                    height: 40px;
-                }
-
-                .confirm-icon-wrapper.aprobar .confirm-icon {
-                    color: #059669;
-                }
-
-                .confirm-icon-wrapper.rechazar .confirm-icon {
-                    color: #dc2626;
-                }
-
-                .confirm-content {
-                    margin-bottom: 24px;
-                }
-
-                .confirm-title {
-                    font-size: 1.4rem;
-                    font-weight: 800;
-                    color: #1e293b;
-                    margin: 0 0 8px;
-                }
-
-                .confirm-subtitle {
-                    font-size: 0.9rem;
-                    color: #64748b;
-                    margin: 0 0 20px;
-                }
-
-                .confirm-info-card {
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 16px;
-                    padding: 16px;
-                    text-align: left;
-                }
-
-                .info-row {
-                    display: flex;
-                    justify-content: space-between;
-                    padding: 8px 0;
-                }
-
-                .info-row:not(:last-child) {
-                    border-bottom: 1px solid #e2e8f0;
-                }
-
-                .info-label {
-                    font-size: 0.8rem;
-                    color: #94a3b8;
-                    font-weight: 600;
-                }
-
-                .info-value {
-                    font-size: 0.85rem;
-                    color: #334155;
-                    font-weight: 700;
-                }
-
-                .confirm-actions {
-                    display: flex;
-                    gap: 12px;
-                }
-
-                .confirm-btn-cancel {
-                    flex: 1;
-                    padding: 14px 20px;
-                    border: 2px solid #e2e8f0;
-                    background: white;
-                    border-radius: 14px;
-                    font-weight: 700;
-                    font-size: 0.9rem;
-                    color: #64748b;
-                    cursor: pointer;
-                    transition: all 0.15s;
-                }
-
-                .confirm-btn-cancel:hover {
-                    background: #f8fafc;
-                    border-color: #cbd5e1;
-                }
-
-                .confirm-btn-action {
-                    flex: 1;
-                    padding: 14px 20px;
-                    border: none;
-                    border-radius: 14px;
-                    font-weight: 700;
-                    font-size: 0.9rem;
-                    color: white;
-                    cursor: pointer;
-                    transition: all 0.15s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                }
-
-                .confirm-btn-action.aprobar {
-                    background: linear-gradient(135deg, #10b981, #059669);
-                }
-
-                .confirm-btn-action.aprobar:hover {
-                    background: linear-gradient(135deg, #059669, #047857);
-                    transform: translateY(-1px);
-                }
-
-                .confirm-btn-action.rechazar {
-                    background: linear-gradient(135deg, #ef4444, #dc2626);
-                }
-
-                .confirm-btn-action.rechazar:hover {
-                    background: linear-gradient(135deg, #dc2626, #b91c1c);
-                    transform: translateY(-1px);
                 }
 
                 /* Toolbar */

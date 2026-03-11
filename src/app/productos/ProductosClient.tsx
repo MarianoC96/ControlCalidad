@@ -434,350 +434,309 @@ export default function ProductosClient() {
                 </div>
             </main>
 
-            {/* Premium Modal */}
-            {
-                showModal && (
-                    <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                        <div className="modal-content premium-modal" onClick={(e) => e.stopPropagation()}>
-                            {/* Sticky Header */}
-                            {/* Fixed Header */}
-                            <div className="modal-header-premium">
-                                <div className="header-content-left">
-                                    <div className="status-indicator">
-                                        <span className="pulse-dot"></span>
-                                        {editingProduct ? 'MODO EDICIÓN' : 'NUEVO TRÁMITE'}
-                                    </div>
-                                    <h3 className="modal-main-title">
-                                        {editingProduct ? 'Editar Producto' : 'Registrar Nuevo Producto'}
+            {showModal && (
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <div className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-5xl max-h-[90vh]" style={{ zIndex: 10 }} onClick={e => e.stopPropagation()}>
+                        
+                        {/* Header Estilo Historial */}
+                        <div className="p-5 sm:p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] flex-shrink-0 rounded-t-3xl">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                                    <i className={`bi ${editingProduct ? 'bi-pencil-square' : 'bi-plus-circle-fill'}`}></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-[#1e293b] uppercase tracking-tighter m-0">
+                                        {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
                                     </h3>
-                                    <p className="modal-sub-title">
-                                        {productName || (editingProduct ? 'Sin nombre asignado' : 'Configure los detalles y parámetros del producto')}
-                                    </p>
+                                    <p className="text-[#64748b] text-[10px] font-bold uppercase tracking-widest mt-1 mb-0">Catálogo de Control de Calidad</p>
                                 </div>
-                                <button
-                                    className="btn-close-modal"
-                                    onClick={() => setShowModal(false)}
-                                    title="Cerrar"
-                                >
-                                    <i className="bi bi-x-lg"></i>
-                                </button>
                             </div>
-
-                            {/* Scrollable Body */}
-                            <div className="modal-body-scrollable bg-light" style={{ overflowY: 'auto', flex: 1, padding: '1.5rem' }}>
-                                {/* Product Name Section */}
-                                <div className="card border-0 shadow-sm mb-4 rounded-4 overflow-hidden">
-                                    <div className="card-body p-4 bg-white">
-                                        <label className="form-label fw-bold text-dark mb-2">Nombre del Producto <span className="text-danger">*</span></label>
-                                        <input
-                                            type="text"
-                                            className="form-control form-control-lg bg-light border-0 fw-semibold text-dark"
-                                            style={{ fontSize: '1.1rem' }}
-                                            value={productName}
-                                            onChange={(e) => setProductName(e.target.value)}
-                                            placeholder="Ej: Leche Entera 1L"
-                                            autoFocus
-                                        />
-                                        <div className="form-text text-muted ps-1">Este nombre aparecerá en todos los reportes y selectores.</div>
-                                    </div>
-                                </div>
-
-                                <div className="d-flex justify-content-between align-items-center mb-3 px-1">
-                                    <h4 className="fw-bold text-secondary mb-0 d-flex align-items-center gap-2">
-                                        Configuración de Parámetros
-                                    </h4>
-                                    <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
-                                        {parametrosForm.length} Parámetro{parametrosForm.length !== 1 ? 's' : ''}
+                            <div className="flex items-center gap-3">
+                                {editingProduct && (
+                                    <span className="hidden sm:inline-flex items-center gap-2 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
+                                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                                        Modo Edición
                                     </span>
-                                </div>
-
-                                {/* Master-Detail Layout Container */}
-                                <div className="split-view-container mt-4">
-                                    {/* Left Sidebar: Parameter Navigation */}
-                                    <div className="parameter-sidebar">
-                                        <div className="sidebar-header">
-                                            <span className="sidebar-title">PARÁMETROS</span>
-                                            <span className="sidebar-count">{parametrosForm.length}</span>
-                                        </div>
-                                        <div className="parameter-nav-list">
-                                            {parametrosForm.map((p, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    type="button"
-                                                    className={`nav-item-btn ${currentParamIndex === idx ? 'active' : ''}`}
-                                                    onClick={() => setCurrentParamIndex(idx)}
-                                                >
-                                                    <div className="nav-item-info">
-                                                        <span className="nav-number">{idx + 1}</span>
-                                                        <div className="nav-texts">
-                                                            <span className="nav-label text-truncate">{p.nombre || 'Sin nombre'}</span>
-                                                            <span className="nav-type">{p.tipo.toUpperCase()}</span>
-                                                        </div>
-                                                    </div>
-                                                    {parametrosForm.length > 1 && (
-                                                        <span
-                                                            className="nav-item-remove"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                removeParametro(idx);
-                                                            }}
-                                                        >
-                                                            <i className="bi bi-x"></i>
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            className="btn-add-parameter-sidebar"
-                                            onClick={addParametro}
-                                        >
-                                            <i className="bi bi-plus-circle-fill me-2"></i>
-                                            <span>Nuevo Parámetro</span>
-                                        </button>
-                                    </div>
-
-                                    {/* Right Content: Active Parameter Configuration */}
-                                    <div className="parameter-content-area">
-                                        {parametrosForm[currentParamIndex] ? (
-                                            <div className="active-tab-animation">
-                                                <div className="content-area-header mb-4">
-                                                    <h5 className="fw-bold text-dark-emphasis mb-0">
-                                                        Configuración del Parámetro {currentParamIndex + 1}
-                                                    </h5>
-                                                    <hr className="my-3 opacity-10" />
-                                                </div>
-
-                                                <div className="row g-4">
-                                                    {/* Origen del Parámetro con Buscador Inteligente */}
-                                                    <div className="col-md-12">
-                                                        <label className="form-label-custom">Origen del Parámetro</label>
-                                                        <div className="smart-selector-container">
-                                                            <div className="input-group-custom">
-                                                                <i className="bi bi-search input-icon" style={{ zIndex: 10 }}></i>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-control-premium searchable"
-                                                                    placeholder="Buscar parámetro maestro..."
-                                                                    value={parametrosForm[currentParamIndex].tempSearch !== undefined ? parametrosForm[currentParamIndex].tempSearch : (parametrosForm[currentParamIndex].parametro_maestro_id ? parametrosForm[currentParamIndex].nombre : '')}
-                                                                    onFocus={() => handleParametroChange(currentParamIndex, 'showDropdown', true)}
-                                                                    onChange={(e) => {
-                                                                        handleParametroChange(currentParamIndex, 'tempSearch', e.target.value);
-                                                                        handleParametroChange(currentParamIndex, 'showDropdown', true);
-                                                                    }}
-                                                                />
-                                                                {parametrosForm[currentParamIndex].parametro_maestro_id && (
-                                                                    <button
-                                                                        className="btn-clear-selection"
-                                                                        onClick={() => {
-                                                                            handleParametroChange(currentParamIndex, 'parametro_maestro_id', null);
-                                                                            handleParametroChange(currentParamIndex, 'tempSearch', '');
-                                                                        }}
-                                                                    >
-                                                                        <i className="bi bi-x"></i>
-                                                                    </button>
-                                                                )}
-                                                            </div>
-
-                                                            {parametrosForm[currentParamIndex].showDropdown && (
-                                                                <div className="smart-dropdown shadow-lg">
-                                                                    <div className="dropdown-section-title">CATÁLOGO MAESTRO</div>
-                                                                    {parametrosMaestros
-                                                                        .filter(m => !parametrosForm[currentParamIndex].tempSearch || normalizeString(m.nombre).includes(normalizeString(parametrosForm[currentParamIndex].tempSearch)))
-                                                                        .map(m => (
-                                                                            <div
-                                                                                key={m.id}
-                                                                                className={`dropdown-item-custom ${parametrosForm[currentParamIndex].parametro_maestro_id === m.id ? 'active' : ''}`}
-                                                                                onClick={() => {
-                                                                                    handleParametroChange(currentParamIndex, 'parametro_maestro_id', m.id);
-                                                                                    handleParametroChange(currentParamIndex, 'showDropdown', false);
-                                                                                    handleParametroChange(currentParamIndex, 'tempSearch', m.nombre);
-                                                                                }}
-                                                                            >
-                                                                                <div className="d-flex justify-content-between align-items-center w-100">
-                                                                                    <span>{m.nombre}</span>
-                                                                                    <span className="badge-type-mini">{m.tipo}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        ))
-                                                                    }
-                                                                    {parametrosMaestros.filter(m => !parametrosForm[currentParamIndex].tempSearch || normalizeString(m.nombre).includes(normalizeString(parametrosForm[currentParamIndex].tempSearch))).length === 0 && (
-                                                                        <div className="p-3 text-center text-muted small">No se encontraron resultados</div>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                            {parametrosForm[currentParamIndex].showDropdown && (
-                                                                <div className="dropdown-backdrop" onClick={() => handleParametroChange(currentParamIndex, 'showDropdown', false)}></div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="col-md-12">
-                                                        <label className="form-label-custom">Nombre del Parámetro</label>
-                                                        <div className="input-group-custom">
-                                                            <i className={`bi ${parametrosForm[currentParamIndex].parametro_maestro_id ? 'bi-lock-fill text-primary' : 'bi-pencil'} input-icon`}></i>
-                                                            <input
-                                                                type="text"
-                                                                className={`form-control-premium ${parametrosForm[currentParamIndex].parametro_maestro_id ? 'bg-disabled' : ''}`}
-                                                                value={parametrosForm[currentParamIndex].nombre}
-                                                                onChange={(e) => handleParametroChange(currentParamIndex, 'nombre', e.target.value)}
-                                                                placeholder="Ej: Humedad"
-                                                                readOnly={!!parametrosForm[currentParamIndex].parametro_maestro_id}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="col-md-6">
-                                                        <label className="form-label-custom">Tipo de Evaluación</label>
-                                                        {!parametrosForm[currentParamIndex].parametro_maestro_id ? (
-                                                            <div className="d-flex gap-2">
-                                                                {(['texto', 'numero', 'rango'] as const).map((t) => (
-                                                                    <button
-                                                                        key={t}
-                                                                        type="button"
-                                                                        className={`btn-type-selector-small ${parametrosForm[currentParamIndex].tipo === t ? 'active' : ''}`}
-                                                                        onClick={() => handleParametroChange(currentParamIndex, 'tipo', t)}
-                                                                    >
-                                                                        {t === 'texto' && <i className="bi bi-fonts"></i>}
-                                                                        {t === 'numero' && <i className="bi bi-123"></i>}
-                                                                        {t === 'rango' && <i className="bi bi-arrows-expand"></i>}
-                                                                        <span className="ms-2">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="data-preview-box">
-                                                                <i className="bi bi-info-circle me-2 text-primary"></i>
-                                                                <strong>{parametrosForm[currentParamIndex].tipo.toUpperCase()}</strong>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {parametrosForm[currentParamIndex].tipo !== 'texto' && (
-                                                        <div className="col-md-6">
-                                                            <label className="form-label-custom">Unidad de Medida</label>
-                                                            <div className="input-group-custom">
-                                                                <i className="bi bi-rulers input-icon"></i>
-                                                                <input
-                                                                    type="text"
-                                                                    className={`form-control-premium ${parametrosForm[currentParamIndex].parametro_maestro_id ? 'bg-disabled' : ''}`}
-                                                                    value={parametrosForm[currentParamIndex].unidad}
-                                                                    onChange={(e) => handleParametroChange(currentParamIndex, 'unidad', e.target.value)}
-                                                                    placeholder="kg, %, °C"
-                                                                    readOnly={!!parametrosForm[currentParamIndex].parametro_maestro_id}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="col-12">
-                                                        <div className="value-config-container p-4 rounded-4 bg-light border-0 shadow-sm">
-                                                            {parametrosForm[currentParamIndex].tipo === 'texto' && (
-                                                                <div>
-                                                                    <label className="form-label-custom">Valor Esperado / Etiqueta</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        className="form-control-premium bg-white"
-                                                                        value={parametrosForm[currentParamIndex].valor}
-                                                                        onChange={(e) => handleParametroChange(currentParamIndex, 'valor', e.target.value)}
-                                                                        placeholder="Ej: Cumple / No Cumple"
-                                                                    />
-                                                                </div>
-                                                            )}
-
-                                                            {parametrosForm[currentParamIndex].tipo === 'numero' && (
-                                                                <div>
-                                                                    <label className="form-label-custom">Valor Numérico Objetivo</label>
-                                                                    <div className="input-group">
-                                                                        <input
-                                                                            type="number"
-                                                                            className="form-control-premium bg-white"
-                                                                            value={parametrosForm[currentParamIndex].valor}
-                                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'valor', e.target.value)}
-                                                                            placeholder="0.00"
-                                                                        />
-                                                                        <span className="input-group-text bg-white border-0 text-muted fw-bold">{parametrosForm[currentParamIndex].unidad}</span>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-
-                                                            {parametrosForm[currentParamIndex].tipo === 'rango' && (
-                                                                <div className="row g-3">
-                                                                    <div className="col-6">
-                                                                        <label className="form-label-custom text-primary">Mínimo Aceptable</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            className="form-control-premium bg-white"
-                                                                            value={parametrosForm[currentParamIndex].rango_min}
-                                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'rango_min', e.target.value)}
-                                                                            placeholder="Mín"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="col-6">
-                                                                        <label className="form-label-custom text-danger">Máximo Aceptable</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            className="form-control-premium bg-white"
-                                                                            value={parametrosForm[currentParamIndex].rango_max}
-                                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'rango_max', e.target.value)}
-                                                                            placeholder="Máx"
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="empty-param-state h-100 d-flex flex-column align-items-center justify-content-center text-muted py-5">
-                                                <i className="bi bi-collection-play mb-3" style={{ fontSize: '3rem', opacity: 0.3 }}></i>
-                                                <p>Seleccione o agregue un parámetro</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {error && (
-                                    <div className="alert alert-danger mt-4 d-flex align-items-center gap-3 rounded-3 shadow-sm border-0 bg-danger bg-opacity-10 text-danger">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                                            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
-                                        </svg>
-                                        <div>
-                                            <div className="fw-bold">Error al guardar</div>
-                                            <div className="small">{error}</div>
-                                        </div>
-                                    </div>
                                 )}
-                            </div>
-
-                            {/* Fixed Footer */}
-                            <div className="modal-footer bg-white border-top p-3" style={{ flexShrink: 0 }}>
-                                <button
-                                    className="btn btn-light text-secondary fw-bold px-4 rounded-pill"
-                                    onClick={() => setShowModal(false)}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    className="btn btn-primary fw-bold px-5 rounded-pill shadow-sm hover-shadow"
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                    style={{ background: 'linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%)', border: 'none' }}
-                                >
-                                    {saving ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Guardando...
-                                        </>
-                                    ) : 'Guardar Producto'}
+                                <button onClick={() => setShowModal(false)} className="w-10 h-10 rounded-full bg-[#f8fafc] hover:bg-[#f1f5f9] flex items-center justify-center text-[#1e293b] transition-transform active:scale-90 border-0 shadow-sm">
+                                    <i className="bi bi-x-lg text-sm"></i>
                                 </button>
                             </div>
                         </div>
+
+                        {/* Body con Split View */}
+                        <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+                            {/* Sidebar de Parámetros */}
+                            <div className="w-full md:w-80 bg-white border-r border-[#e2e8f0] flex flex-col flex-shrink-0">
+                                <div className="p-4 border-b border-[#f1f5f9] bg-slate-50/50">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] text-[#94a3b8] uppercase font-black tracking-widest ml-1">Nombre del Producto</label>
+                                        <input
+                                            type="text"
+                                            value={productName}
+                                            onChange={(e) => setProductName(e.target.value)}
+                                            className="w-full bg-white border border-[#cbd5e1] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-[#0f172a] outline-none transition-all shadow-sm"
+                                            placeholder="Ej: Leche Entera 1L"
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="p-4 flex justify-between items-center bg-white border-b border-[#f1f5f9]">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Parámetros ({parametrosForm.length})</span>
+                                    <button 
+                                        onClick={addParametro}
+                                        className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-2 py-1 rounded-lg hover:bg-rose-100 transition-colors border-0"
+                                    >
+                                        + Agregar
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                                    {parametrosForm.map((p, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setCurrentParamIndex(idx)}
+                                            className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between group ${currentParamIndex === idx ? 'bg-[#0f172a] text-white shadow-lg shadow-[#0f172a]/20' : 'bg-white hover:bg-slate-50 text-slate-600 border border-transparent hover:border-slate-100'}`}
+                                        >
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${currentParamIndex === idx ? 'bg-white/10' : 'bg-slate-100 text-slate-400'}`}>
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <p className={`text-xs font-black truncate m-0 ${currentParamIndex === idx ? 'text-white' : 'text-[#1e293b]'}`}>
+                                                        {p.nombre || 'Sin nombre'}
+                                                    </p>
+                                                    <p className={`text-[9px] uppercase font-bold tracking-widest m-0 opacity-60`}>
+                                                        {p.tipo}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {parametrosForm.length > 1 && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); removeParametro(idx); }}
+                                                    className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${currentParamIndex === idx ? 'text-white/40 hover:text-white hover:bg-white/10' : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'}`}
+                                                >
+                                                    <i className="bi bi-trash3 text-xs"></i>
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Área de Configuración Activa */}
+                            <div className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar bg-[#f8fafc]/50">
+                                {parametrosForm[currentParamIndex] ? (
+                                    <div className="max-w-xl mx-auto space-y-8 animate-in slide-in-from-right-4 duration-300">
+                                        <div className="space-y-1">
+                                            <h4 className="text-xl font-black text-[#1e293b] tracking-tight">Configuración del Parámetro {currentParamIndex + 1}</h4>
+                                            <p className="text-[#64748b] text-xs font-bold uppercase tracking-widest">Vincula un parámetro maestro y define sus reglas</p>
+                                        </div>
+
+                                        <div className="space-y-6 bg-white p-6 sm:p-8 rounded-3xl border border-[#e2e8f0] shadow-sm">
+                                            {/* Selector Inteligente */}
+                                            <div className="space-y-2 relative">
+                                                <label className="text-[10px] text-[#94a3b8] uppercase font-black tracking-widest ml-1">Origen (Catálogo Maestro)</label>
+                                                <div className="relative group">
+                                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                                                        <i className="bi bi-search"></i>
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        value={parametrosForm[currentParamIndex].tempSearch !== undefined ? parametrosForm[currentParamIndex].tempSearch : (parametrosForm[currentParamIndex].parametro_maestro_id ? parametrosForm[currentParamIndex].nombre : '')}
+                                                        onFocus={() => handleParametroChange(currentParamIndex, 'showDropdown', true)}
+                                                        onChange={(e) => {
+                                                            handleParametroChange(currentParamIndex, 'tempSearch', e.target.value);
+                                                            handleParametroChange(currentParamIndex, 'showDropdown', true);
+                                                        }}
+                                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl pl-12 pr-12 py-4 text-[#1e293b] font-bold focus:border-[#0f172a] focus:bg-white outline-none transition-all shadow-sm"
+                                                        placeholder="Buscar parámetro maestro..."
+                                                    />
+                                                    {parametrosForm[currentParamIndex].parametro_maestro_id && (
+                                                        <button
+                                                            onClick={() => {
+                                                                handleParametroChange(currentParamIndex, 'parametro_maestro_id', null);
+                                                                handleParametroChange(currentParamIndex, 'tempSearch', '');
+                                                            }}
+                                                            className="absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 bg-slate-200 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-300 transition-colors border-0 shadow-sm"
+                                                        >
+                                                            <i className="bi bi-x text-lg"></i>
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Dropdown Style Historial */}
+                                                {parametrosForm[currentParamIndex].showDropdown && (
+                                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-[#e2e8f0] z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                                        <div className="px-5 py-3 bg-slate-50 border-b border-[#f1f5f9]">
+                                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Catálogo Disponible</span>
+                                                        </div>
+                                                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                                            {parametrosMaestros
+                                                                .filter(m => !parametrosForm[currentParamIndex].tempSearch || normalizeString(m.nombre).includes(normalizeString(parametrosForm[currentParamIndex].tempSearch)))
+                                                                .map(m => (
+                                                                    <div
+                                                                        key={m.id}
+                                                                        onClick={() => {
+                                                                            handleParametroChange(currentParamIndex, 'parametro_maestro_id', m.id);
+                                                                            handleParametroChange(currentParamIndex, 'showDropdown', false);
+                                                                            handleParametroChange(currentParamIndex, 'tempSearch', m.nombre);
+                                                                            handleParametroChange(currentParamIndex, 'nombre', m.nombre);
+                                                                            handleParametroChange(currentParamIndex, 'tipo', m.tipo);
+                                                                        }}
+                                                                        className={`px-5 py-4 flex items-center justify-between cursor-pointer transition-colors group ${parametrosForm[currentParamIndex].parametro_maestro_id === m.id ? 'bg-[#0f172a] text-white' : 'hover:bg-rose-50 text-[#1e293b]'}`}
+                                                                    >
+                                                                        <div className="flex flex-col">
+                                                                            <span className={`text-sm font-bold ${parametrosForm[currentParamIndex].parametro_maestro_id === m.id ? 'text-white' : 'text-[#1e293b] group-hover:text-rose-700'}`}>{m.nombre}</span>
+                                                                            <span className={`text-[9px] font-bold uppercase tracking-widest opacity-60`}>{m.tipo}</span>
+                                                                        </div>
+                                                                        {parametrosForm[currentParamIndex].parametro_maestro_id === m.id && (
+                                                                            <i className="bi bi-check-circle-fill text-rose-400"></i>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            {parametrosMaestros.filter(m => !parametrosForm[currentParamIndex].tempSearch || normalizeString(m.nombre).includes(normalizeString(parametrosForm[currentParamIndex].tempSearch))).length === 0 && (
+                                                                <div className="p-10 text-center opacity-40">
+                                                                    <i className="bi bi-search text-3xl d-block mb-3"></i>
+                                                                    <p className="text-xs font-bold uppercase tracking-widest m-0">No se encontraron resultados</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Campos dinámicos */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] text-[#94a3b8] uppercase font-black tracking-widest ml-1">Nombre Visual</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="text"
+                                                            value={parametrosForm[currentParamIndex].nombre}
+                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'nombre', e.target.value)}
+                                                            readOnly={!!parametrosForm[currentParamIndex].parametro_maestro_id}
+                                                            className={`w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-5 py-4 text-[#1e293b] font-bold outline-none focus:border-[#0f172a] transition-all shadow-sm ${parametrosForm[currentParamIndex].parametro_maestro_id ? 'opacity-60 cursor-not-allowed bg-slate-100' : ''}`}
+                                                            placeholder="Ej: Humedad"
+                                                        />
+                                                        {parametrosForm[currentParamIndex].parametro_maestro_id && <i className="bi bi-lock-fill absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"></i>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] text-[#94a3b8] uppercase font-black tracking-widest ml-1">Unidad de Medida</label>
+                                                    <input
+                                                        type="text"
+                                                        value={parametrosForm[currentParamIndex].unidad}
+                                                        onChange={(e) => handleParametroChange(currentParamIndex, 'unidad', e.target.value)}
+                                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-5 py-4 text-[#1e293b] font-bold outline-none focus:border-[#0f172a] transition-all shadow-sm"
+                                                        placeholder="kg, %, °C"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <label className="text-[10px] text-[#94a3b8] uppercase font-black tracking-widest ml-1">Tipo de Dato</label>
+                                                    <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
+                                                        {(['texto', 'numero', 'rango'] as const).map((t) => (
+                                                            <button
+                                                                key={t}
+                                                                type="button"
+                                                                disabled={!!parametrosForm[currentParamIndex].parametro_maestro_id}
+                                                                onClick={() => handleParametroChange(currentParamIndex, 'tipo', t)}
+                                                                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${parametrosForm[currentParamIndex].tipo === t ? 'bg-white text-[#0f172a] shadow-sm' : 'text-slate-400 hover:text-slate-600 disabled:opacity-50'}`}
+                                                            >
+                                                                {t}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Rango (si aplica) */}
+                                            {parametrosForm[currentParamIndex].tipo === 'rango' && (
+                                                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-100 animate-in fade-in slide-in-from-top-2">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] text-[#94a3b8] uppercase font-black tracking-widest ml-1">V. Mínimo</label>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={parametrosForm[currentParamIndex].rango_min || ''}
+                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'rango_min', e.target.value)}
+                                                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] font-bold focus:border-[#0f172a] outline-none shadow-sm"
+                                                            placeholder="0.00"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] text-[#94a3b8] uppercase font-black tracking-widest ml-1">V. Máximo</label>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={parametrosForm[currentParamIndex].rango_max || ''}
+                                                            onChange={(e) => handleParametroChange(currentParamIndex, 'rango_max', e.target.value)}
+                                                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] font-bold focus:border-[#0f172a] outline-none shadow-sm"
+                                                            placeholder="0.00"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Valor Objetivo (si no es rango) */}
+                                            {parametrosForm[currentParamIndex].tipo !== 'rango' && (
+                                                <div className="space-y-2 pt-4 border-t border-slate-100">
+                                                    <label className="text-[10px] text-[#94a3b8] uppercase font-black tracking-widest ml-1">Valor Objetivo / Referencia</label>
+                                                    <input
+                                                        type={parametrosForm[currentParamIndex].tipo === 'numero' ? 'number' : 'text'}
+                                                        step="0.01"
+                                                        value={parametrosForm[currentParamIndex].valor || ''}
+                                                        onChange={(e) => handleParametroChange(currentParamIndex, 'valor', e.target.value)}
+                                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] font-bold focus:border-[#0f172a] outline-none shadow-sm"
+                                                        placeholder={parametrosForm[currentParamIndex].tipo === 'numero' ? '0.00' : 'Ej: CUMPLE'}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {error && (
+                                            <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 text-rose-600 animate-pulse">
+                                                <i className="bi bi-exclamation-triangle-fill"></i>
+                                                <span className="text-xs font-bold uppercase tracking-tight">{error}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center opacity-30 text-center">
+                                        <i className="bi bi-gear-wide-connected text-6xl mb-4 text-[#0f172a]"></i>
+                                        <p className="text-sm font-black uppercase tracking-widest text-[#0f172a]">Seleccione o agregue un parámetro</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer Fijo */}
+                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm bg-rose-600 text-white hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20 border-0 disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {saving ? (
+                                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Guardando...</>
+                                ) : (
+                                    <><i className="bi bi-check-circle-fill"></i> Guardar Producto</>
+                                )}
+                            </button>
+                        </div>
                     </div>
-                )
-            }
+                </div>
+            )}
 
             <style jsx>{`
         /* Page Layout */

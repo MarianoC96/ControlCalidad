@@ -287,92 +287,102 @@ export default function ProductosMasterPage() {
 
             {/* Modal Form */}
             {showModal && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#1e293b]/70 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-                    <form onSubmit={handleSubmit} className="relative w-full max-w-xl bg-[#ffffff] border border-[#cbd5e1] rounded-[2.5rem] p-8 sm:p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+                    <form onSubmit={handleSubmit} className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-xl max-h-[90vh]" style={{ zIndex: 10 }}>
 
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-[#208754]/5 rounded-full blur-3xl"></div>
+                        <div className="p-5 sm:p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] flex-shrink-0 rounded-t-3xl">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-[#208754]/10 text-[#208754] rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                                    <i className="bi bi-box-seam"></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-[#1e293b] uppercase tracking-tighter m-0 flex items-center gap-2">
+                                        {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
+                                    </h3>
+                                    <p className="text-[#64748b] text-sm mt-1 mb-0">Configure los metadatos globales del SKU.</p>
+                                </div>
+                            </div>
+                            <button type="button" onClick={() => setShowModal(false)} className="w-10 h-10 rounded-full bg-[#f8fafc] hover:bg-[#f1f5f9] flex items-center justify-center text-[#1e293b] transition-transform active:scale-90 border-0 shadow-sm">
+                                <i className="bi bi-x-lg text-sm"></i>
+                            </button>
+                        </div>
 
-                        <header className="mb-8 relative z-10">
-                            <h2 className="text-2xl font-black text-[#1e293b] uppercase tracking-tight">
-                                {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
-                            </h2>
-                            <p className="text-[#64748b] text-sm mt-1">Configure los metadatos globales del SKU.</p>
-                        </header>
+                        <div className="flex-1 overflow-y-auto p-5 sm:p-6 custom-scrollbar">
+                            <div className="space-y-6 w-full">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Código de Barras (Universal)</label>
+                                    <div className="relative">
+                                        <input
+                                            required
+                                            disabled={!!editingProduct}
+                                            value={formData.barcode}
+                                            onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-mono disabled:opacity-50"
+                                            placeholder="775..."
+                                        />
+                                        <i className="bi bi-upc-scan absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+                                    </div>
+                                </div>
 
-                        <div className="space-y-6 relative z-10">
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Código de Barras (Universal)</label>
-                                <div className="relative">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Nombre / Presentación</label>
                                     <input
                                         required
-                                        disabled={!!editingProduct}
-                                        value={formData.barcode}
-                                        onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                                        className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#005d31] outline-none transition-all font-mono disabled:opacity-50"
-                                        placeholder="775..."
+                                        value={formData.presentacion}
+                                        onChange={(e) => setFormData({ ...formData, presentacion: e.target.value })}
+                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-medium"
+                                        placeholder="Ej: Aceituna Verde 200g"
                                     />
-                                    <i className="bi bi-upc-scan absolute right-5 top-1/2 -translate-y-1/2 text-[#e2e8f0]"></i>
                                 </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Nombre / Presentación</label>
-                                <input
-                                    required
-                                    value={formData.presentacion}
-                                    onChange={(e) => setFormData({ ...formData, presentacion: e.target.value })}
-                                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#005d31] outline-none transition-all font-medium"
-                                    placeholder="Ej: Aceituna Verde 200g"
-                                />
-                            </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Vida Útil</label>
+                                        <input
+                                            value={formData.vida_util}
+                                            onChange={(e) => setFormData({ ...formData, vida_util: e.target.value })}
+                                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all"
+                                            placeholder="Ej: 12 meses"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Unidades / Caja</label>
+                                        <input
+                                            type="number"
+                                            value={formData.unidades_por_caja}
+                                            onChange={(e) => setFormData({ ...formData, unidades_por_caja: e.target.value })}
+                                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Vida Útil</label>
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Registro Sanitario</label>
                                     <input
-                                        value={formData.vida_util}
-                                        onChange={(e) => setFormData({ ...formData, vida_util: e.target.value })}
-                                        className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#005d31] outline-none transition-all"
-                                        placeholder="Ej: 12 meses"
+                                        value={formData.registro_sanitario}
+                                        onChange={(e) => setFormData({ ...formData, registro_sanitario: e.target.value })}
+                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all"
+                                        placeholder="RS-XXXX-A"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Unidades / Caja</label>
-                                    <input
-                                        type="number"
-                                        value={formData.unidades_por_caja}
-                                        onChange={(e) => setFormData({ ...formData, unidades_por_caja: e.target.value })}
-                                        className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#005d31] outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Registro Sanitario</label>
-                                <input
-                                    value={formData.registro_sanitario}
-                                    onChange={(e) => setFormData({ ...formData, registro_sanitario: e.target.value })}
-                                    className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#005d31] outline-none transition-all"
-                                    placeholder="RS-XXXX-A"
-                                />
                             </div>
                         </div>
 
-                        <div className="mt-10 flex gap-4">
+                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
                             <button
                                 type="button"
                                 onClick={() => setShowModal(false)}
-                                className="flex-1 bg-[#f1f5f9] hover:bg-[#e2e8f0] text-[#1e293b] py-5 rounded-2xl font-bold transition-all text-xs uppercase tracking-widest"
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
                             >
-                                CANCELAR
+                                Cancelar
                             </button>
                             <button
                                 disabled={isSaving}
                                 type="submit"
-                                className="flex-[1.5] bg-[#004d29] hover:bg-[#005d31] text-white py-5 px-10 rounded-2xl font-black transition-all text-xs uppercase tracking-widest shadow-xl shadow-[#005d31]/20"
+                                className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#005d31] hover:bg-[#004d29] text-white transition-all shadow-lg shadow-[#005d31]/20 border-0 disabled:opacity-50 flex items-center gap-2"
                             >
-                                {isSaving ? 'GUARDANDO...' : editingProduct ? 'ACTUALIZAR' : 'REGISTRAR'}
+                                {isSaving ? 'Guardando...' : editingProduct ? 'Actualizar Producto' : 'Registrar Producto'}
                             </button>
                         </div>
                     </form>

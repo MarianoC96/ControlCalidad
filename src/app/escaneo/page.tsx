@@ -176,18 +176,24 @@ export default function EscaneoPage() {
         if (!lastScanned || !scanMode || !loteValue.trim()) return;
 
         setIsSaving(true);
-        const transactionData = {
+        const localTransactionData = {
             barcode: lastScanned.barcode,
             lote: loteValue.trim().toUpperCase(),
             usuario_id: userId,
-            presentacion: lastScanned.presentacion // Para referencia local
+            presentacion: lastScanned.presentacion // Para referencia local (offline)
+        };
+        
+        const dbTransactionData = {
+            barcode: lastScanned.barcode,
+            lote: loteValue.trim().toUpperCase(),
+            usuario_id: userId
         };
 
         if (!navigator.onLine) {
             try {
                 const pendingScans = JSON.parse(localStorage.getItem('scanner_offline_queue') || '[]');
                 pendingScans.push({
-                    ...transactionData,
+                    ...localTransactionData,
                     id: Date.now() + Math.random().toString(36).substring(7),
                     mode: scanMode,
                     created_at: new Date().toISOString()
@@ -207,7 +213,7 @@ export default function EscaneoPage() {
         }
 
         try {
-            const { error } = await BarcodeRepository.saveTransaction(transactionData, scanMode);
+            const { error } = await BarcodeRepository.saveTransaction(dbTransactionData, scanMode);
 
             if (error) throw error;
 
@@ -221,7 +227,7 @@ export default function EscaneoPage() {
             if (err?.message === 'Failed to fetch' || String(err).includes('fetch') || String(err).includes('network')) {
                 const pendingScans = JSON.parse(localStorage.getItem('scanner_offline_queue') || '[]');
                 pendingScans.push({
-                    ...transactionData,
+                    ...localTransactionData,
                     id: Date.now() + Math.random().toString(36).substring(7),
                     mode: scanMode,
                     created_at: new Date().toISOString()
@@ -285,20 +291,7 @@ export default function EscaneoPage() {
                 </div>
             )}
 
-            {/* --- TOP NAV HEADER --- */}
-            {scanMode && (
-                <header className="sticky top-0 z-40 flex items-center justify-between p-4 bg-[#f8fafc]/90 backdrop-blur-xl border-b border-[#e2e8f0] shadow-2xl h-[72px]">
-                    <div className="flex items-center gap-4 cursor-pointer" onClick={handleBackToModules}>
-                        <div className="w-10 h-10 bg-[#f1f5f9] text-[#64748b] rounded-xl flex items-center justify-center hover:text-[#1e293b] transition-all">
-                            <i className="bi bi-arrow-left"></i>
-                        </div>
-                        <div>
-                            <h1 className="text-[#1e293b] font-black tracking-tighter text-sm leading-none uppercase">Módulo {scanMode}s</h1>
-                            <p className="text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mt-0.5">Control Individual</p>
-                        </div>
-                    </div>
-                </header>
-            )}
+            {/* TOP NAV HEADER REMOVED - Se descarta para evitar confusión al usuario */}
 
             {/* --- VISTA 1: MENÚ DE MÓDULOS --- */}
             {!scanMode && (

@@ -696,279 +696,254 @@ export default function RegistrosClient() {
 
 
 
-            {
-                selectedRegistro && (
-                    <div className="modal-overlay" style={{ zIndex: 2100 }} onClick={() => setSelectedRegistro(null)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h3>Detalle del Registro</h3>
-                                <button className="close-btn" onClick={() => setSelectedRegistro(null)}>×</button>
+            {selectedRegistro && (
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={() => setSelectedRegistro(null)}></div>
+                    <div className="relative bg-[#f8fafc] rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-4xl max-h-[95vh]" style={{ zIndex: 10 }}>
+                        
+                        {/* Modal Header */}
+                        <div className="p-6 sm:p-8 bg-white flex justify-between items-center border-b border-[#e2e8f0] flex-shrink-0 rounded-t-[2.5rem]">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0 border border-blue-100">
+                                    <i className="bi bi-file-earmark-text-fill"></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-[#1e293b] uppercase tracking-tighter m-0">Detalle del Registro</h3>
+                                    <p className="text-[#64748b] text-[10px] font-bold uppercase tracking-widest mt-1 m-0">Información técnica y técnica del lote</p>
+                                </div>
                             </div>
+                            <button onClick={() => setSelectedRegistro(null)} className="w-10 h-10 rounded-full bg-[#f8fafc] text-[#64748b] hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-all border-0 shadow-sm active:scale-90">
+                                <i className="bi bi-x-lg text-lg"></i>
+                            </button>
+                        </div>
 
-                            <div className="modal-body">
-                                {/* Header PDF Snapshot/Preview */}
-                                {(() => {
-                                    const CUTOFF_DATE = new Date('2025-01-29T00:00:00');
-                                    const isNewFormat = selectedRegistro.pdf_codigo || new Date(selectedRegistro.fecha_registro) >= CUTOFF_DATE;
+                        <div className="p-6 sm:p-8 overflow-y-auto flex-grow custom-scrollbar space-y-8">
+                            {/* PDF Header Preview Snapshot if applicable */}
+                            {(() => {
+                                const CUTOFF_DATE = new Date('2025-01-29T00:00:00');
+                                const isNewFormat = selectedRegistro.pdf_codigo || new Date(selectedRegistro.fecha_registro) >= CUTOFF_DATE;
+                                if (!isNewFormat) return null;
 
-                                    if (!isNewFormat) return null;
+                                const headerToShow = {
+                                    titulo: selectedRegistro.pdf_titulo || globalPdfConfig?.titulo || 'REPORTE DE CONTROL DE CALIDAD',
+                                    codigo: selectedRegistro.pdf_codigo || globalPdfConfig?.codigo || 'PE C - CC001',
+                                    edicion: selectedRegistro.pdf_edicion || globalPdfConfig?.edicion || 'ED. 01',
+                                    aprobado_por: selectedRegistro.pdf_aprobado_por || globalPdfConfig?.aprobado_por || 'Aprob. J. Calidad'
+                                };
 
-                                    const headerToShow = {
-                                        titulo: selectedRegistro.pdf_titulo || globalPdfConfig?.titulo || 'REPORTE DE CONTROL DE CALIDAD',
-                                        codigo: selectedRegistro.pdf_codigo || globalPdfConfig?.codigo || 'PE C - CC001',
-                                        edicion: selectedRegistro.pdf_edicion || globalPdfConfig?.edicion || 'ED. 01',
-                                        aprobado_por: selectedRegistro.pdf_aprobado_por || globalPdfConfig?.aprobado_por || 'Aprob. J. Calidad'
-                                    };
-
-                                    return (
-                                        <div className="pdf-header-preview mb-4">
-                                            {/* Container with exact proportions 25/55/20 */}
-                                            <div style={{
-                                                border: '2px solid black',
-                                                height: '100px',
-                                                backgroundColor: 'white',
-                                                display: 'flex',
-                                                width: '100%',
-                                                overflow: 'hidden'
-                                            }}>
-                                                {/* Cell 1: LOGO (25%) */}
-                                                <div style={{
-                                                    width: '25%',
-                                                    borderRight: '1px solid black',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    padding: '5px'
-                                                }}>
-                                                    <img
-                                                        src="/logo.png"
-                                                        alt="Logo"
-                                                        style={{ maxHeight: '90%', maxWidth: '90%', objectFit: 'contain' }}
-                                                        onError={(e) => {
-                                                            (e.target as any).style.display = 'none';
-                                                            (e.target as any).nextElementSibling.style.display = 'block';
-                                                        }}
-                                                    />
-                                                    <span style={{ display: 'none', fontSize: '12px', color: '#999', fontWeight: 'bold' }}>LOGO</span>
-                                                </div>
-
-                                                {/* Cell 2: TITLE (55%) */}
-                                                <div style={{
-                                                    width: '55%',
-                                                    borderRight: '1px solid black',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    padding: '10px'
-                                                }}>
-                                                    <h5 className="mb-0 fw-bold text-center text-uppercase" style={{
-                                                        fontSize: '1.1rem',
-                                                        fontFamily: 'Helvetica, Arial, sans-serif',
-                                                        lineHeight: '1.2'
-                                                    }}>
-                                                        {headerToShow.titulo}
-                                                    </h5>
-                                                </div>
-
-                                                {/* Cell 3: DATA (20%) */}
-                                                <div style={{
-                                                    width: '20%',
-                                                    display: 'flex',
-                                                    flexDirection: 'column'
-                                                }}>
-                                                    <div style={{
-                                                        flex: 1,
-                                                        borderBottom: '1px solid black',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: 'bold',
-                                                        fontFamily: 'Helvetica, Arial, sans-serif'
-                                                    }}>
-                                                        {headerToShow.codigo}
-                                                    </div>
-                                                    <div style={{
-                                                        flex: 1,
-                                                        borderBottom: '1px solid black',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: 'bold',
-                                                        fontFamily: 'Helvetica, Arial, sans-serif'
-                                                    }}>
-                                                        {headerToShow.edicion}
-                                                    </div>
-                                                    <div style={{
-                                                        flex: 1,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: 'bold',
-                                                        fontFamily: 'Helvetica, Arial, sans-serif',
-                                                        textAlign: 'center',
-                                                        padding: '2px'
-                                                    }}>
-                                                        {(() => {
-                                                            const original = headerToShow.aprobado_por || '';
-                                                            // If YYYY-MM-DD, convert to DD-MM-YYYY
-                                                            if (/^\d{4}-\d{2}-\d{2}$/.test(original)) {
-                                                                const [y, m, d] = original.split('-');
-                                                                return `${d}-${m}-${y}`;
-                                                            }
-                                                            return original;
-                                                        })()}
-                                                    </div>
-                                                </div>
+                                return (
+                                    <div className="animate-in fade-in duration-500">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <i className="bi bi-eye-fill text-blue-500"></i>
+                                            <span className="text-[10px] font-black text-[#475569] uppercase tracking-widest">Vista Previa Reporte Oficial</span>
+                                        </div>
+                                        <div className="border-2 border-slate-900 rounded-sm overflow-hidden flex w-full shadow-lg bg-white h-[90px] sm:h-[100px]">
+                                            <div className="w-[25%] border-r-2 border-slate-900 flex items-center justify-center p-2 sm:p-4">
+                                                <img src="/logo.png" alt="Logo" className="max-h-full max-w-full object-contain" />
                                             </div>
-                                            <div className="text-end mt-1">
-                                                <small className="text-muted" style={{ fontSize: '10px', fontStyle: 'italic' }}>
-                                                    {selectedRegistro.pdf_codigo ? '● Encabezado histórico de este registro' : '○ Encabezado actual (Vista previa)'}
-                                                </small>
+                                            <div className="w-[55%] border-r-2 border-slate-900 flex items-center justify-center p-2 sm:p-4 text-center">
+                                                <h4 className="m-0 font-black text-[10px] sm:text-xs md:text-sm text-slate-900 leading-tight uppercase tracking-tight">{headerToShow.titulo}</h4>
+                                            </div>
+                                            <div className="w-[20%] flex flex-col font-black text-[8px] sm:text-[10px] text-slate-900">
+                                                <div className="flex-1 border-b-2 border-slate-900 flex items-center justify-center">{headerToShow.codigo}</div>
+                                                <div className="flex-1 border-b-2 border-slate-900 flex items-center justify-center">{headerToShow.edicion}</div>
+                                                <div className="flex-1 flex items-center justify-center text-center p-1 uppercase">
+                                                    {(() => {
+                                                        const original = headerToShow.aprobado_por || '';
+                                                        if (/^\d{4}-\d{2}-\d{2}$/.test(original)) {
+                                                            const [y, m, d] = original.split('-');
+                                                            return `${d}-${m}-${y}`;
+                                                        }
+                                                        return original;
+                                                    })()}
+                                                </div>
                                             </div>
                                         </div>
-                                    );
-                                })()}
+                                    </div>
+                                );
+                            })()}
 
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <strong>Lote Interno:</strong>
-                                        <span>{selectedRegistro.lote_interno}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Guía:</strong>
-                                        <span>{selectedRegistro.guia || '-'}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Producto:</strong>
-                                        <span>{selectedRegistro.producto_nombre}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Cantidad:</strong>
-                                        <span>{selectedRegistro.cantidad}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Fecha:</strong>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            {formatDate(selectedRegistro.fecha_registro)}
-                                            {selectedRegistro.es_offline && (
-                                                <span
-                                                    className="badge bg-success"
-                                                    title={`Sincronizado el ${selectedRegistro.fecha_sincronizacion ? formatDate(selectedRegistro.fecha_sincronizacion) : 'N/A'}`}
-                                                    style={{ cursor: 'help', fontWeight: '500' }}
-                                                >
-                                                    <span style={{ marginRight: '4px' }}>☁️</span> Sincronizado
-                                                </span>
-                                            )}
-                                        </span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <strong>Verificado por:</strong>
-                                        <span>{selectedRegistro.verificado_por || selectedRegistro.usuario_nombre}</span>
+                            {/* Main Info Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 bg-white p-6 sm:p-8 rounded-[2rem] border border-[#e2e8f0] shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 opacity-50 rounded-bl-full -z-0 pointer-events-none"></div>
+                                <div className="space-y-1 relative z-10">
+                                    <span className="block text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Lote Interno</span>
+                                    <span className="block text-lg font-black text-[#1e293b] truncate uppercase">{selectedRegistro.lote_interno}</span>
+                                </div>
+                                <div className="space-y-1 relative z-10">
+                                    <span className="block text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Guía de Remisión</span>
+                                    <span className="block text-lg font-black text-[#1e293b] truncate">{selectedRegistro.guia || 'SIN GUÍA'}</span>
+                                </div>
+                                <div className="space-y-1 relative z-10">
+                                    <span className="block text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Fecha Registro</span>
+                                    <span className="flex items-center gap-2 text-[#1e293b] font-black text-sm">
+                                        <i className="bi bi-calendar3 text-blue-500"></i>
+                                        {formatDate(selectedRegistro.fecha_registro)}
+                                    </span>
+                                </div>
+                                <div className="space-y-1 relative z-10">
+                                    <span className="block text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Producto</span>
+                                    <span className="block text-[#1e293b] font-bold text-sm leading-tight">{selectedRegistro.producto_nombre}</span>
+                                </div>
+                                <div className="space-y-1 relative z-10">
+                                    <span className="block text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Cantidad</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl font-black text-[#1e293b] leading-none">{selectedRegistro.cantidad}</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Unidades</span>
                                     </div>
                                 </div>
-
-                                {selectedRegistro.observaciones_generales && (
-                                    <div className="observations">
-                                        <strong>Observaciones Generales:</strong>
-                                        <p>{selectedRegistro.observaciones_generales}</p>
-                                    </div>
-                                )}
-
-                                {selectedRegistro.controles && selectedRegistro.controles.length > 0 && (
-                                    <>
-                                        <h4>Controles</h4>
-                                        <table className="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Parámetro</th>
-                                                    <th>Rango</th>
-                                                    <th>Valor</th>
-                                                    <th>Estado</th>
-                                                    <th>Observación</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {selectedRegistro.controles.map((control) => (
-                                                    <tr key={control.id}>
-                                                        <td>{control.parametro_nombre}</td>
-                                                        <td>{control.rango_completo}</td>
-                                                        <td>
-                                                            {control.valor_control !== null
-                                                                ? control.valor_control
-                                                                : control.texto_control || '-'}
-                                                        </td>
-                                                        <td>
-                                                            {(() => {
-                                                                const isVacio = control.valor_control === null && !control.texto_control;
-                                                                if (control.fuera_de_rango) {
-                                                                    return <span className="badge badge-danger">Fuera de Rango</span>;
-                                                                }
-                                                                if (isVacio && control.rango_completo) {
-                                                                    return <span className="badge badge-warning text-dark">Incompleto</span>;
-                                                                }
-                                                                return <span className="badge badge-success">OK</span>;
-                                                            })()}
-                                                        </td>
-                                                        <td>{control.observacion || '-'}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </>
-                                )}
-
-                                {selectedRegistro.fotos && selectedRegistro.fotos.length > 0 && (
-                                    <>
-                                        <h4>Fotos</h4>
-                                        <div className="photos-grid">
-                                            {selectedRegistro.fotos.map((foto) => (
-                                                <div
-                                                    key={foto.id}
-                                                    className="photo-card"
-                                                    style={{ cursor: 'zoom-in' }}
-                                                    onClick={() => setZoomImage({ url: foto.datos_base64, description: foto.descripcion || '' })}
-                                                >
-                                                    <div className="photo-frame">
-                                                        <img
-                                                            src={foto.datos_base64}
-                                                            alt={foto.descripcion || `Evidencia ${foto.id}`}
-                                                            className="photo-img"
-                                                        />
-                                                    </div>
-                                                    {foto.descripcion && (
-                                                        <div className="photo-caption">
-                                                            {foto.descripcion}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
+                                <div className="space-y-1 relative z-10">
+                                    <span className="block text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Responsable</span>
+                                    <span className="flex items-center gap-2 text-[#1e293b] font-bold text-sm">
+                                        <i className="bi bi-person-check-fill text-blue-500"></i>
+                                        {selectedRegistro.verificado_por || selectedRegistro.usuario_nombre}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div className="modal-footer">
+                            {/* Connection status if applicable */}
+                            {selectedRegistro.es_offline && (
+                                <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center gap-3 animate-pulse">
+                                    <i className="bi bi-cloud-check-fill text-emerald-500 text-xl"></i>
+                                    <div>
+                                        <span className="block text-[10px] font-black text-emerald-700 uppercase tracking-widest">Registro Sincronizado</span>
+                                        <span className="text-xs font-semibold text-emerald-600 opacity-90">Capturado localmente y subido el {selectedRegistro.fecha_sincronizacion ? formatDate(selectedRegistro.fecha_sincronizacion) : 'N/A'}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Observations Section */}
+                            {selectedRegistro.observaciones_generales && (
+                                <div className="bg-amber-50/50 p-6 rounded-[2rem] border border-amber-100/50 relative">
+                                    <div className="absolute top-4 right-6 text-amber-200/50 text-4xl rotate-12">
+                                        <i className="bi bi-quote"></i>
+                                    </div>
+                                    <h4 className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 m-0">Observaciones Generales</h4>
+                                    <p className="text-sm font-semibold text-amber-900/80 italic leading-relaxed m-0">"{selectedRegistro.observaciones_generales}"</p>
+                                </div>
+                            )}
+
+                            {/* Controls Table Section */}
+                            {selectedRegistro.controles && selectedRegistro.controles.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-end">
+                                        <div className="flex items-center gap-2">
+                                            <i className="bi bi-activity text-blue-600"></i>
+                                            <h4 className="text-[10px] font-black text-[#1e293b] uppercase tracking-widest m-0">Parámetros de Control</h4>
+                                        </div>
+                                        <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase">Total: {selectedRegistro.controles.length}</span>
+                                    </div>
+                                    <div className="bg-white rounded-[2rem] border border-[#e2e8f0] overflow-hidden shadow-sm">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                                                    <tr>
+                                                        <th className="px-5 py-4 font-black text-[#64748b] uppercase tracking-widest">Variable</th>
+                                                        <th className="px-5 py-4 font-black text-[#64748b] uppercase tracking-widest">Rango Esperado</th>
+                                                        <th className="px-5 py-4 font-black text-[#64748b] uppercase tracking-widest">Valor Medido</th>
+                                                        <th className="px-5 py-4 font-black text-[#64748b] uppercase tracking-widest">Validación</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-[#f1f5f9]">
+                                                    {selectedRegistro.controles.map((control) => (
+                                                        <tr key={control.id} className="hover:bg-slate-50/80 transition-colors">
+                                                            <td className="px-5 py-4">
+                                                                <div className="font-bold text-[#1e293b] truncate max-w-[150px]">{control.parametro_nombre}</div>
+                                                                {control.observacion && <div className="text-[9px] text-slate-400 mt-0.5 line-clamp-1 italic">{control.observacion}</div>}
+                                                            </td>
+                                                            <td className="px-5 py-4 font-bold text-slate-500 font-mono tracking-tighter">{control.rango_completo}</td>
+                                                            <td className="px-5 py-4">
+                                                                <span className="bg-slate-100 text-slate-700 font-black px-3 py-1.5 rounded-lg text-sm shadow-inner">
+                                                                    {control.valor_control !== null ? control.valor_control : control.texto_control || '-'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-5 py-4">
+                                                                {(() => {
+                                                                    const isVacio = control.valor_control === null && !control.texto_control;
+                                                                    if (control.fuera_de_rango) return <span className="bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest inline-flex items-center gap-1"><i className="bi bi-x-circle-fill"></i> Fuera de Rango</span>;
+                                                                    if (isVacio && control.rango_completo) return <span className="bg-amber-50 text-amber-600 border border-amber-100 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest inline-flex items-center gap-1"><i className="bi bi-clock-fill"></i> Incompleto</span>;
+                                                                    return <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest inline-flex items-center gap-1"><i className="bi bi-check-circle-fill"></i> Correcto</span>;
+                                                                })()}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Photos Grid Section */}
+                            {selectedRegistro.fotos && selectedRegistro.fotos.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <i className="bi bi-camera-fill text-blue-600"></i>
+                                        <h4 className="text-[10px] font-black text-[#1e293b] uppercase tracking-widest m-0">Evidencias Fotográficas</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {selectedRegistro.fotos.map((foto) => (
+                                            <div
+                                                key={foto.id}
+                                                className="group relative bg-white border border-[#e2e8f0] rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-zoom-in"
+                                                onClick={() => setZoomImage({ url: foto.datos_base64, description: foto.descripcion || '' })}
+                                            >
+                                                <div className="aspect-square bg-slate-50 relative">
+                                                    <img
+                                                        src={foto.datos_base64}
+                                                        alt={foto.descripcion || `Evidencia ${foto.id}`}
+                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                        <i className="bi bi-plus-circle text-white text-3xl opacity-0 group-hover:opacity-100 transition-opacity scale-50 group-hover:scale-100 transition-transform"></i>
+                                                    </div>
+                                                </div>
+                                                {foto.descripcion && (
+                                                    <div className="p-3 bg-white/90 backdrop-blur-sm border-t border-[#f1f5f9]">
+                                                        <p className="text-[9px] font-bold text-slate-600 m-0 line-clamp-2 leading-tight text-center uppercase tracking-tight">{foto.descripcion}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 sm:p-8 bg-white border-t border-[#e2e8f0] flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0 rounded-b-[2.5rem]">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <i className="bi bi-clock"></i> Registro: {selectedRegistro.id}
+                            </div>
+                            <div className="flex gap-4 w-full sm:w-auto">
                                 <button
-                                    className="btn btn-success"
-                                    onClick={() => handleDownloadPDF(selectedRegistro)}
-                                    disabled={downloadingId === selectedRegistro.id}
-                                >
-                                    {downloadingId === selectedRegistro.id ? 'Generando...' : 'Descargar PDF Reporte'}
-                                </button>
-                                <button
-                                    className="btn btn-secondary"
+                                    className="flex-1 sm:flex-none px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.15em] bg-[#f8fafc] text-[#64748b] hover:bg-[#f1f5f9] transition-all border-0"
                                     onClick={() => setSelectedRegistro(null)}
                                 >
                                     Cerrar
                                 </button>
+                                <button
+                                    className="flex-1 sm:flex-none px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.15em] bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 border-0 active:scale-95"
+                                    onClick={() => handleDownloadPDF(selectedRegistro)}
+                                    disabled={downloadingId === selectedRegistro.id}
+                                >
+                                    {downloadingId === selectedRegistro.id ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                            Generando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-file-earmark-pdf-fill"></i>
+                                            Descargar Reporte
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {/* Password Verification Modal */}
             {
@@ -1813,223 +1788,32 @@ export default function RegistrosClient() {
             cursor: not-allowed;
         }
 
-        /* Modal Styles */
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2000;
-          padding: 1rem;
-        }
-
-        .modal-content {
-          background: white;
-          border-radius: 0.5rem;
-          width: 100%;
-          max-width: 900px;
-          max-height: 90vh;
-          overflow-y: auto;
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid #dee2e6;
-          flex-shrink: 0;
-        }
-
-        .modal-header h3 {
-          margin: 0;
-        }
-
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          color: #6c757d;
-        }
-
-        .modal-body {
-          padding: 1.5rem;
-        }
-
-        .modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 0.5rem;
-          padding: 1rem 1.5rem;
-          border-top: 1px solid #dee2e6;
-          flex-shrink: 0;
-        }
-
-        .detail-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .detail-item {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .detail-item strong {
-          color: #6c757d;
-          font-size: 0.875rem;
-        }
-
-        .observations {
-          margin-bottom: 1.5rem;
-          padding: 1rem;
-          background: #f8f9fa;
-          border-radius: 0.25rem;
-        }
-
-        .observations p {
-          margin: 0.5rem 0 0 0;
-        }
-
-        h4 {
-          margin: 1.5rem 0 1rem 0;
-          color: #333;
-        }
-
-        .photos-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-
-        .photo-card {
-          border: 1px solid #dee2e6;
-          border-radius: 0.5rem;
-          overflow: hidden;
-          background: white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-          transition: transform 0.2s;
-        }
-        
-        .photo-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .photo-frame {
-            height: 140px;
-            width: 100%;
-            background: #f8f9fa;
-            border-bottom: 1px solid #eee;
-        }
-
-        .photo-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .photo-caption {
-            padding: 0.75rem;
-            font-size: 0.85rem;
-            color: #495057;
-            background: white;
-            line-height: 1.4;
-        }
-
-
-        /* Lightbox CSS */
-        .zoom-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.9);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            cursor: zoom-out;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .zoom-content {
-            position: relative;
-            max-width: 95%;
-            max-height: 95%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .zoom-img {
-            max-width: 100%;
-            max-height: 85vh;
-            object-fit: contain;
-            border-radius: 4px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .zoom-caption {
-            color: white;
-            margin-top: 1.5rem;
-            background: rgba(0,0,0,0.5);
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            font-size: 1.1rem;
-            text-align: center;
-        }
-
-        .zoom-close {
-            position: absolute;
-            top: -40px;
-            right: 0;
-            color: white;
-            font-size: 2rem;
-            cursor: pointer;
-            background: none;
-            border: none;
-            line-height: 1;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes zoomIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
       `}</style>
 
-            {
-                zoomImage && (
-                    <div className="zoom-overlay" onClick={() => setZoomImage(null)}>
-                        <div className="zoom-content" onClick={e => e.stopPropagation()}>
-                            <button className="zoom-close" onClick={() => setZoomImage(null)}>&times;</button>
-                            <img src={zoomImage.url} alt="Zoom" className="zoom-img" />
-                            {zoomImage.description && (
-                                <div className="zoom-caption">{zoomImage.description}</div>
-                            )}
-                        </div>
+            {zoomImage && (
+                <div 
+                    className="fixed inset-0 z-[8000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl transition-all animate-in fade-in" 
+                    onClick={() => setZoomImage(null)}
+                >
+                    <div className="absolute top-6 right-6 flex gap-4">
+                        <button className="w-12 h-12 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-all border-0 backdrop-blur-md active:scale-90">
+                            <i className="bi bi-x-lg text-xl"></i>
+                        </button>
                     </div>
-                )
-            }
+                    <div className="relative max-w-full max-h-[85vh] group" onClick={e => e.stopPropagation()}>
+                        <img 
+                            src={zoomImage.url} 
+                            alt="Zoom" 
+                            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 border border-white/10" 
+                        />
+                        {zoomImage.description && (
+                            <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md text-white px-8 py-3 rounded-2xl font-bold border border-white/20 shadow-2xl text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[90vw]">
+                                {zoomImage.description}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </>
     );
 }
