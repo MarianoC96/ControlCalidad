@@ -701,7 +701,7 @@ export default function SolicitudesClient() {
                 }
 
                 .main-content {
-                    max-width: 900px;
+                    max-width: 1200px;
                     margin: 0 auto;
                     padding: 40px 20px;
                 }
@@ -1334,7 +1334,8 @@ export default function SolicitudesClient() {
                 }
 
                 /* Layout Toggles */
-                .desktop-table { display: block; }
+                .desktop-table { display: block; width: 100%; }
+                .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
                 .mobile-cards { display: none; }
 
                 /* Mobile Card Styles */

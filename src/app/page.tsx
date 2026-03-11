@@ -60,6 +60,7 @@ export default function LoginPage() {
             <div className="input-with-icon">
               <i className="bi bi-person"></i>
               <input
+                suppressHydrationWarning
                 type="text"
                 placeholder="Ingresa tu usuario"
                 required
@@ -75,6 +76,7 @@ export default function LoginPage() {
             <div className="input-with-icon">
               <i className="bi bi-lock"></i>
               <input
+                suppressHydrationWarning
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••"
                 required

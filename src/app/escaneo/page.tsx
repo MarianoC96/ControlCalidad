@@ -302,113 +302,146 @@ export default function EscaneoPage() {
 
             {/* --- VISTA 1: MENÚ DE MÓDULOS --- */}
             {!scanMode && (
-                <main className="flex-1 flex flex-col p-5 sm:p-8 items-center justify-center gap-6 animate-in fade-in zoom-in-95 duration-500 max-w-lg mx-auto w-full">
-                    <div className="text-center mb-4 sm:mb-8">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center mx-auto mb-6 border border-[#e2e8f0]">
-                            <i className="bi bi-command text-3xl sm:text-4xl text-[#005d31]"></i>
-                        </div>
-                        <h2 className="text-[#1e293b] text-2xl sm:text-3xl font-black uppercase tracking-tight m-0">Menú Principal</h2>
-                        <p className="text-[#94a3b8] text-xs sm:text-sm mt-3 font-medium uppercase tracking-[0.1em]">Configuración de Planta</p>
-                    </div>
+                <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+                    {/* Background Ambient Effects */}
+                    <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-[#e0f2fe]/60 to-transparent pointer-events-none"></div>
+                    <div className="absolute top-1/4 -left-20 w-72 h-72 bg-[#208754]/5 rounded-full blur-[80px] pointer-events-none"></div>
+                    <div className="absolute bottom-1/4 -right-20 w-72 h-72 bg-[#b5b74b]/10 rounded-full blur-[80px] pointer-events-none"></div>
 
-                    <button
-                        onClick={() => startScanner('producto')}
-                        className="w-full bg-[#ffffff] border border-[#e2e8f0] hover:border-[#208754]/50 p-5 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] flex items-center gap-5 sm:gap-6 group transition-all active:scale-95 shadow-xl shadow-slate-200/50"
-                    >
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#208754]/10 text-[#208754] flex items-center justify-center text-2xl sm:text-3xl group-hover:bg-[#208754] group-hover:text-white transition-all shadow-inner shrink-0">
-                            <i className="bi bi-upc-scan"></i>
-                        </div>
-                        <div className="text-left flex-1 min-w-0">
-                            <h3 className="text-[#1e293b] font-black text-lg sm:text-xl uppercase tracking-tight mb-0.5 truncate">Productos</h3>
-                            <p className="text-[9px] sm:text-[10px] text-[#64748b] font-bold tracking-widest uppercase">Escaneo de Lotes</p>
-                        </div>
-                        <i className="bi bi-chevron-right text-[#cbd5e1] group-hover:text-[#208754] group-hover:translate-x-1 transition-all text-sm sm:text-base"></i>
-                    </button>
-
-                    <button
-                        onClick={() => startScanner('caja')}
-                        className="w-full bg-[#ffffff] border border-[#e2e8f0] hover:border-[#b5b74b]/50 p-5 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] flex items-center gap-5 sm:gap-6 group transition-all active:scale-95 shadow-xl shadow-slate-200/50"
-                    >
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#b5b74b]/10 text-[#b5b74b] flex items-center justify-center text-2xl sm:text-3xl group-hover:bg-[#b5b74b] group-hover:text-white transition-all shadow-inner shrink-0">
-                            <i className="bi bi-box-seam"></i>
-                        </div>
-                        <div className="text-left flex-1 min-w-0">
-                            <h3 className="text-[#1e293b] font-black text-lg sm:text-xl uppercase tracking-tight mb-0.5 truncate">Cajas / Empaque</h3>
-                            <p className="text-[9px] sm:text-[10px] text-[#64748b] font-bold tracking-widest uppercase">Trazabilidad</p>
-                        </div>
-                        <i className="bi bi-chevron-right text-[#cbd5e1] group-hover:text-[#b5b74b] group-hover:translate-x-1 transition-all text-sm sm:text-base"></i>
-                    </button>
-
-                    {/* CRUD DE PRODUCTOS Y CAJAS */}
-                    <div className="w-full grid grid-cols-2 gap-4 mt-4">
-                        {canManageProducts ? (
-                            <button
-                                onClick={() => router.push('/escaneo/productos')}
-                                className="bg-[#ffffff]/80 border border-[#e2e8f0] hover:border-[#005d31]/30 p-5 rounded-[2rem] flex flex-col items-center gap-3 transition-all active:scale-95 text-center group"
-                            >
-                                <div className="w-12 h-12 rounded-2xl bg-[#f1f5f9] text-[#64748b] group-hover:text-[#208754] flex items-center justify-center text-xl transition-all">
-                                    <i className="bi bi-journal-check"></i>
+                    <main className="relative z-10 flex-1 flex flex-col p-5 sm:p-8 items-center justify-center gap-6 animate-in fade-in zoom-in-95 duration-700 max-w-lg mx-auto w-full">
+                        
+                        {/* Premium Header */}
+                        <div className="text-center mb-4 sm:mb-8">
+                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 group cursor-default">
+                                <div className="absolute inset-2 bg-gradient-to-tr from-[#208754] to-[#b5b74b] blur-xl opacity-40 group-hover:opacity-70 group-hover:scale-110 transition-all duration-500 rounded-full animate-pulse"></div>
+                                <div className="relative w-full h-full bg-white/90 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.08)] flex items-center justify-center border border-white backdrop-blur-xl transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_rgba(32,135,84,0.15)] overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-b from-white to-transparent opacity-80 h-1/2 rounded-t-[2rem] z-0"></div>
+                                    <div className="absolute inset-0 rounded-[2rem] shadow-[inset_0_0_20px_rgba(0,0,0,0.02)] border border-slate-100/50"></div>
+                                    <i className="bi bi-shield-check text-4xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-br from-[#005d31] to-[#208754] drop-shadow-sm relative z-10 transition-all duration-500 group-hover:scale-110 group-hover:drop-shadow-[0_5px_10px_rgba(0,93,49,0.3)]"></i>
                                 </div>
-                                <span className="text-[10px] text-[#94a3b8] font-black uppercase tracking-widest group-hover:text-[#1e293b]">Productos</span>
-                            </button>
-                        ) : (
-                            <button className="bg-[#ffffff]/50 border border-[#e2e8f0] p-5 rounded-[2rem] flex flex-col items-center gap-3 text-center opacity-50 cursor-not-allowed">
-                                <div className="w-12 h-12 rounded-2xl bg-[#f1f5f9] text-[#94a3b8] flex items-center justify-center text-xl">
-                                    <i className="bi bi-lock-fill"></i>
-                                </div>
-                                <span className="text-[10px] text-[#cbd5e1] font-black uppercase tracking-widest">Productos</span>
-                            </button>
-                        )}
+                            </div>
+                            <h2 className="text-[#1e293b] text-3xl sm:text-4xl font-black uppercase tracking-tight m-0 bg-clip-text text-transparent bg-gradient-to-r from-[#1e293b] to-[#475569]">Menú Principal</h2>
+                            <div className="inline-flex items-center gap-2 mt-3 bg-white/60 px-4 py-1.5 rounded-full border border-white/80 shadow-sm backdrop-blur-md">
+                                <span className="w-1.5 h-1.5 bg-[#208754] rounded-full animate-pulse"></span>
+                                <p className="text-[#64748b] text-[10px] sm:text-xs font-bold uppercase tracking-[0.15em] m-0">Planta El Olivar</p>
+                            </div>
+                        </div>
 
-                        {canManageBoxes ? (
+                        {/* Contenedor Principal de Escáneres */}
+                        <div className="w-full space-y-4 relative">
                             <button
-                                onClick={() => router.push('/escaneo/cajas')}
-                                className="bg-[#ffffff]/80 border border-[#e2e8f0] hover:border-[#969836]/30 p-5 rounded-[2rem] flex flex-col items-center gap-3 transition-all active:scale-95 text-center group"
+                                onClick={() => startScanner('producto')}
+                                className="w-full bg-white/80 backdrop-blur-xl border border-white hover:border-[#208754]/30 p-5 sm:p-6 rounded-[2rem] flex items-center gap-5 sm:gap-6 group transition-all duration-300 active:scale-95 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(32,135,84,0.15)] cursor-pointer overflow-hidden relative"
                             >
-                                <div className="w-12 h-12 rounded-2xl bg-[#f1f5f9] text-[#64748b] group-hover:text-[#b5b74b] flex items-center justify-center text-xl transition-all">
-                                    <i className="bi bi-archive-fill"></i>
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"></div>
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#208754]/10 to-[#208754]/5 border border-[#208754]/10 text-[#208754] flex items-center justify-center text-2xl sm:text-3xl group-hover:bg-[#208754] group-hover:text-white transition-all duration-300 shadow-inner shrink-0 relative z-10">
+                                    <i className="bi bi-upc-scan"></i>
                                 </div>
-                                <span className="text-[10px] text-[#94a3b8] font-black uppercase tracking-widest group-hover:text-[#1e293b]">Cajas</span>
-                            </button>
-                        ) : (
-                            <button className="bg-[#ffffff]/50 border border-[#e2e8f0] p-5 rounded-[2rem] flex flex-col items-center gap-3 text-center opacity-50 cursor-not-allowed">
-                                <div className="w-12 h-12 rounded-2xl bg-[#f1f5f9] text-[#94a3b8] flex items-center justify-center text-xl">
-                                    <i className="bi bi-lock-fill"></i>
+                                <div className="text-left flex-1 min-w-0 relative z-10">
+                                    <h3 className="text-[#1e293b] font-black text-lg sm:text-xl uppercase tracking-tight mb-0.5 truncate group-hover:text-[#005d31] transition-colors">Productos</h3>
+                                    <p className="text-[10px] sm:text-[11px] text-[#64748b] font-bold tracking-widest uppercase">Escaneo de Lotes</p>
                                 </div>
-                                <span className="text-[10px] text-[#cbd5e1] font-black uppercase tracking-widest">Cajas</span>
+                                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-[#208754]/10 transition-colors shrink-0">
+                                    <i className="bi bi-chevron-right text-[#cbd5e1] group-hover:text-[#208754] group-hover:translate-x-0.5 transition-all text-sm"></i>
+                                </div>
                             </button>
-                        )}
-                    </div>
 
-                    {/* BOTONES SECUNDARIOS */}
-                    <div className="w-full flex flex-col gap-2 mt-2">
-                        <button
-                            onClick={() => router.push('/escaneo/temporal')}
-                            className="w-full py-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 font-bold text-xs uppercase tracking-[0.3em] hover:text-amber-700 hover:border-amber-300 transition-all flex items-center justify-center gap-3 shadow-sm"
-                        >
-                            <i className="bi bi-cloud-slash"></i>
-                            Sincronización Temporal
-                        </button>
+                            <button
+                                onClick={() => startScanner('caja')}
+                                className="w-full bg-white/80 backdrop-blur-xl border border-white hover:border-[#b5b74b]/30 p-5 sm:p-6 rounded-[2rem] flex items-center gap-5 sm:gap-6 group transition-all duration-300 active:scale-95 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(181,183,75,0.15)] cursor-pointer overflow-hidden relative"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"></div>
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#b5b74b]/10 to-[#b5b74b]/5 border border-[#b5b74b]/10 text-[#b5b74b] flex items-center justify-center text-2xl sm:text-3xl group-hover:bg-[#b5b74b] group-hover:text-white transition-all duration-300 shadow-inner shrink-0 relative z-10">
+                                    <i className="bi bi-box-seam"></i>
+                                </div>
+                                <div className="text-left flex-1 min-w-0 relative z-10">
+                                    <h3 className="text-[#1e293b] font-black text-lg sm:text-xl uppercase tracking-tight mb-0.5 truncate group-hover:text-[#7b7c2b] transition-colors">Cajas / Empaque</h3>
+                                    <p className="text-[10px] sm:text-[11px] text-[#64748b] font-bold tracking-widest uppercase">Trazabilidad Web</p>
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-[#b5b74b]/10 transition-colors shrink-0">
+                                    <i className="bi bi-chevron-right text-[#cbd5e1] group-hover:text-[#b5b74b] group-hover:translate-x-0.5 transition-all text-sm"></i>
+                                </div>
+                            </button>
+                        </div>
 
-                        {canViewHistory ? (
+                        {/* CRUD DE PRODUCTOS Y CAJAS */}
+                        <div className="w-full relative mt-4">
+                            <div className="absolute inset-0 bg-gradient-to-b from-slate-100/50 to-transparent rounded-[2.5rem] -z-10"></div>
+                            <div className="grid grid-cols-2 gap-4 p-2">
+                                {canManageProducts ? (
+                                    <button
+                                        onClick={() => router.push('/escaneo/productos')}
+                                        className="bg-white/60 backdrop-blur-sm border border-white hover:border-[#005d31]/20 p-5 rounded-[1.5rem] flex flex-col items-center gap-3 transition-all duration-300 active:scale-95 text-center group cursor-pointer shadow-sm hover:shadow-md hover:bg-white"
+                                    >
+                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 text-[#64748b] border border-slate-200/50 group-hover:text-[#208754] group-hover:border-[#208754]/20 group-hover:bg-[#208754]/5 flex items-center justify-center text-xl transition-all">
+                                            <i className="bi bi-journal-check"></i>
+                                        </div>
+                                        <span className="text-[10px] text-[#64748b] font-black uppercase tracking-widest group-hover:text-[#1e293b] transition-colors">Maestro Prod.</span>
+                                    </button>
+                                ) : (
+                                    <button className="bg-slate-50/50 border border-slate-100 p-5 rounded-[1.5rem] flex flex-col items-center gap-3 text-center opacity-60 cursor-not-allowed">
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-100/80 text-[#94a3b8] flex items-center justify-center text-xl">
+                                            <i className="bi bi-lock-fill"></i>
+                                        </div>
+                                        <span className="text-[10px] text-[#94a3b8] font-black uppercase tracking-widest">Maestro Prod.</span>
+                                    </button>
+                                )}
+
+                                {canManageBoxes ? (
+                                    <button
+                                        onClick={() => router.push('/escaneo/cajas')}
+                                        className="bg-white/60 backdrop-blur-sm border border-white hover:border-[#969836]/20 p-5 rounded-[1.5rem] flex flex-col items-center gap-3 transition-all duration-300 active:scale-95 text-center group cursor-pointer shadow-sm hover:shadow-md hover:bg-white"
+                                    >
+                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 text-[#64748b] border border-slate-200/50 group-hover:text-[#b5b74b] group-hover:border-[#b5b74b]/20 group-hover:bg-[#b5b74b]/5 flex items-center justify-center text-xl transition-all">
+                                            <i className="bi bi-archive-fill"></i>
+                                        </div>
+                                        <span className="text-[10px] text-[#64748b] font-black uppercase tracking-widest group-hover:text-[#1e293b] transition-colors">Maestro Cajas</span>
+                                    </button>
+                                ) : (
+                                    <button className="bg-slate-50/50 border border-slate-100 p-5 rounded-[1.5rem] flex flex-col items-center gap-3 text-center opacity-60 cursor-not-allowed">
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-100/80 text-[#94a3b8] flex items-center justify-center text-xl">
+                                            <i className="bi bi-lock-fill"></i>
+                                        </div>
+                                        <span className="text-[10px] text-[#94a3b8] font-black uppercase tracking-widest">Maestro Cajas</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* BOTONES SECUNDARIOS */}
+                        <div className="w-full flex flex-col gap-3 mt-4">
                             <button
-                                onClick={() => router.push('/escaneo/historial')}
-                                className="w-full py-4 rounded-2xl bg-[#f8fafc] border border-[#cbd5e1] text-[#64748b] font-bold text-xs uppercase tracking-[0.3em] hover:text-[#1e293b] hover:border-white/30 transition-all flex items-center justify-center gap-3"
+                                onClick={() => router.push('/escaneo/temporal')}
+                                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50/30 border border-amber-200/60 text-amber-700 font-bold text-[11px] sm:text-xs uppercase tracking-[0.2em] hover:text-amber-800 hover:border-amber-300 hover:shadow-[0_4px_15px_rgba(251,191,36,0.15)] transition-all flex items-center justify-center gap-3 cursor-pointer"
                             >
-                                <i className="bi bi-clock-history"></i>
-                                Ver Historial de Escaneos
+                                <span className="relative flex h-2 w-2 mr-1">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                </span>
+                                <i className="bi bi-cloud-slash text-sm"></i>
+                                Sincronización Temporal
                             </button>
-                        ) : (
-                            <button
-                                disabled
-                                className="w-full py-4 rounded-2xl bg-[#f8fafc] border border-transparent text-[#cbd5e1] font-bold text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-3 opacity-50 cursor-not-allowed"
-                            >
-                                <i className="bi bi-lock-fill"></i>
-                                Historial Bloqueado
-                            </button>
-                        )}
-                    </div>
-                </main>
+
+                            {canViewHistory ? (
+                                <button
+                                    onClick={() => router.push('/escaneo/historial')}
+                                    className="w-full py-4 rounded-2xl bg-white/50 backdrop-blur-md border border-slate-200 text-[#475569] font-bold text-[11px] sm:text-xs uppercase tracking-[0.2em] hover:text-[#1e293b] hover:bg-white hover:border-slate-300 hover:shadow-sm transition-all flex items-center justify-center gap-3 cursor-pointer"
+                                >
+                                    <i className="bi bi-clock-history text-sm"></i>
+                                    Registro de Historial
+                                </button>
+                            ) : (
+                                <button
+                                    disabled
+                                    className="w-full py-4 rounded-2xl bg-slate-50/50 border border-slate-100 text-slate-400 font-bold text-[11px] sm:text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 cursor-not-allowed"
+                                >
+                                    <i className="bi bi-lock-fill text-sm"></i>
+                                    Historial Bloqueado
+                                </button>
+                            )}
+                        </div>
+                    </main>
+                </div>
             )}
 
 
@@ -515,6 +548,9 @@ export default function EscaneoPage() {
             <style jsx>{`
                 @keyframes scan-neon { 0%, 100% { top: 0; opacity: 0; } 10%, 90% { opacity: 1; } 50% { top: 100%; opacity: 1; } }
                 .animate-scan-neon { animation: scan-neon 3s infinite ease-in-out; }
+                @keyframes shimmer {
+                    100% { transform: translateX(100%); }
+                }
             `}</style>
         </div>
     );

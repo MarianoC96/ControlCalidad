@@ -258,14 +258,14 @@ export default function HistorialPage() {
                     <div className="flex bg-[#f1f5f9] p-1.5 rounded-2xl w-full sm:w-auto">
                         <button
                             onClick={() => setActiveTab('productos')}
-                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'productos' ? 'bg-white text-[#1e293b] shadow-sm' : 'text-[#64748b] hover:text-[#1e293b]'
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === 'productos' ? 'bg-white text-[#1e293b] shadow-sm' : 'text-[#64748b] hover:text-[#1e293b]'
                                 }`}
                         >
                             Productos
                         </button>
                         <button
                             onClick={() => setActiveTab('cajas')}
-                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'cajas' ? 'bg-white text-[#1e293b] shadow-sm' : 'text-[#64748b] hover:text-[#1e293b]'
+                            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${activeTab === 'cajas' ? 'bg-white text-[#1e293b] shadow-sm' : 'text-[#64748b] hover:text-[#1e293b]'
                                 }`}
                         >
                             Cajas
@@ -297,9 +297,17 @@ export default function HistorialPage() {
                 </div>
 
                 {/* Status Bar */}
-                <div className="flex items-center justify-between text-xs text-[#94a3b8] font-bold uppercase tracking-widest px-2">
-                    <span>{filteredList.length} Resultados encontrados</span>
-                    {dateFilter && <button onClick={() => setDateFilter('')} className="text-red-400 hover:text-red-300">Limpiar Fecha</button>}
+                <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-[#94a3b8] font-bold uppercase tracking-widest px-2 gap-3 mb-2">
+                    <span className="bg-white/50 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">{filteredList.length} Resultados</span>
+                    {dateFilter && (
+                        <button 
+                            onClick={() => setDateFilter('')} 
+                            className="group flex items-center gap-2 bg-red-50/50 hover:bg-red-50 border border-red-100/50 hover:border-red-200 text-red-500 hover:text-red-600 px-4 py-1.5 rounded-xl transition-all duration-300 cursor-pointer shadow-sm"
+                        >
+                            <i className="bi bi-calendar-x text-sm group-hover:scale-110 transition-transform duration-300"></i>
+                            <span className="font-medium text-[13px]">Borrar filtro de fecha</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Table/List Container */}
