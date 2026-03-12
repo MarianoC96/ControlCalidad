@@ -11,7 +11,7 @@ const PUBLIC_PATHS = ['/', '/olvide-password', '/restablecer-password', '/dashbo
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isPublicPage = PUBLIC_PATHS.includes(pathname);
-    const isScannerPath = pathname.startsWith('/escaneo');
+    const isScannerPath = pathname.startsWith('/escaner-codigos');
 
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');

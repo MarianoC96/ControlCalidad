@@ -23,21 +23,49 @@ export default function HistorialPage() {
             const { data, error } = await BarcodeRepository.getHistory(activeTab);
             if (error) throw error;
 
-            const mappedData = data.map((item: any) => ({
-                id: item.id,
-                barcode: item.barcode,
-                lote: item.lote,
-                fecha: item.created_at,
-                nombre: activeTab === 'productos' ? item.productos_barcode?.presentacion : item.cajas_barcode?.tipo_caja,
-                tipo: activeTab === 'productos' ? item.productos_barcode?.presentacion : item.cajas_barcode?.tipo_caja,
-                operador: item.usuarios?.nombre_completo || 'Sistema',
-                edit_started_at: item.edit_started_at,
-                edit_expires_at: item.edit_expires_at,
-            }));
+            const mappedData = data.map((item: any) => {
+                const isProd = activeTab === 'productos';
+                const snapshot = isProd ? item.metadata_producto : item.metadata_caja;
+                const master = isProd ? item.productos_barcode : item.cajas_barcode;
+
+                // Priority: Snapshot > Master > ID/Barcode (fallback)
+                const nombreVal = snapshot
+                    ? (isProd ? snapshot.presentacion : snapshot.tipo_caja)
+                    : (isProd ? master?.presentacion : master?.tipo_caja);
+
+                const unitsVal = snapshot
+                    ? (isProd ? snapshot.unidades : snapshot.capacidad_max)
+                    : (isProd ? master?.unidades_por_caja : master?.capacidad_max);
+
+                return {
+                    id: item.id,
+                    barcode: item.barcode,
+                    lote: item.lote,
+                    fecha: item.created_at,
+                    nombre: nombreVal || 'Desconocido',
+                    tipo: nombreVal || 'Desconocido',
+                    operador: item.usuarios?.nombre_completo || 'Sistema',
+                    edit_started_at: item.edit_started_at,
+                    edit_expires_at: item.edit_expires_at,
+                    // Reconstruct masterData from snapshot if available for the detail modal
+                    masterData: snapshot ? {
+                        ...master,
+                        presentacion: snapshot.presentacion,
+                        tipo_caja: snapshot.tipo_caja,
+                        unidades_por_caja: snapshot.unidades,
+                        capacidad_max: snapshot.capacidad_max,
+                        vida_util: snapshot.vida_util,
+                        registro_sanitario: snapshot.registro_sanitario
+                    } : master,
+                    hasSnapshot: !!snapshot
+                };
+            });
 
             setHistorialList(mappedData);
-        } catch (error) {
-            console.error("Error fetching historial", error);
+        } catch (error: any) {
+            console.error("Error fetching historial full object:", error);
+            const errorMsg = error.message || error.details || (typeof error === 'object' ? JSON.stringify(error) : String(error));
+            alert(`Error consultando historial: ${errorMsg}`);
         } finally {
             setIsLoading(false);
         }
@@ -72,6 +100,10 @@ export default function HistorialPage() {
     const [requestMotivo, setRequestMotivo] = useState('');
     const [requestRecordId, setRequestRecordId] = useState<number | null>(null);
     const [isRequesting, setIsRequesting] = useState(false);
+
+    // Detail Modal State
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
+    const [viewingRecord, setViewingRecord] = useState<any>(null);
 
     // Audit History State
     const [editHistory, setEditHistory] = useState<any[]>([]);
@@ -124,7 +156,7 @@ export default function HistorialPage() {
 
     const executeEditLock = async (record: any, password: string) => {
         try {
-            const res = await fetch('/api/escaneo/historial/lock', {
+            const res = await fetch('/api/escaner-codigos/historial/lock', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -153,7 +185,7 @@ export default function HistorialPage() {
 
             // FETCH HISTORY IN PARALLEL
             const [histRes] = await Promise.all([
-                fetch(`/api/escaneo/historial/history?id=${record.id}&mode=${activeTab}`).then(r => r.ok ? r.json() : [])
+                fetch(`/api/escaner-codigos/historial/history?id=${record.id}&mode=${activeTab}`).then(r => r.ok ? r.json() : [])
             ]);
 
             setEditHistory(histRes);
@@ -170,7 +202,7 @@ export default function HistorialPage() {
         if (!requestRecordId) return;
         setIsRequesting(true);
         try {
-            const reqRes = await fetch('/api/escaneo/historial/request-edit', {
+            const reqRes = await fetch('/api/escaner-codigos/historial/request-edit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -196,7 +228,7 @@ export default function HistorialPage() {
     const handleCancelEdit = async () => {
         if (editingRecord) {
             try {
-                await fetch('/api/escaneo/historial/unlock', {
+                await fetch('/api/escaner-codigos/historial/unlock', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ historial_id: editingRecord.id, scan_mode: activeTab })
@@ -213,7 +245,7 @@ export default function HistorialPage() {
         if (!editingRecord || !editLoteValue.trim()) return;
         setIsSaving(true);
         try {
-            const res = await fetch('/api/escaneo/historial/edit', {
+            const res = await fetch('/api/escaner-codigos/historial/edit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -245,7 +277,7 @@ export default function HistorialPage() {
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-[#e2e8f0] pb-8">
                     <div>
-                        <div className="flex items-center gap-3 mb-2 cursor-pointer group" onClick={() => router.push('/escaneo')}>
+                        <div className="flex items-center gap-3 mb-2 cursor-pointer group" onClick={() => router.push('/escaner-codigos')}>
                             <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#64748b] group-hover:text-blue-500 transition-colors border border-[#e2e8f0]">
                                 <i className="bi bi-arrow-left"></i>
                             </div>
@@ -300,8 +332,8 @@ export default function HistorialPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-[#94a3b8] font-bold uppercase tracking-widest px-2 gap-3 mb-2">
                     <span className="bg-white/50 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">{filteredList.length} Resultados</span>
                     {dateFilter && (
-                        <button 
-                            onClick={() => setDateFilter('')} 
+                        <button
+                            onClick={() => setDateFilter('')}
                             className="group flex items-center gap-2 bg-red-50/50 hover:bg-red-50 border border-red-100/50 hover:border-red-200 text-red-500 hover:text-red-600 px-4 py-1.5 rounded-xl transition-all duration-300 cursor-pointer shadow-sm"
                         >
                             <i className="bi bi-calendar-x text-sm group-hover:scale-110 transition-transform duration-300"></i>
@@ -337,14 +369,26 @@ export default function HistorialPage() {
                                         {/* Lote */}
                                         <div className="flex items-center gap-4 w-full min-w-0">
                                             <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 border transition-all ${activeTab === 'productos'
-                                                    ? 'bg-green-50 text-[#208754] border-green-100 group-hover:bg-[#208754] group-hover:text-white'
-                                                    : 'bg-amber-50 text-amber-600 border-amber-100 group-hover:bg-amber-500 group-hover:text-white'
+                                                ? 'bg-green-50 text-[#208754] border-green-100 group-hover:bg-[#208754] group-hover:text-white'
+                                                : 'bg-amber-50 text-amber-600 border-amber-100 group-hover:bg-amber-500 group-hover:text-white'
                                                 }`}>
                                                 <i className={`bi ${activeTab === 'productos' ? 'bi-shield-check' : 'bi-truck'}`}></i>
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="text-[#1e293b] font-black text-base sm:text-lg truncate m-0 leading-tight uppercase tracking-wider">{item.lote}</h3>
-                                                <p className="text-[10px] font-mono font-bold text-[#94a3b8] mt-1 uppercase tracking-widest line-clamp-1">{item.nombre || item.tipo}</p>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-[9px] font-black bg-slate-800 text-white px-2 py-0.5 rounded border border-slate-700 uppercase tracking-widest">
+                                                        {activeTab === 'productos' ? 'MAR' : 'FEB'}{String(item.id).padStart(4, '0')}
+                                                    </span>
+                                                    <h3 className="text-[#1e293b] font-black text-base sm:text-lg truncate m-0 leading-tight uppercase tracking-wider">{item.lote}</h3>
+                                                    {item.hasSnapshot && (
+                                                        <span className="bg-blue-50 text-blue-600 text-[8px] px-1.5 py-0.5 rounded-md font-black border border-blue-100 flex items-center gap-1" title="Datos Inmutables">
+                                                            <i className="bi bi-shield-lock-fill"></i>
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] font-mono font-bold text-[#94a3b8] uppercase tracking-widest line-clamp-1">
+                                                    {item.nombre || item.tipo}
+                                                </p>
                                             </div>
                                         </div>
 
@@ -368,7 +412,15 @@ export default function HistorialPage() {
                                         </div>
 
                                         {/* Acción */}
-                                        <div className="flex items-center justify-end w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-[#f1f5f9]">
+                                        <div className="flex items-center justify-end w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-[#f1f5f9] gap-2">
+                                            <button
+                                                onClick={() => { setViewingRecord(item); setDetailModalOpen(true); }}
+                                                className="flex-1 md:flex-none h-11 px-6 md:px-0 md:w-11 rounded-xl bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-100 flex items-center justify-center shadow-sm gap-2"
+                                                title="Ver Detalles"
+                                            >
+                                                <i className="bi bi-eye-fill text-lg"></i>
+                                                <span className="md:hidden font-bold text-sm uppercase">Ver Detalles</span>
+                                            </button>
                                             <button
                                                 onClick={() => handleEditClick(item)}
                                                 className="flex-1 md:flex-none h-11 px-6 md:px-0 md:w-11 rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition-all border border-orange-100 flex items-center justify-center shadow-sm gap-2"
@@ -477,14 +529,59 @@ export default function HistorialPage() {
                         </div>
 
                         <div className="p-5 sm:p-6 overflow-y-auto flex-grow custom-scrollbar space-y-6">
-                            {/* Record Info */}
-                            <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm flex items-center gap-4">
-                                <div className="p-3 bg-slate-100 rounded-xl text-slate-500">
-                                    <i className="bi bi-box-seam text-xl"></i>
+                            {/* Record Info & Tech Specs */}
+                            <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-sm space-y-4">
+                                <div className="flex items-center gap-4 border-b border-slate-50 pb-4">
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 ${activeTab === 'productos' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                        <i className={`bi ${activeTab === 'productos' ? 'bi-box-seam' : 'bi-truck'}`}></i>
+                                    </div>
+                                    <div>
+                                        <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest leading-none mb-1">Caja / Presentación</span>
+                                        <span className="text-[#1e293b] font-black text-lg">{editingRecord.nombre || editingRecord.tipo}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest leading-none mb-1">Caja / Presentación</span>
-                                    <span className="text-[#1e293b] font-black">{editingRecord.nombre || editingRecord.tipo}</span>
+
+                                <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                        <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Código de Barras Maestro</span>
+                                        <div className="flex items-center gap-2 text-[#1e293b] font-mono font-bold text-xs tracking-widest">
+                                            <i className="bi bi-upc-scan text-slate-400"></i>
+                                            {editingRecord.barcode}
+                                        </div>
+                                    </div>
+                                    {activeTab === 'productos' ? (
+                                        <>
+                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                                <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Vida Útil</span>
+                                                <div className="flex items-center gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-calendar-check text-green-500"></i>
+                                                    {editingRecord.masterData?.vida_util || 'N/A'}
+                                                </div>
+                                            </div>
+                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                                <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Reg. Sanitario</span>
+                                                <div className="flex items-center gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-shield-check text-blue-500"></i>
+                                                    {editingRecord.masterData?.registro_sanitario || 'N/A'}
+                                                </div>
+                                            </div>
+                                            <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                                <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Unidades por Caja</span>
+                                                <div className="flex items-center gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-layers text-slate-400"></i>
+                                                    {editingRecord.masterData?.unidades_por_caja} Unidades
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Capacidad Máxima</span>
+                                            <div className="flex items-center gap-2 text-[#1e293b] font-bold text-xs">
+                                                <i className="bi bi-plus-circle text-amber-500"></i>
+                                                {editingRecord.masterData?.capacidad_max} Unidades
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -621,6 +718,116 @@ export default function HistorialPage() {
                         <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end rounded-b-3xl">
                             <button onClick={() => setSelectedHistoryDetail(null)} className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#1e293b] text-white hover:bg-[#334155] transition-colors border-0">
                                 Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 4. Product Detail Modal */}
+            {detailModalOpen && viewingRecord && (
+                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0f172a]/90 backdrop-blur-md" onClick={() => setDetailModalOpen(false)}></div>
+                    <div className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-lg" style={{ zIndex: 10 }}>
+                        <div className="p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] rounded-t-3xl">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0 ${activeTab === 'productos' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+                                    <i className={`bi ${activeTab === 'productos' ? 'bi-box-seam' : 'bi-truck'}`}></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-[#1e293b] uppercase tracking-tighter m-0">Detalles Técnicos</h3>
+                                    <p className="text-[#64748b] text-[10px] font-bold uppercase tracking-widest mt-1 m-0">Información Maestra del {activeTab === 'productos' ? 'Producto' : 'Empaque'}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setDetailModalOpen(false)} className="w-10 h-10 rounded-full bg-[#f8fafc] text-[#64748b] hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors border-0">
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Product Header */}
+                            <div className="text-center pb-2">
+                                <div className="mb-2 flex flex-col items-center gap-2">
+                                    <span className="text-[10px] font-black bg-slate-800 text-white px-3 py-1 rounded-lg uppercase tracking-[0.2em] shadow-sm">
+                                        ID Historial: {activeTab === 'productos' ? 'MAR' : 'FEB'}{String(viewingRecord.id).padStart(4, '0')}
+                                    </span>
+                                    {viewingRecord.hasSnapshot && (
+                                        <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100 uppercase tracking-widest flex items-center gap-1">
+                                            <i className="bi bi-camera-fill"></i> Snapshot Histórico
+                                        </span>
+                                    )}
+                                </div>
+                                <h2 className="text-2xl font-black text-[#1e293b] uppercase tracking-tight mb-1">{viewingRecord.nombre || viewingRecord.tipo}</h2>
+                                <div className="inline-flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                                    <span className="text-[10px] font-black text-[#64748b] uppercase tracking-widest">Lote:</span>
+                                    <span className="text-xs font-black text-[#1e293b] uppercase tracking-wider">{viewingRecord.lote}</span>
+                                </div>
+                            </div>
+
+                            {/* Tech Specs Grid */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2">
+                                    <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Código de Barras</span>
+                                    <div className="flex items-center gap-2 text-[#1e293b] font-mono font-bold tracking-widest">
+                                        <i className="bi bi-upc-scan text-slate-400"></i>
+                                        {viewingRecord.barcode}
+                                    </div>
+                                </div>
+                                {activeTab === 'productos' ? (
+                                    <>
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm">
+                                            <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Vida Útil</span>
+                                            <div className="flex items-center gap-2 text-[#1e293b] font-black">
+                                                <i className="bi bi-calendar-check text-green-500"></i>
+                                                {viewingRecord.masterData?.vida_util || 'N/A'}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm">
+                                            <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Reg. Sanitario</span>
+                                            <div className="flex items-center gap-2 text-[#1e293b] font-black">
+                                                <i className="bi bi-shield-check text-blue-500"></i>
+                                                {viewingRecord.masterData?.registro_sanitario || 'N/A'}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2">
+                                            <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Configuración Empaque</span>
+                                            <div className="flex items-center gap-2 text-[#1e293b] font-black text-sm">
+                                                <i className="bi bi-layers text-slate-400"></i>
+                                                {viewingRecord.masterData?.unidades_por_caja} Unid. por caja
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2">
+                                            <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Capacidad Máxima</span>
+                                            <div className="flex items-center gap-2 text-[#1e293b] font-black">
+                                                <i className="bi bi-plus-circle text-amber-500"></i>
+                                                {viewingRecord.masterData?.capacidad_max} Unidades
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Scan Info */}
+                            <div className="bg-slate-100/50 p-4 rounded-2xl border border-slate-200">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Operador</span>
+                                        <span className="text-xs font-bold text-[#475569]">{viewingRecord.operador}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Escaneado el</span>
+                                        <span className="text-xs font-bold text-[#475569]">{new Date(viewingRecord.fecha).toLocaleString('es-PE')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-5 bg-white border-t border-[#e2e8f0] flex justify-end rounded-b-3xl">
+                            <button onClick={() => setDetailModalOpen(false)} className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm bg-[#1e293b] text-white hover:bg-slate-700 transition-all shadow-lg shadow-slate-200 border-0">
+                                Cerrar Vista
                             </button>
                         </div>
                     </div>

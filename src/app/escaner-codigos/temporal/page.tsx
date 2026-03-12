@@ -64,12 +64,30 @@ export default function TemporalScannerPage() {
 
         for (let i = 0; i < pendingScans.length; i++) {
             const scan = pendingScans[i];
-            
+
             try {
+                // REHIDRATACIÓN: Intentar buscar la info real del producto antes de subir
+                const { data: masterData } = await BarcodeRepository.findByBarcode(scan.barcode, scan.mode);
+
+                let metadataToSave: any = {
+                    presentacion: scan.presentacion || 'Escaneo sin conexión (Offline)',
+                    unidades: '0'
+                };
+
+                if (masterData) {
+                    metadataToSave = {
+                        presentacion: scan.mode === 'producto' ? masterData.presentacion : masterData.tipo_caja,
+                        unidades: String(scan.mode === 'producto' ? masterData.unidades_por_caja : masterData.capacidad_max),
+                        vida_util: masterData.vida_util,
+                        registro_sanitario: masterData.registro_sanitario
+                    };
+                }
+
                 const { error } = await BarcodeRepository.saveTransaction({
                     barcode: scan.barcode,
                     lote: scan.lote,
-                    usuario_id: scan.usuario_id
+                    usuario_id: scan.usuario_id,
+                    metadata: metadataToSave
                 }, scan.mode);
 
                 if (error) throw error;
@@ -104,10 +122,28 @@ export default function TemporalScannerPage() {
 
         setIsSyncing(true);
         try {
+            // REHIDRATACIÓN: Intentar buscar la info real del producto antes de subir
+            const { data: masterData } = await BarcodeRepository.findByBarcode(scan.barcode, scan.mode);
+
+            let metadataToSave: any = {
+                presentacion: scan.presentacion || 'Escaneo sin conexión (Offline)',
+                unidades: '0'
+            };
+
+            if (masterData) {
+                metadataToSave = {
+                    presentacion: scan.mode === 'producto' ? masterData.presentacion : masterData.tipo_caja,
+                    unidades: String(scan.mode === 'producto' ? masterData.unidades_por_caja : masterData.capacidad_max),
+                    vida_util: masterData.vida_util,
+                    registro_sanitario: masterData.registro_sanitario
+                };
+            }
+
             const { error } = await BarcodeRepository.saveTransaction({
                 barcode: scan.barcode,
                 lote: scan.lote,
-                usuario_id: scan.usuario_id
+                usuario_id: scan.usuario_id,
+                metadata: metadataToSave
             }, scan.mode);
 
             if (error) throw error;
@@ -126,10 +162,10 @@ export default function TemporalScannerPage() {
     return (
         <div className="min-h-screen bg-[#f8fafc] p-6 lg:pl-[--sidebar-width] transition-all pb-24">
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-                 {/* Header Section */}
+                {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-[#e2e8f0] pb-8">
                     <div>
-                        <div className="flex items-center gap-3 mb-2 cursor-pointer group" onClick={() => router.push('/escaneo')}>
+                        <div className="flex items-center gap-3 mb-2 cursor-pointer group" onClick={() => router.push('/escaner-codigos')}>
                             <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#64748b] group-hover:text-amber-500 transition-colors border border-[#e2e8f0]">
                                 <i className="bi bi-arrow-left"></i>
                             </div>
@@ -142,11 +178,10 @@ export default function TemporalScannerPage() {
                     <button
                         onClick={handleSyncAll}
                         disabled={isSyncing || pendingScans.length === 0}
-                        className={`w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 shrink-0 ${
-                            isSyncing || pendingScans.length === 0
+                        className={`w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 shrink-0 ${isSyncing || pendingScans.length === 0
                             ? 'bg-[#f1f5f9] text-[#cbd5e1] cursor-not-allowed shadow-none'
                             : 'bg-amber-500 hover:bg-amber-400 text-white shadow-amber-500/20'
-                        }`}
+                            }`}
                     >
                         {isSyncing ? (
                             <>
@@ -178,14 +213,13 @@ export default function TemporalScannerPage() {
                         <div className="divide-y divide-[#f1f5f9]">
                             {pendingScans.map(scan => (
                                 <div key={scan.id} className="flex flex-col md:grid md:grid-cols-[2fr_1.5fr_1fr] gap-5 p-5 sm:p-6 hover:bg-[#f8fafc] transition-colors items-center group">
-                                    
+
                                     {/* Info Principal */}
                                     <div className="flex items-center gap-4 w-full min-w-0">
-                                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 border transition-all ${
-                                            scan.mode === 'producto' 
-                                            ? 'bg-green-50 text-[#208754] border-green-100 group-hover:bg-[#208754] group-hover:text-white' 
+                                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 border transition-all ${scan.mode === 'producto'
+                                            ? 'bg-green-50 text-[#208754] border-green-100 group-hover:bg-[#208754] group-hover:text-white'
                                             : 'bg-amber-50 text-amber-600 border-amber-100 group-hover:bg-amber-500 group-hover:text-white'
-                                        }`}>
+                                            }`}>
                                             <i className={`bi ${scan.mode === 'producto' ? 'bi-upc-scan' : 'bi-box-seam'}`}></i>
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -211,8 +245,8 @@ export default function TemporalScannerPage() {
 
                                     {/* Acciones */}
                                     <div className="flex items-center justify-end gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-[#f1f5f9]">
-                                        <button 
-                                            onClick={() => handleSyncSingle(scan)} 
+                                        <button
+                                            onClick={() => handleSyncSingle(scan)}
                                             disabled={isSyncing}
                                             className="flex-1 md:flex-none h-11 w-11 rounded-xl bg-green-50 text-[#208754] hover:bg-[#208754] hover:text-white transition-all border border-green-100 flex items-center justify-center shadow-sm"
                                             title="Sincronizar ahora"
@@ -220,8 +254,8 @@ export default function TemporalScannerPage() {
                                             <i className="bi bi-cloud-arrow-up-fill text-lg"></i>
                                             <span className="md:hidden ml-2 font-bold text-sm uppercase">Subir</span>
                                         </button>
-                                        <button 
-                                            onClick={() => handleDelete(scan.id)} 
+                                        <button
+                                            onClick={() => handleDelete(scan.id)}
                                             disabled={isSyncing}
                                             className="flex-1 md:flex-none h-11 w-11 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-100 flex items-center justify-center shadow-sm"
                                             title="Eliminar"

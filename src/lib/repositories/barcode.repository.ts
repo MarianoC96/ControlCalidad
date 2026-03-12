@@ -19,6 +19,7 @@ export interface BarcodeTransaction {
     barcode: string;
     lote: string;
     usuario_id: number | null;
+    metadata?: any;
 }
 
 /**
@@ -37,6 +38,7 @@ export const BarcodeRepository = {
             .from(table)
             .select('*')
             .eq('barcode', barcode)
+            .eq('is_active', true)
             .single();
     },
 
@@ -46,10 +48,18 @@ export const BarcodeRepository = {
     async saveTransaction(transaction: BarcodeTransaction, mode: 'producto' | 'caja'): Promise<PostgrestSingleResponse<null>> {
         const supabase = createClient();
         const table = mode === 'producto' ? 'historial_escaneos_productos' : 'historial_escaneos_cajas';
+        const metadataField = mode === 'producto' ? 'metadata_producto' : 'metadata_caja';
+
+        const payload = {
+            barcode: transaction.barcode,
+            lote: transaction.lote,
+            usuario_id: transaction.usuario_id,
+            [metadataField]: transaction.metadata
+        };
 
         return await supabase
             .from(table)
-            .insert(transaction);
+            .insert(payload);
     },
 
     /**
@@ -60,7 +70,7 @@ export const BarcodeRepository = {
 
         return await supabase
             .from('productos_barcode')
-            .insert(product);
+            .upsert({ ...product, is_active: true });
     },
 
     /**
@@ -83,7 +93,7 @@ export const BarcodeRepository = {
 
         return await supabase
             .from('productos_barcode')
-            .delete()
+            .update({ is_active: false } as any)
             .eq('barcode', barcode);
     },
 
@@ -96,6 +106,7 @@ export const BarcodeRepository = {
         return await supabase
             .from('productos_barcode')
             .select('*')
+            .eq('is_active', true)
             .order('created_at', { ascending: false });
     },
 
@@ -107,7 +118,7 @@ export const BarcodeRepository = {
 
         return await supabase
             .from('cajas_barcode')
-            .insert(caja);
+            .upsert({ ...caja, is_active: true });
     },
 
     /**
@@ -130,7 +141,7 @@ export const BarcodeRepository = {
 
         return await supabase
             .from('cajas_barcode')
-            .delete()
+            .update({ is_active: false } as any)
             .eq('barcode', barcode);
     },
 
@@ -143,6 +154,7 @@ export const BarcodeRepository = {
         return await supabase
             .from('cajas_barcode')
             .select('*')
+            .eq('is_active', true)
             .order('created_at', { ascending: false });
     },
 
@@ -153,7 +165,7 @@ export const BarcodeRepository = {
         const supabase = createClient();
         const table = mode === 'productos' ? 'historial_escaneos_productos' : 'historial_escaneos_cajas';
         const masterTable = mode === 'productos' ? 'productos_barcode' : 'cajas_barcode';
-        const masterField = mode === 'productos' ? 'presentacion' : 'tipo_caja';
+        const metadataColumn = mode === 'productos' ? 'metadata_producto' : 'metadata_caja';
 
         return await supabase
             .from(table)
@@ -165,8 +177,9 @@ export const BarcodeRepository = {
                 edit_started_at,
                 edit_expires_at,
                 edit_started_by,
+                ${metadataColumn},
                 usuarios!usuario_id(nombre_completo),
-                ${masterTable}(${masterField})
+                ${masterTable}(*)
             `)
             .order('created_at', { ascending: false });
     }

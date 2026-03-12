@@ -70,7 +70,7 @@ export default function DashboardGateway() {
 
                 {/* Card 2: Escaneo de Códigos */}
                 {hasEscaneo && (
-                    <Link href="/escaneo" className="group">
+                    <Link href="/escaner-codigos/escaner" className="group">
                         <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">
                             {/* Background Image with Overlay */}
                             <div
