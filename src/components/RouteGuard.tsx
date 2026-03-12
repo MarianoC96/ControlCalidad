@@ -5,17 +5,17 @@ import { useRouter, usePathname } from 'next/navigation';
 
 // Map URL paths to module keys
 const PATH_TO_MODULE: Record<string, string> = {
-    '/registro-productos': 'registro-productos',
-    '/historial': 'historial',
-    '/historial-descargas': 'historial-descargas',
+    '/control-calidad/registro-productos': 'registro-productos',
+    '/control-calidad/historial': 'historial',
+    '/control-calidad/historial-descargas': 'historial-descargas',
     '/solicitudes': 'solicitudes',
     '/escaneo/solicitudes': 'solicitudes',
-    '/productos': 'productos',
+    '/control-calidad/productos': 'productos',
     '/parametros-maestros': 'parametros-maestros',
     '/usuarios': 'usuarios',
     '/admin/config-pdf': 'admin/config-pdf',
     '/accesos': 'accesos',
-    '/temporal': 'temporal',
+    '/control-calidad/temporal': 'temporal',
 };
 
 interface RouteGuardProps {

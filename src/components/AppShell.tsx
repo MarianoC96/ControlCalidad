@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Navbar';
 import ScannerSidebar from '@/components/ScannerSidebar';
+import SystemSidebar from '@/components/SystemSidebar';
 import { useState, useEffect } from 'react';
 
 // Pages that should NOT show the sidebar
@@ -12,6 +13,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isPublicPage = PUBLIC_PATHS.includes(pathname);
     const isScannerPath = pathname.startsWith('/escaner-codigos');
+    const isSystemPath = pathname.startsWith('/control-sistema') || pathname.startsWith('/solicitudes');
 
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
@@ -58,6 +60,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <>
             {isScannerPath ? (
                 <ScannerSidebar userName={userName} userRole={userRole} />
+            ) : isSystemPath ? (
+                <SystemSidebar userName={userName} userRole={userRole} />
             ) : (
                 <Sidebar userName={userName} userRole={userRole} />
             )}

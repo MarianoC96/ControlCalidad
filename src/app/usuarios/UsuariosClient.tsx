@@ -67,7 +67,7 @@ export default function UsuariosClient() {
         const user = await response.json();
         setUserName(user.nombre_completo);
         setUserRole(user.roles);
-        if (user.roles !== 'administrador') router.push('/registro-productos');
+        if (user.roles !== 'administrador') router.push('/control-calidad/registro-productos');
     };
 
     const loadUsuarios = async () => {
