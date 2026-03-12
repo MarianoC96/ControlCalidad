@@ -157,7 +157,7 @@ export default function SolicitudesClient() {
         setUserName(user.nombre_completo);
         setUserRole(user.roles);
         if (user.roles !== 'administrador' && !user.hasSolicitudesPermission) {
-            router.push('/historial');
+            router.push('/control-calidad/historial');
         }
 
     };

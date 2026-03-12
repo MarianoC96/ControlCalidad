@@ -121,7 +121,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
 
   const navLinks = [
     {
-      href: '/registro-productos',
+      href: '/control-calidad/registro-productos',
       label: 'Registrar',
       moduleKey: 'registro-productos',
       icon: (
@@ -129,7 +129,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       ),
     },
     {
-      href: '/historial',
+      href: '/control-calidad/historial',
       label: 'Historial',
       moduleKey: 'historial',
       icon: (
@@ -137,7 +137,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       ),
     },
     {
-      href: '/registros-modificados',
+      href: '/control-calidad/registros-modificados',
       label: 'Registros Modificados',
       moduleKey: 'registros-modificados',
       icon: (
@@ -145,7 +145,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       ),
     },
     {
-      href: '/historial-descargas',
+      href: '/control-calidad/historial-descargas',
       label: 'Historial de descargas masivas',
       moduleKey: 'historial-descargas',
       icon: (
@@ -161,7 +161,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       ),
     },
     {
-      href: '/productos',
+      href: '/control-calidad/productos',
       label: 'Productos',
       moduleKey: 'productos',
       icon: (
@@ -201,7 +201,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
       ),
     },
     {
-      href: '/temporal',
+      href: '/control-calidad/temporal',
       label: 'Temporal',
       moduleKey: 'temporal',
       icon: (
@@ -242,7 +242,7 @@ export default function Sidebar({ userName, userRole, onLogout }: NavbarProps) {
     <>
       {/* Mobile Header Toggle */}
       <div className="mobile-header">
-        <Link href="/registro-productos" className="mobile-brand">Control Calidad - El Olivar</Link>
+        <Link href="/control-calidad/registro-productos" className="mobile-brand">Control Calidad - El Olivar</Link>
         <button className="mobile-toggle" onClick={toggleMobile} aria-label="Abrir menú">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>

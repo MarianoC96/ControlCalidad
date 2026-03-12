@@ -7,7 +7,8 @@ import { useState, useEffect } from 'react';
 export default function DashboardGateway() {
     const router = useRouter();
     const [hasEscaneo, setHasEscaneo] = useState(false);
-
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [pendingSolicitudes, setPendingSolicitudes] = useState(0);
     useEffect(() => {
         const fetchPermissions = async () => {
             try {
@@ -17,31 +18,95 @@ export default function DashboardGateway() {
                     if (data.roles === 'administrador' || data.permiso_escaneo) {
                         setHasEscaneo(true);
                     }
+                    if (data.roles === 'administrador') {
+                        setIsAdmin(true);
+                    }
                 }
             } catch (err) {
                 console.error("Error fetching permissions", err);
             }
         };
+
+        const fetchPendingSolicitudes = async () => {
+            try {
+                const res = await fetch('/api/admin/pending-counts');
+                if (res.ok) {
+                    const data = await res.json();
+                    setPendingSolicitudes(data.pendingSolicitudes || 0);
+                }
+            } catch (err) {
+                console.error("Error fetching pending requests", err);
+            }
+        };
+
         fetchPermissions();
+        fetchPendingSolicitudes();
     }, []);
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--primary-400)_0%,_transparent_25%),_radial-gradient(circle_at_bottom_left,_var(--accent-400)_0%,_transparent_25%)]">
             {/* Header Section */}
-            <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-700 relative w-full max-w-5xl">
+                {/* Solicitudes Floating Badge for Dashboard */}
+                {isAdmin && pendingSolicitudes > 0 && (
+                    <Link href="/solicitudes" className="absolute top-0 right-4 group">
+                        <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-red-100 p-3 pr-5 flex items-center gap-3 hover:bg-red-50 hover:border-red-200 transition-all cursor-pointer transform hover:-translate-y-1">
+                            <div className="relative">
+                                <i className="bi bi-bell-fill text-red-500 text-xl animate-pulse"></i>
+                                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
+                                    {pendingSolicitudes}
+                                </span>
+                            </div>
+                            <div className="text-left flex flex-col">
+                                <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Solicitudes</span>
+                                <span className="text-sm text-red-700 font-bold leading-tight">Pendientes</span>
+                            </div>
+                        </div>
+                    </Link>
+                )}
+
                 <h1 className="text-4xl font-bold text-slate-900 mb-4 tracking-tight">
                     Bienvenido al <span className="text-primary">Centro de Operaciones</span>
                 </h1>
-                <p className="text-lg text-slate-600 max-w-2xl">
+                <p className="text-lg text-slate-600 max-w-2xl mx-auto">
                     Selecciona el módulo con el que deseas trabajar hoy. Tu sesión está activa y protegida.
                 </p>
             </div>
 
             {/* Gateway Cards Container */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl px-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl px-4">
 
-                {/* Card 1: Control de Calidad */}
-                <Link href="/registro-productos" className="group">
+                {/* Card 1: Control de Sistema (Solo Admins) */}
+                {isAdmin && (
+                    <Link href="/control-sistema" className="group">
+                        <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">
+                            {/* Background Image with Overlay */}
+                            <div
+                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 bg-slate-800"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-[#58623f] px-2 via-[#7b7c2b]/80 to-[#1e293b]/90 opacity-90 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="absolute inset-0 flex flex-col justify-end p-8">
+                                <div className="bg-[#969836]/30 backdrop-blur-md w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-white/20 group-hover:bg-[#969836]/50 transition-colors">
+                                    <i className="bi bi-cpu text-white text-3xl"></i>
+                                </div>
+                                <h2 className="text-3xl font-bold text-white mb-3">Control de Sistema</h2>
+                                <p className="text-slate-200 text-lg opacity-90 group-hover:opacity-100 transition-opacity">
+                                    Administración centralizada de usuarios, parámetros operativos y registros de auditoría.
+                                </p>
+
+                                <div className="mt-6 flex items-center text-[#b5b74b] font-semibold text-lg group-hover:translate-x-2 transition-transform">
+                                    Gestionar sistema <i className="bi bi-arrow-right ml-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
+                )}
+
+                {/* Card 2: Control de Calidad */}
+                <Link href="/control-calidad/registro-productos" className="group">
                     <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">
                         {/* Background Image with Overlay */}
                         <div
@@ -68,7 +133,7 @@ export default function DashboardGateway() {
                     </div>
                 </Link>
 
-                {/* Card 2: Escaneo de Códigos */}
+                {/* Card 3: Escaneo de Códigos */}
                 {hasEscaneo && (
                     <Link href="/escaneo" className="group">
                         <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">

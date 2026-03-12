@@ -57,7 +57,7 @@ export function useAuth(options: UseAuthOptions = {}): AuthState {
             const isAdmin = user.roles === 'administrador';
 
             if (requireAdmin && !isAdmin) {
-                router.push('/registro-productos');
+                router.push('/control-calidad/registro-productos');
                 return;
             }
 

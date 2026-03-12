@@ -35,7 +35,7 @@ export default function ConfigPdfClient() {
         setUserRole(user.roles);
 
         if (user.roles !== 'administrador') {
-            router.push('/registro-productos');
+            router.push('/control-calidad/registro-productos');
         }
     };
 
