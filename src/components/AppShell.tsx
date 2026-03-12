@@ -13,7 +13,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isPublicPage = PUBLIC_PATHS.includes(pathname);
     const isScannerPath = pathname.startsWith('/escaner-codigos');
-    const isSystemPath = pathname.startsWith('/control-sistema') || pathname.startsWith('/solicitudes');
+    const isSystemPath = pathname.startsWith('/control-sistema') || pathname.startsWith('/control-sistema/centro-solicitudes');
 
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');

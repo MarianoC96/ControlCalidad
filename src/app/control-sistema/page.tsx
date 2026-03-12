@@ -76,7 +76,7 @@ export default function ControlSistemaGateway() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
                     
                     {/* Usuarios */}
-                    <Link href="/usuarios" className="group">
+                    <Link href="/control-sistema/gestion-usuarios" className="group">
                         <div className="h-full bg-white border border-slate-200 rounded-3xl p-6 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(32,135,84,0.15)] hover:border-[#208754]/30 transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#208754]/10 to-[#208754]/5 border border-[#208754]/10 text-[#208754] flex items-center justify-center text-2xl group-hover:bg-[#208754] group-hover:text-white transition-all duration-300 shadow-inner">
                                 <i className="bi bi-people-fill"></i>
@@ -93,26 +93,9 @@ export default function ControlSistemaGateway() {
                         </div>
                     </Link>
 
-                    {/* Parámetros Maestros */}
-                    <Link href="/parametros-maestros" className="group">
-                        <div className="h-full bg-white border border-slate-200 rounded-3xl p-6 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(181,183,75,0.15)] hover:border-[#b5b74b]/30 transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#b5b74b]/10 to-[#b5b74b]/5 border border-[#b5b74b]/10 text-[#b5b74b] flex items-center justify-center text-2xl group-hover:bg-[#b5b74b] group-hover:text-white transition-all duration-300 shadow-inner">
-                                <i className="bi bi-sliders"></i>
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-1 group-hover:text-[#7b7c2b] transition-colors">Parámetros Maestros</h3>
-                                <p className="text-sm text-slate-500 leading-relaxed">
-                                    Configura presentaciones, líneas de producto y unidades de medida.
-                                </p>
-                            </div>
-                            <div className="mt-auto pt-4 flex items-center text-[#b5b74b] font-semibold text-sm group-hover:translate-x-2 transition-transform">
-                                <span className="uppercase tracking-wider text-[11px] font-bold">Ingresar</span> <i className="bi bi-arrow-right ml-2 text-lg leading-none"></i>
-                            </div>
-                        </div>
-                    </Link>
 
                     {/* Solicitudes */}
-                    <Link href="/solicitudes" className="group">
+                    <Link href="/control-sistema/centro-solicitudes" className="group">
                         <div className="h-full bg-white border border-slate-200 rounded-3xl p-6 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(239,68,68,0.15)] hover:border-red-500/30 transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/10 text-red-500 flex items-center justify-center text-2xl group-hover:bg-red-500 group-hover:text-white transition-all duration-300 shadow-inner">
                                 <i className="bi bi-inboxes-fill"></i>
@@ -130,7 +113,7 @@ export default function ControlSistemaGateway() {
                     </Link>
 
                     {/* Accesos a Sistema */}
-                    <Link href="/accesos" className="group">
+                    <Link href="/control-sistema/auditoria-accesos" className="group">
                         <div className="h-full bg-white border border-slate-200 rounded-3xl p-6 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(14,165,233,0.15)] hover:border-sky-500/30 transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500/10 to-sky-500/5 border border-sky-500/10 text-sky-500 flex items-center justify-center text-2xl group-hover:bg-sky-500 group-hover:text-white transition-all duration-300 shadow-inner">
                                 <i className="bi bi-shield-lock-fill"></i>
@@ -148,7 +131,7 @@ export default function ControlSistemaGateway() {
                     </Link>
 
                     {/* Edición de PDF (Settings) */}
-                    <Link href="/admin/config-pdf" className="group">
+                    <Link href="/control-sistema/config-reporte" className="group">
                         <div className="h-full bg-white border border-slate-200 rounded-3xl p-6 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(139,92,246,0.15)] hover:border-purple-500/30 transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/10 text-purple-500 flex items-center justify-center text-2xl group-hover:bg-purple-500 group-hover:text-white transition-all duration-300 shadow-inner">
                                 <i className="bi bi-file-earmark-pdf-fill"></i>

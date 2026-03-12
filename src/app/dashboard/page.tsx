@@ -49,7 +49,7 @@ export default function DashboardGateway() {
             <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-700 relative w-full max-w-5xl">
                 {/* Solicitudes Floating Badge for Dashboard */}
                 {isAdmin && pendingSolicitudes > 0 && (
-                    <Link href="/solicitudes" className="absolute top-0 right-4 group">
+                    <Link href="/control-sistema/centro-solicitudes" className="absolute top-0 right-4 group">
                         <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-red-100 p-3 pr-5 flex items-center gap-3 hover:bg-red-50 hover:border-red-200 transition-all cursor-pointer transform hover:-translate-y-1">
                             <div className="relative">
                                 <i className="bi bi-bell-fill text-red-500 text-xl animate-pulse"></i>

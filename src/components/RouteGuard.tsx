@@ -8,13 +8,13 @@ const PATH_TO_MODULE: Record<string, string> = {
     '/control-calidad/registro-productos': 'registro-productos',
     '/control-calidad/historial': 'historial',
     '/control-calidad/historial-descargas': 'historial-descargas',
-    '/solicitudes': 'solicitudes',
+    '/control-sistema/centro-solicitudes': 'solicitudes',
     '/escaneo/solicitudes': 'solicitudes',
     '/control-calidad/productos': 'productos',
     '/parametros-maestros': 'parametros-maestros',
-    '/usuarios': 'usuarios',
-    '/admin/config-pdf': 'admin/config-pdf',
-    '/accesos': 'accesos',
+    '/control-sistema/gestion-usuarios': 'usuarios',
+    '/control-sistema/config-reporte': 'admin/config-pdf',
+    '/control-sistema/auditoria-accesos': 'accesos',
     '/control-calidad/temporal': 'temporal',
 };
 
