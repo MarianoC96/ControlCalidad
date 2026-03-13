@@ -29,7 +29,9 @@ const MODULE_LABELS: Record<string, string> = {
     'usuarios': 'Usuarios',
     'admin/config-pdf': 'Edición de PDF',
     'accesos': 'Accesos a Sistema',
-    'escaneo': 'Escaneo de Códigos (Principal)',
+    'control-sistema': 'Control del Sistema (Padre)',
+    'control-calidad': 'Control de Calidad (Padre)',
+    'escaneo': 'Escaneo de Códigos (Padre)',
     'escaneo-productos': 'Sección: Agregar Productos',
     'escaneo-cajas': 'Sección: Agregar Cajas',
     'escaneo-historial': 'Historial Logístico',
@@ -103,19 +105,45 @@ export default function AccesosClient() {
         }
 
         // Parent/Child Cascade Logic
-        if (moduleKey === 'escaneo' && !nextState) {
-            ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'].forEach(child => {
+        const systemChildren = ['usuarios', 'admin/config-pdf', 'accesos'];
+        const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros'];
+        const scannerChildren = ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'];
+
+        // If disabling a parent, disable all children
+        if (moduleKey === 'control-sistema' && !nextState) {
+            systemChildren.forEach(child => {
                 const cIdx = newPermisos.findIndex(p => p.modulo_key === child);
                 if (cIdx >= 0) newPermisos[cIdx].habilitado = false;
             });
         }
-        if (moduleKey.startsWith('escaneo-') && nextState) {
+        if (moduleKey === 'control-calidad' && !nextState) {
+            qualityChildren.forEach(child => {
+                const cIdx = newPermisos.findIndex(p => p.modulo_key === child);
+                if (cIdx >= 0) newPermisos[cIdx].habilitado = false;
+            });
+        }
+        if (moduleKey === 'escaneo' && !nextState) {
+            scannerChildren.forEach(child => {
+                const cIdx = newPermisos.findIndex(p => p.modulo_key === child);
+                if (cIdx >= 0) newPermisos[cIdx].habilitado = false;
+            });
+        }
+
+        // If enabling a child, enable the parent
+        if (systemChildren.includes(moduleKey) && nextState) {
+            const pIdx = newPermisos.findIndex(p => p.modulo_key === 'control-sistema');
+            if (pIdx >= 0) newPermisos[pIdx].habilitado = true;
+            else newPermisos.push({ id: Date.now() + 1, role_id: selectedRole.id, modulo_key: 'control-sistema', habilitado: true });
+        }
+        if (qualityChildren.includes(moduleKey) && nextState) {
+            const pIdx = newPermisos.findIndex(p => p.modulo_key === 'control-calidad');
+            if (pIdx >= 0) newPermisos[pIdx].habilitado = true;
+            else newPermisos.push({ id: Date.now() + 2, role_id: selectedRole.id, modulo_key: 'control-calidad', habilitado: true });
+        }
+        if (scannerChildren.includes(moduleKey) && nextState) {
             const pIdx = newPermisos.findIndex(p => p.modulo_key === 'escaneo');
-            if (pIdx >= 0) {
-                newPermisos[pIdx].habilitado = true;
-            } else {
-                newPermisos.push({ id: Date.now() + 1, role_id: selectedRole.id, modulo_key: 'escaneo', habilitado: true });
-            }
+            if (pIdx >= 0) newPermisos[pIdx].habilitado = true;
+            else newPermisos.push({ id: Date.now() + 3, role_id: selectedRole.id, modulo_key: 'escaneo', habilitado: true });
         }
 
         setSelectedRole({ ...selectedRole, permisos: newPermisos });
@@ -159,12 +187,20 @@ export default function AccesosClient() {
             const nextState = !prev.includes(mod);
             let nextPerms = nextState ? [...prev, mod] : prev.filter(p => p !== mod);
 
-            if (mod === 'escaneo' && !nextState) {
-                nextPerms = nextPerms.filter(p => !p.startsWith('escaneo-'));
-            }
-            if (mod.startsWith('escaneo-') && nextState) {
-                if (!nextPerms.includes('escaneo')) nextPerms.push('escaneo');
-            }
+            const systemChildren = ['usuarios', 'admin/config-pdf', 'accesos'];
+            const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros'];
+            const scannerChildren = ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'];
+
+            // Parent Disable => Child Disable
+            if (mod === 'control-sistema' && !nextState) nextPerms = nextPerms.filter(p => !systemChildren.includes(p));
+            if (mod === 'control-calidad' && !nextState) nextPerms = nextPerms.filter(p => !qualityChildren.includes(p));
+            if (mod === 'escaneo' && !nextState) nextPerms = nextPerms.filter(p => !scannerChildren.includes(p));
+
+            // Child Enable => Parent Enable
+            if (systemChildren.includes(mod) && nextState && !nextPerms.includes('control-sistema')) nextPerms.push('control-sistema');
+            if (qualityChildren.includes(mod) && nextState && !nextPerms.includes('control-calidad')) nextPerms.push('control-calidad');
+            if (scannerChildren.includes(mod) && nextState && !nextPerms.includes('escaneo')) nextPerms.push('escaneo');
+
             return nextPerms;
         });
     }, []);
@@ -394,129 +430,175 @@ export default function AccesosClient() {
                                         </div>
                                     )}
 
-                                    <div className="modules-grid-main">
-                                        {modules.filter(m => !m.startsWith('escaneo')).map(mod => {
-                                            const perm = selectedRole.permisos.find(p => p.modulo_key === mod);
-                                            const isEnabled = perm?.habilitado ?? false;
-                                            const isLocked = selectedRole.is_system || (mod === 'accesos' && !isSadmin);
+                                    {/* Módulos Agrupados por Padres */}
+                                    <div className="space-y-8 p-6">
+                                        {[
+                                            {
+                                                id: 'control-sistema',
+                                                label: 'Control del Sistema',
+                                                icon: 'bi-cpu-fill',
+                                                color: 'indigo',
+                                                children: ['usuarios', 'accesos', 'admin/config-pdf']
+                                            },
+                                            {
+                                                id: 'control-calidad',
+                                                label: 'Control de Calidad',
+                                                icon: 'bi-check-all',
+                                                color: 'emerald',
+                                                children: ['registro-productos', 'historial', 'productos', 'parametros-maestros']
+                                            },
+                                            {
+                                                id: 'escaneo',
+                                                label: 'Escaneo de Códigos',
+                                                icon: 'bi-upc-scan',
+                                                color: 'blue',
+                                                children: ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial']
+                                            }
+                                        ].map(parent => {
+                                            const parentPerm = selectedRole.permisos.find(p => p.modulo_key === parent.id);
+                                            const parentEnabled = parentPerm?.habilitado ?? false;
+                                            const parentLocked = selectedRole.is_system;
+
+                                            // Static color mapping to ensure Tailwind classes are generated
+                                            const colorMap: Record<string, any> = {
+                                                indigo: {
+                                                    bgLight: 'bg-indigo-50',
+                                                    bgMain: 'bg-indigo-600',
+                                                    bgMuted: 'bg-indigo-100',
+                                                    border: 'border-indigo-300',
+                                                    text: 'text-indigo-600',
+                                                    textMain: 'text-indigo-900',
+                                                    toggle: 'bg-indigo-600'
+                                                },
+                                                emerald: {
+                                                    bgLight: 'bg-emerald-50',
+                                                    bgMain: 'bg-emerald-600',
+                                                    bgMuted: 'bg-emerald-100',
+                                                    border: 'border-emerald-300',
+                                                    text: 'text-emerald-600',
+                                                    textMain: 'text-emerald-900',
+                                                    toggle: 'bg-emerald-600'
+                                                },
+                                                blue: {
+                                                    bgLight: 'bg-blue-50',
+                                                    bgMain: 'bg-blue-600',
+                                                    bgMuted: 'bg-blue-100',
+                                                    border: 'border-blue-300',
+                                                    text: 'text-blue-600',
+                                                    textMain: 'text-blue-900',
+                                                    toggle: 'bg-blue-600'
+                                                }
+                                            };
+
+                                            const colors = colorMap[parent.color] || colorMap.indigo;
+
                                             return (
-                                                <div
-                                                    key={mod}
-                                                    className={`main-module-card ${isEnabled ? 'enabled' : ''} ${isLocked ? 'locked' : ''}`}
-                                                    onClick={() => !isLocked && handleTogglePermission(mod)}
-                                                >
-                                                    <div className="main-module-icon">
-                                                        {isEnabled ? (
-                                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                        ) : (
-                                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                                        )}
-                                                    </div>
-                                                    <div className="main-module-info">
-                                                        <span className="main-module-name">{MODULE_LABELS[mod] || mod}</span>
-                                                        <span className="main-module-status">{isEnabled ? 'Habilitado' : 'Deshabilitado'}</span>
-                                                    </div>
-                                                    <div className="main-module-action">
-                                                        {isLocked ? (
-                                                            <svg className="lock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                        ) : (
-                                                            <div className={`toggle-switch ${isEnabled ? 'on' : ''}`}>
-                                                                <div className="toggle-thumb" />
+                                                <div key={parent.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm relative">
+                                                    {/* Parent Header */}
+                                                    <div className={`p-5 flex items-center justify-between transition-colors ${parentEnabled ? colors.bgLight : 'bg-slate-50'}`}>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner ${parentEnabled ? `${colors.bgMain} text-white` : 'bg-slate-200 text-slate-400'}`}>
+                                                                <i className={`bi ${parent.icon}`}></i>
                                                             </div>
-                                                        )}
+                                                            <div className="flex flex-col">
+                                                                <h4 className="text-sm font-black text-[#1e293b] uppercase tracking-tight m-0">{parent.label}</h4>
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest m-0">{parentEnabled ? 'Grupo Activo' : 'Grupo Bloqueado'}</p>
+                                                                    {parent.id === 'control-sistema' && (
+                                                                        <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase ring-1 ring-amber-200">
+                                                                            <i className="bi bi-person-fill-lock"></i> Solo Admin
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            {!parentLocked ? (
+                                                                <div 
+                                                                    className={`w-14 h-7 rounded-full relative cursor-pointer transition-all duration-300 ${parentEnabled ? colors.toggle : 'bg-slate-300'}`}
+                                                                    onClick={() => handleTogglePermission(parent.id)}
+                                                                >
+                                                                    <div className={`absolute top-1 bottom-1 w-5 bg-white rounded-full transition-all duration-300 shadow-sm ${parentEnabled ? 'right-1' : 'left-1'}`}></div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-amber-100 text-amber-700 text-[10px] font-black px-3 py-1 rounded-full uppercase italic">Sistema</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Special Notice for Control Sistema */}
+                                                    {parent.id === 'control-sistema' && parentEnabled && (
+                                                        <div className="bg-indigo-600/5 px-6 py-2 border-b border-indigo-100 flex items-center gap-2">
+                                                            <i className="bi bi-info-circle-fill text-indigo-500 text-xs text-xs"></i>
+                                                            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">Acceso restringido únicamente a usuarios con rol ADMINISTRADOR.</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Children Grid */}
+                                                    <div className={`p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 transition-all ${parentEnabled ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
+                                                        {parent.children.map(child => {
+                                                            const childPerm = selectedRole.permisos.find(p => p.modulo_key === child);
+                                                            const childEnabled = childPerm?.habilitado ?? false;
+                                                            return (
+                                                                <div 
+                                                                    key={child}
+                                                                    onClick={() => !parentLocked && parentEnabled && handleTogglePermission(child)}
+                                                                    className={`p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${childEnabled ? `bg-white ${colors.border} shadow-md transform -translate-y-0.5` : 'bg-slate-50 border-slate-100 hover:border-slate-200'}`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${childEnabled ? `${colors.bgMuted} ${colors.text}` : 'bg-white text-slate-300 border border-slate-100'}`}>
+                                                                            {childEnabled ? <i className="bi bi-check-lg"></i> : <i className="bi bi-dash"></i>}
+                                                                        </div>
+                                                                        <span className={`text-xs font-bold leading-none ${childEnabled ? 'text-slate-900' : 'text-slate-500'}`}>
+                                                                            {MODULE_LABELS[child]?.replace('Sección: ', '') || child}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={`w-8 h-4 rounded-full relative transition-colors ${childEnabled ? colors.bgMain : 'bg-slate-200'}`}>
+                                                                        <div className={`absolute top-0.5 bottom-0.5 w-3 bg-white rounded-full transition-all ${childEnabled ? 'right-0.5' : 'left-0.5'}`}></div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             );
                                         })}
-                                    </div>
 
-                                    {/* Módulo Logístico: Sección Enorme */}
-                                    <div className="logistics-section-wrapper">
-                                        <div className="logistics-header-bar">
-                                            <h3>
-                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="inline mr-2 -translate-y-0.5 text-blue-500"><path d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zM9 16V8M13 16V8M17 12h-8" /></svg>
-                                                Permisos: Escaneo de Códigos y Módulos Logísticos
-                                            </h3>
-                                        </div>
-                                        <div className="logistics-content-area">
-                                            {/* PADRE */}
-                                            {(() => {
-                                                const mod = 'escaneo';
-                                                const perm = selectedRole.permisos.find(p => p.modulo_key === mod);
-                                                const isEnabled = perm?.habilitado ?? false;
-                                                const isLocked = selectedRole.is_system;
-                                                return (
-                                                    <div
-                                                        key={mod}
-                                                        className={`main-module-card logi-parent ${isEnabled ? 'enabled' : ''} ${isLocked ? 'locked' : ''}`}
-                                                        onClick={() => !isLocked && handleTogglePermission(mod)}
-                                                        style={isEnabled ? { borderColor: '#3b82f6', background: '#eff6ff', boxShadow: '0 4px 15px -3px rgba(59,130,246,0.1)' } : {}}
-                                                    >
-                                                        <div className="main-module-icon" style={isEnabled ? { background: '#dbeafe', color: '#3b82f6' } : {}}>
-                                                            {isEnabled ? (
-                                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                            ) : (
-                                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                                            )}
-                                                        </div>
-                                                        <div className="main-module-info">
-                                                            <span className="main-module-name">{MODULE_LABELS[mod]}</span>
-                                                            <span className="main-module-status" style={isEnabled ? { color: '#3b82f6' } : {}}>{isEnabled ? 'Módulo Logístico Activo' : 'Deshabilitado y bloqueado'}</span>
-                                                        </div>
-                                                        <div className="main-module-action">
-                                                            {isLocked ? (
-                                                                <svg className="lock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                            ) : (
-                                                                <div className={`toggle-switch ${isEnabled ? 'on' : ''}`} style={isEnabled ? { background: '#2563eb' } : {}}>
-                                                                    <div className="toggle-thumb" />
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                        {/* Acceso Universal: Centro de Solicitudes */}
+                                        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                                                <i className="bi bi-clock-history text-8xl"></i>
+                                            </div>
+                                            <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
+                                                <div className="flex items-center gap-5">
+                                                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl border border-white/20 shadow-2xl">
+                                                        <i className="bi bi-person-workspace text-amber-400"></i>
                                                     </div>
-                                                );
-                                            })()}
-
-                                            {/* HIJOS */}
-                                            <div className="logistics-children-grid">
-                                                {['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'].map(mod => {
-                                                    const perm = selectedRole.permisos.find(p => p.modulo_key === mod);
-                                                    const isEnabled = perm?.habilitado ?? false;
-                                                    const parentEnabled = selectedRole.permisos.find(p => p.modulo_key === 'escaneo')?.habilitado ?? false;
-                                                    const isLocked = selectedRole.is_system;
-                                                    // Only interactive if parent is enabled, or if we want to enable the parent by clicking the child
-                                                    const isLockedLocal = isLocked || !parentEnabled;
-
-                                                    return (
-                                                        <div
-                                                            key={mod}
-                                                            className={`main-module-card child-card ${isEnabled ? 'enabled' : ''} ${isLocked ? 'locked' : ''}`}
-                                                            style={{ opacity: isLockedLocal && !isLocked ? 0.5 : 1, filter: isLockedLocal && !isLocked ? 'grayscale(1)' : 'none' }}
-                                                            onClick={() => !isLocked && parentEnabled && handleTogglePermission(mod)}
-                                                        >
-                                                            <div className="main-module-icon">
-                                                                {isEnabled ? (
-                                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                                                ) : (
-                                                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
-                                                                )}
-                                                            </div>
-                                                            <div className="main-module-info">
-                                                                <span className="main-module-name" style={{ fontSize: '0.85rem' }}>{MODULE_LABELS[mod]}</span>
-                                                            </div>
-                                                            <div className="main-module-action">
-                                                                {isLocked ? (
-                                                                    <svg className="lock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                                ) : (
-                                                                    <div className={`toggle-switch ${isEnabled ? 'on' : ''}`} style={{ transform: 'scale(0.8)' }}>
-                                                                        <div className="toggle-thumb" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                })}
+                                                    <div>
+                                                        <h4 className="text-lg font-black uppercase tracking-tight m-0 text-white">Centro de Solicitudes</h4>
+                                                        <p className="text-xs font-medium text-slate-400 m-0">Acceso Universal Transversal</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div 
+                                                        className={`w-20 h-9 rounded-full relative cursor-pointer transition-all duration-300 ${selectedRole.permisos.find(p => p.modulo_key === 'solicitudes')?.habilitado ? 'bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'bg-slate-700'}`}
+                                                        onClick={() => !selectedRole.is_system && handleTogglePermission('solicitudes')}
+                                                    >
+                                                        <div className={`absolute top-1 bottom-1 w-7 bg-white rounded-full transition-all duration-300 shadow-sm ${(selectedRole.permisos.find(p => p.modulo_key === 'solicitudes')?.habilitado) ? 'right-1' : 'left-1'}`}></div>
+                                                    </div>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                        {(selectedRole.permisos.find(p => p.modulo_key === 'solicitudes')?.habilitado) ? 'Acceso Permitido' : 'Acceso Restringido'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Módulos de Soporte (Hidden from Main View but kept for internal logic if needed) */}
+                                    <div className="hidden">
+                                        {modules.filter(m => !['control-sistema', 'control-calidad', 'escaneo', 'usuarios', 'accesos', 'admin/config-pdf', 'registro-productos', 'historial', 'productos', 'parametros-maestros', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'solicitudes'].includes(m)).map(mod => (
+                                            <div key={mod} onClick={() => handleTogglePermission(mod)}>{mod}</div>
+                                        ))}
                                     </div>
 
                                     {!selectedRole.is_system && (

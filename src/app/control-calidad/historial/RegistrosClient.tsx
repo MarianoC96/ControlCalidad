@@ -567,15 +567,19 @@ export default function RegistrosClient() {
                                                         <td className="text-dark">{registro.producto_nombre}</td>
                                                         <td className="text-secondary small">{registro.verificado_por || registro.usuario_nombre}</td>
                                                         <td className="text-end pe-3">
-                                                            <div className="d-flex justify-content-end gap-2">
-                                                                <button className="btn btn-sm btn-link text-primary p-0" onClick={() => viewDetails(registro)} title="Ver detalles">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" /><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z" /></svg>
+                                                            <div className="action-buttons-container">
+                                                                <button className="action-btn-p view" onClick={() => viewDetails(registro)} title="Ver detalles">
+                                                                    <i className="bi bi-eye-fill"></i>
                                                                 </button>
-                                                                <button className="btn btn-sm btn-link text-warning p-0 ms-2" onClick={() => handleEdit(registro)} title="Editar">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" /><path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" /></svg>
+                                                                <button className="action-btn-p pdf" onClick={() => handleDownloadPDF(registro)} disabled={downloadingId === registro.id} title="Descargar PDF">
+                                                                    {downloadingId === registro.id ? (
+                                                                        <span className="spinner-border spinner-border-sm" style={{ width: '12px', height: '12px' }}></span>
+                                                                    ) : (
+                                                                        <i className="bi bi-file-earmark-pdf-fill"></i>
+                                                                    )}
                                                                 </button>
-                                                                <button className="btn btn-sm btn-link text-secondary p-0 ms-2" onClick={() => handleDownloadPDF(registro)} disabled={downloadingId === registro.id} title="PDF">
-                                                                    {downloadingId === registro.id ? <span className="spinner-border spinner-border-sm"></span> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" /><path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.305 11.305 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029z" /></svg>}
+                                                                <button className="action-btn-p edit" onClick={() => handleEdit(registro)} title="Editar registro">
+                                                                    <i className="bi bi-pencil-square"></i>
                                                                 </button>
                                                             </div>
                                                         </td>
@@ -621,10 +625,18 @@ export default function RegistrosClient() {
                                                 <span className="mobile-card-user">{registro.verificado_por || registro.usuario_nombre}</span>
                                             </div>
                                             <div className="mobile-card-actions">
-                                                <button className="mobile-action-btn view" onClick={() => viewDetails(registro)}>👁 Ver</button>
-                                                <button className="mobile-action-btn edit" onClick={() => handleEdit(registro)}>✏️ Editar</button>
-                                                <button className="mobile-action-btn pdf" onClick={() => handleDownloadPDF(registro)} disabled={downloadingId === registro.id}>
-                                                    {downloadingId === registro.id ? '...' : '📄 PDF'}
+                                                <button className="mobile-action-btn view d-flex align-items-center justify-content-center gap-2" onClick={() => viewDetails(registro)}>
+                                                    <i className="bi bi-eye-fill"></i> DETALLES
+                                                </button>
+                                                <button className="mobile-action-btn pdf d-flex align-items-center justify-content-center gap-2" onClick={() => handleDownloadPDF(registro)} disabled={downloadingId === registro.id}>
+                                                    {downloadingId === registro.id ? (
+                                                        <span className="spinner-border spinner-border-sm"></span>
+                                                    ) : (
+                                                        <><i className="bi bi-file-earmark-pdf-fill"></i> PDF</>
+                                                    )}
+                                                </button>
+                                                <button className="mobile-action-btn edit d-flex align-items-center justify-content-center gap-2" onClick={() => handleEdit(registro)}>
+                                                    <i className="bi bi-pencil-square"></i> EDITAR
                                                 </button>
                                             </div>
                                         </div>
@@ -1411,6 +1423,42 @@ export default function RegistrosClient() {
             }
 
             <style jsx>{`
+                /* Action Buttons Table */
+                .action-buttons-container {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                    align-items: center;
+                    white-space: nowrap;
+                }
+                .action-btn-p {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 10px;
+                    border: 1px solid #e2e8f0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    cursor: pointer;
+                    font-size: 1.1rem;
+                    background: white;
+                    padding: 0;
+                }
+                .action-btn-p:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                }
+                .action-btn-p.view { color: #3b82f6; background: #eff6ff; border-color: #dbeafe; }
+                .action-btn-p.view:hover { background: #3b82f6; color: white; border-color: #3b82f6; }
+                
+                .action-btn-p.pdf { color: #ef4444; background: #fef2f2; border-color: #fee2e2; }
+                .action-btn-p.pdf:hover { background: #ef4444; color: white; border-color: #ef4444; }
+                .action-btn-p.pdf:disabled { opacity: 0.5; cursor: wait; transform: none; box-shadow: none; }
+
+                .action-btn-p.edit { color: #f59e0b; background: #fffbeb; border-color: #fef3c7; }
+                .action-btn-p.edit:hover { background: #f59e0b; color: white; border-color: #f59e0b; }
+
                 /* Page Container */
                 .historial-page-container {
                     max-width: 1100px;

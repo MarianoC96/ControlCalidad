@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 
 interface ScannerSidebarProps {
     userName?: string;
@@ -16,86 +15,19 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-    const isActive = (path: string) => pathname === path;
+    // Determinar si una ruta está activa
+    const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
-    // Adjust main content margin based on sidebar state exactly like the main Navbar
+    // Ajustar el margen del contenido principal según el estado del sidebar
     useEffect(() => {
         const root = document.documentElement;
-        if (window.innerWidth > 992) {
+        if (root && window.innerWidth > 992) {
             root.style.setProperty('--sidebar-width', isCollapsed ? '72px' : '260px');
         }
     }, [isCollapsed]);
 
-    const { user } = useAuth();
-    const isAdmin = user?.roles === 'administrador' || user?.roles === 'sadmin';
-    const canManageProducts = isAdmin || user?.permiso_escaneo_productos === true;
-    const canManageBoxes = isAdmin || user?.permiso_escaneo_cajas === true;
-    const canViewHistory = isAdmin || user?.permiso_escaneo_historial === true;
-    const canViewSolicitudes = isAdmin || user?.permiso_solicitudes === true;
-
     const toggleSidebar = () => setIsCollapsed(!isCollapsed);
     const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
-
-    const navLinks = [
-        {
-            href: '/escaner-codigos/escaner',
-            label: 'Escáner Central',
-            icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-            ),
-            show: true
-        },
-        {
-            href: '/escaner-codigos/centro-solicitudes',
-            label: 'Centro Solicitudes',
-            icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            ),
-            show: canViewSolicitudes
-        },
-        {
-            href: '/escaner-codigos/productos',
-            label: 'Agregar Producto',
-            icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-            ),
-            show: canManageProducts
-        },
-        {
-            href: '/escaner-codigos/cajas',
-            label: 'Agregar Caja',
-            icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-            ),
-            show: canManageBoxes
-        },
-        {
-            href: '/escaner-codigos/temporal',
-            label: 'Sinc. Temporal',
-            icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 14l2-2m0 0l2 2m-2-2v6" /></svg>
-            ),
-            show: true
-        },
-        {
-            href: '/escaner-codigos/historial',
-            label: 'Historial',
-            icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            ),
-            show: canViewHistory
-        },
-        {
-            href: '/dashboard',
-            label: 'Volver a Dashboard',
-            icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-            ),
-            show: true
-        },
-    ];
-
-    const filteredNavLinks = navLinks.filter(link => link.show);
 
     const handleLogout = async () => {
         try {
@@ -106,6 +38,58 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
             console.error('Error during logout:', error);
         }
     };
+
+    const navLinks = [
+        {
+            href: '/escaner-codigos/escaner',
+            label: 'Escáner Central',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h.01M16 12h.01M8 12h.01M12 16h.01M16 16h.01M8 16h.01M10 8h4a2 2 0 012 2v8a2 2 0 01-2 2h-4a2 2 0 01-2-2v-8a2 2 0 012-2z" /></svg>
+            )
+        },
+        {
+            href: '/escaner-codigos/centro-solicitudes',
+            label: 'Centro Solicitudes',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            )
+        },
+        {
+            href: '/escaner-codigos/productos',
+            label: 'Agregar Producto',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+            )
+        },
+        {
+            href: '/escaner-codigos/cajas',
+            label: 'Agregar Caja',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            )
+        },
+        {
+            href: '/escaner-codigos/temporal',
+            label: 'Sinc. Temporal',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+            )
+        },
+        {
+            href: '/escaner-codigos/historial',
+            label: 'Historial',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            )
+        },
+        {
+            href: '/dashboard',
+            label: 'Volver a Dashboard',
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            )
+        }
+    ];
 
     return (
         <>
@@ -131,44 +115,41 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                         <div className="logo-box">
                             <img src="/logo.png" alt="Logo El Olivar" />
                         </div>
-                        {!isCollapsed && <span className="brand-name">
-                            <span className="block text-sm">Módulo Escaneo</span>
-                            <span className="block text-xs text-blue-400 font-semibold italic">El Olivar</span>
-                        </span>}
+                        {!isCollapsed && (
+                            <div className="brand-details">
+                                <span className="brand-name">Módulo Escaneo</span>
+                                <span className="brand-subtitle">El Olivar</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Collapser (Desktop Only) */}
-                <button className="collapse-btn" onClick={toggleSidebar} title={isCollapsed ? "Expandir" : "Colapsar"} aria-label={isCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {isCollapsed ? (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        ) : (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        )}
-                    </svg>
+                <button className="collapse-btn" onClick={toggleSidebar}>
+                    <svg className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                 </button>
 
                 {/* Navigation Links */}
                 <div className="sidebar-content">
                     <nav className="sidebar-nav">
                         <ul className="nav-list">
-                            {filteredNavLinks.map((link) => (
-                                <li key={link.href} className="nav-item">
-                                    <Link
-                                        href={link.href}
-                                        className={`nav-link ${isActive(link.href) ? 'active' : ''}`}
-                                        title={isCollapsed ? link.label : ''}
-                                        onClick={() => setIsMobileOpen(false)}
-                                    >
-                                        <span className="nav-icon">
-                                            {link.icon}
-                                        </span>
-                                        {!isCollapsed && <span className="nav-text">{link.label}</span>}
-                                        {isCollapsed && isActive(link.href) && <div className="active-dot" />}
-                                    </Link>
-                                </li>
-                            ))}
+                            {navLinks.map((link) => {
+                                const active = isActive(link.href) && (link.href !== '/dashboard');
+                                return (
+                                    <li key={link.href} className="nav-item">
+                                        <Link
+                                            href={link.href}
+                                            className={`nav-link ${active ? 'active' : ''}`}
+                                            title={isCollapsed ? link.label : ''}
+                                            onClick={() => setIsMobileOpen(false)}
+                                        >
+                                            <span className="nav-icon">{link.icon}</span>
+                                            {!isCollapsed && <span className="nav-text">{link.label}</span>}
+                                            {isCollapsed && active && <div className="active-dot" />}
+                                        </Link>
+                                    </li>
+                                );
+                            })}
                         </ul>
                     </nav>
                 </div>
@@ -177,28 +158,27 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                 {userName && (
                     <div className="sidebar-footer">
                         <div className="user-profile-container">
-                            <div className="user-profile-link" title="Módulo Operario">
-                                <div className="avatar bg-blue-600">
+                            <div className="user-profile-link">
+                                <div className="avatar" style={{ backgroundColor: '#2563eb' }}>
                                     {userName.charAt(0).toUpperCase()}
                                 </div>
 
                                 {!isCollapsed && (
                                     <div className="user-details">
                                         <span className="user-name">{userName.split(' ')[0]}</span>
-                                        <span className="user-role">{userRole === 'administrador' ? 'Admin' : 'Operario'}</span>
+                                        <span className="user-role">{userRole || 'Operador'}</span>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="flex items-center gap-1">
-                                <button className="logout-btn" onClick={handleLogout} title="Cerrar Sesión" aria-label="Cerrar sesión">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                                </button>
-                            </div>
+                            <button className="logout-btn" onClick={handleLogout} title="Cerrar Sesión">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                            </button>
                         </div>
                     </div>
                 )}
             </aside>
+
 
             {/* Global Styles for Scanner Sidebar Structure */}
             <style jsx>{`
@@ -247,9 +227,9 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                     top: 0;
                     left: 0;
                     bottom: 0;
-                    width: 260px;
-                    background-color: var(--sidebar-bg, #0f172a);
-                    color: var(--sidebar-text, #f1f5f9);
+                    width: 280px;
+                    background-color: #003d1f; /* Verde más claro y vibrante */
+                    color: #f1f5f9;
                     z-index: 1002;
                     display: flex;
                     flex-direction: column;
@@ -266,7 +246,7 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                     height: 70px;
                     display: flex;
                     align-items: center;
-                    padding: 0 1.5rem;
+                    padding: 0 1.25rem;
                     border-bottom: 1px solid rgba(255,255,255,0.05);
                 }
 
@@ -278,13 +258,12 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                 .brand-wrapper {
                     display: flex;
                     align-items: center;
-                    gap: 0.75rem;
-                    overflow: hidden;
+                    gap: 0.5rem;
                 }
 
                 .logo-box {
-                    min-width: 36px;
-                    height: 36px;
+                    min-width: 85px;
+                    height: 38px;
                     background: #ffffff;
                     color: var(--sidebar-bg);
                     border-radius: 8px;
@@ -292,7 +271,7 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                     align-items: center;
                     justify-content: center;
                     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-                    padding: 4px;
+                    padding: 4px 6px;
                 }
                 
                 .logo-box img {
@@ -302,13 +281,21 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                 }
 
                 .brand-name {
-                    font-weight: 700;
+                    font-weight: 800;
                     font-size: 1.05rem;
                     white-space: nowrap;
-                    color: #fff;
-                    opacity: 1;
+                    color: #ffffff;
                     transition: opacity 0.2s;
-                    line-height: 1.2;
+                    line-height: 1.1;
+                    display: block;
+                }
+
+                .brand-subtitle {
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: #acc62d; 
+                    display: block;
+                    letter-spacing: 0.01em;
                 }
 
                 /* Collapse Button */
@@ -374,14 +361,14 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                     align-items: center;
                     flex-direction: row !important;
                     flex-wrap: nowrap;
-                    gap: 16px;
-                    padding: 0 20px;
+                    gap: 14px;
+                    padding: 0 18px;
                     text-decoration: none;
                     color: #94a3b8;
                     border-radius: 12px;
                     transition: all 0.2s ease;
                     position: relative;
-                    height: 52px;
+                    height: 46px; 
                     width: 100%;
                     box-sizing: border-box;
                 }
@@ -400,8 +387,8 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
 
                 .nav-link.active {
                     color: #fff;
-                    background: var(--primary-color, #2563eb);
-                    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+                    background: #005d31; 
+                    box-shadow: 0 4px 20px rgba(0, 93, 49, 0.3);
                 }
                 
                 .nav-link.active:hover {
@@ -425,7 +412,7 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
 
                 .nav-text {
                     font-weight: 500;
-                    font-size: 1rem;
+                    font-size: 0.95rem;
                     white-space: nowrap;
                     opacity: 1;
                     line-height: 1.2;
@@ -552,3 +539,4 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
         </>
     );
 }
+

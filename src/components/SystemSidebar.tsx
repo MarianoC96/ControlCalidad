@@ -66,7 +66,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
     // Adjust main content margin based on sidebar state
     useEffect(() => {
         const root = document.documentElement;
-        if (window.innerWidth > 992) {
+        if (root && window.innerWidth > 992) {
             root.style.setProperty('--sidebar-width', isCollapsed ? '72px' : '260px');
         }
     }, [isCollapsed]);
@@ -148,16 +148,17 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
             {/* Sidebar Container */}
             <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
 
-                {/* Header / Brand */}
                 <div className="sidebar-header">
                     <div className="brand-wrapper">
                         <div className="logo-box">
                             <img src="/logo.png" alt="Logo El Olivar" />
                         </div>
-                        {!isCollapsed && <span className="brand-name">
-                            <span className="block text-sm">Control Sistema</span>
-                            <span className="block text-xs text-[#969836] font-semibold">El Olivar</span>
-                        </span>}
+                        {!isCollapsed && (
+                            <div className="brand-details">
+                                <span className="brand-name">Control Sistema</span>
+                                <span className="brand-subtitle">El Olivar</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -196,7 +197,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                                             </span>
                                             {!isCollapsed && <span className="nav-text">{link.label}</span>}
                                             {!isCollapsed && badgeCount > 0 && (
-                                                <div className="nav-badge-bell" style={{ marginRight: 'auto' }}>
+                                                <div className="nav-badge-bell" style={{ fontStyle: 'normal' }}>
                                                     <i className="bi bi-bell-fill bell-icon"></i>
                                                     <span className="badge-count">{badgeCount > 99 ? '99+' : badgeCount}</span>
                                                 </div>
@@ -284,9 +285,9 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                     top: 0;
                     left: 0;
                     bottom: 0;
-                    width: 260px;
-                    background-color: var(--sidebar-bg); /* Use matching global variable */
-                    color: var(--sidebar-text);
+                    width: 280px;
+                    background-color: #003d1f; /* Verde más claro y vibrante */
+                    color: #f1f5f9;
                     z-index: 1002;
                     display: flex;
                     flex-direction: column;
@@ -303,7 +304,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                     height: 70px;
                     display: flex;
                     align-items: center;
-                    padding: 0 1.5rem;
+                    padding: 0 1.25rem;
                     border-bottom: 1px solid rgba(255,255,255,0.05);
                 }
 
@@ -315,13 +316,12 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                 .brand-wrapper {
                     display: flex;
                     align-items: center;
-                    gap: 0.75rem;
-                    overflow: hidden;
+                    gap: 0.5rem;
                 }
 
                 .logo-box {
-                    min-width: 36px;
-                    height: 36px;
+                    min-width: 85px;
+                    height: 38px;
                     background: #ffffff;
                     color: var(--sidebar-bg);
                     border-radius: 8px;
@@ -329,7 +329,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                     align-items: center;
                     justify-content: center;
                     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-                    padding: 4px;
+                    padding: 4px 6px;
                 }
                 
                 .logo-box img {
@@ -339,13 +339,21 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                 }
 
                 .brand-name {
-                    font-weight: 700;
-                    font-size: 1.05rem;
+                    font-weight: 800;
+                    font-size: 0.95rem;
                     white-space: nowrap;
-                    color: #fff;
-                    opacity: 1;
+                    color: #ffffff;
                     transition: opacity 0.2s;
-                    line-height: 1.2;
+                    line-height: 1;
+                    display: block;
+                }
+
+                .brand-subtitle {
+                    font-size: 0.65rem;
+                    font-weight: 700;
+                    color: #acc62d; /* Gold según la imagen */
+                    display: block;
+                    letter-spacing: 0.02em;
                 }
 
                 /* Collapse Button */
@@ -411,14 +419,14 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                     align-items: center;
                     flex-direction: row !important;
                     flex-wrap: nowrap;
-                    gap: 16px;
-                    padding: 0 20px;
+                    gap: 12px;
+                    padding: 0 16px;
                     text-decoration: none;
                     color: #94a3b8;
-                    border-radius: 12px;
+                    border-radius: 10px;
                     transition: all 0.2s ease;
                     position: relative;
-                    height: 52px;
+                    height: 42px; /* Compacto */
                     width: 100%;
                     box-sizing: border-box;
                 }
@@ -437,8 +445,8 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
 
                 .nav-link.active {
                     color: #fff;
-                    background: var(--primary-color);
-                    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+                    background: #005d31;
+                    box-shadow: 0 4px 20px rgba(0, 93, 49, 0.3);
                 }
                 
                 .nav-link.active:hover {
@@ -462,7 +470,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
 
                 .nav-text {
                     font-weight: 500;
-                    font-size: 1rem;
+                    font-size: 0.85rem;
                     white-space: nowrap;
                     opacity: 1;
                     line-height: 1.2;
@@ -471,7 +479,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
 
                 /* Notification Bell */
                 .nav-badge-bell {
-                    margin-left: 8px;
+                    margin-left: auto;
                     position: relative;
                     display: inline-flex;
                     align-items: center;
@@ -673,3 +681,4 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
         </>
     );
 }
+

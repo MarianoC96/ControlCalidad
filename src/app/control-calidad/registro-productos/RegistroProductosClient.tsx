@@ -181,106 +181,111 @@ export default function RegistroProductosClient() {
         return <LoadingOverlay message="Sincronizando Sistema de Registro..." />;
     }
 
-    // ─── Main UI ───────────────────────────────────────────────
     return (
-        <div className="page-wrapper">
+        <div className="page-wrapper animate-in">
+            {/* Ambient Background */}
+            <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+                <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-emerald-50 rounded-full blur-[120px] opacity-40"></div>
+                <div className="absolute -bottom-[10%] -left-[10%] w-[40%] h-[40%] bg-slate-100 rounded-full blur-[120px] opacity-40"></div>
+            </div>
+
             <main className="main-content">
-                {/* Offline Banner */}
+                {/* Offline Banner Moderno */}
                 {!isOnline && (
-                    <div style={{
-                        background: 'linear-gradient(90deg, #dc2626, #b91c1c)',
-                        color: 'white', padding: '0.75rem 1.25rem', borderRadius: '10px',
-                        marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
-                        fontWeight: 600, fontSize: '0.95rem', animation: 'pulseOffline 2s infinite',
-                    }}>
-                        <span style={{ fontSize: '1.3rem' }}>📡</span>
+                    <div className="bg-rose-600 text-white p-4 rounded-3xl mb-8 flex items-center gap-4 shadow-xl shadow-rose-200 animate-pulse border-none">
+                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-xl">
+                            <i className="bi bi-wifi-off"></i>
+                        </div>
                         <div>
-                            <div>SIN CONEXIÓN A INTERNET</div>
-                            <div style={{ fontWeight: 400, fontSize: '0.8rem', opacity: 0.9 }}>
-                                Los registros se guardarán temporalmente y podrá sincronizarlos desde el módulo Temporal
-                            </div>
+                            <div className="font-black text-xs uppercase tracking-widest opacity-80 mb-0.5">Estado: Desconectado</div>
+                            <div className="text-sm font-bold">Modo Offline Activo. Los datos se guardarán localmente en su dispositivo.</div>
                         </div>
                     </div>
                 )}
 
-                {/* Header */}
-                <div className="header-container shadow-sm border">
+                {/* Header Premium */}
+                <div className="header-container">
                     <div className="header-info">
                         <div className="badge-system">
                             <span className="dot-pulse" style={!isOnline ? { background: '#ef4444' } : {}}></span>
-                            {isOnline ? 'REGISTRO' : 'REGISTRO OFFLINE'}
+                            {isOnline ? 'REGISTRO DE CALIDAD' : 'REGISTRO OFFLINE'}
                         </div>
                         <h1 className="title">Registro de Producto</h1>
-                        <p className="subtitle">Ingrese la información de control de calidad del lote.</p>
+                        <p className="subtitle">Gestión centralizada de inspección para el control de lotes y trazabilidad.</p>
                     </div>
                     <div className="header-date">
-                        <span className="date-label">FECHA ACTUAL</span>
+                        <span className="date-label">Fecha de Auditoría</span>
                         <span className="date-value">{getCurrentDate()}</span>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} noValidate>
-                    {/* Form Fields */}
+                    {/* Campos de Identificación */}
                     <div className="form-grid">
                         <div className="form-group">
-                            <label htmlFor="lote" className="form-label">Lote Interno</label>
+                            <label htmlFor="lote" className="form-label">Lote Interno System</label>
                             <input type="text" id="lote"
                                 className={`form-control ${form.fieldErrors.loteInterno ? 'is-invalid' : ''}`}
                                 value={form.formData.loteInterno}
-                                onChange={(e) => form.setFormData((prev) => ({ ...prev, loteInterno: e.target.value }))}
+                                onChange={(e) => form.setFormData((prev: any) => ({ ...prev, loteInterno: e.target.value }))}
+                                placeholder="Ej: LI-2024-001"
                                 required />
                             {form.fieldErrors.loteInterno && <div className="invalid-feedback">{form.fieldErrors.loteInterno}</div>}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="loteProducto" className="form-label">Lote de Producto</label>
+                            <label htmlFor="loteProducto" className="form-label">Lote Fabricante / Producto</label>
                             <input type="text" id="loteProducto"
                                 className={`form-control ${form.fieldErrors.loteProducto ? 'is-invalid' : ''}`}
                                 value={form.formData.loteProducto}
-                                onChange={(e) => form.setFormData((prev) => ({ ...prev, loteProducto: e.target.value }))}
+                                onChange={(e) => form.setFormData((prev: any) => ({ ...prev, loteProducto: e.target.value }))}
+                                placeholder="Ej: L-45678"
                                 required />
                             {form.fieldErrors.loteProducto && <div className="invalid-feedback">{form.fieldErrors.loteProducto}</div>}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="guia" className="form-label">Guía</label>
+                            <label htmlFor="guia" className="form-label">Guía de Remisión</label>
                             <input type="text" id="guia"
                                 className={`form-control ${form.fieldErrors.guia ? 'is-invalid' : ''}`}
                                 value={form.formData.guia}
-                                onChange={(e) => form.setFormData((prev) => ({ ...prev, guia: e.target.value }))}
+                                onChange={(e) => form.setFormData((prev: any) => ({ ...prev, guia: e.target.value }))}
+                                placeholder="001-000123"
                                 required />
                             {form.fieldErrors.guia && <div className="invalid-feedback">{form.fieldErrors.guia}</div>}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="marca" className="form-label">Marca</label>
+                            <label htmlFor="marca" className="form-label">Marca del Producto</label>
                             <input type="text" id="marca"
                                 className={`form-control ${form.fieldErrors.marca ? 'is-invalid' : ''}`}
                                 value={form.formData.marca}
-                                onChange={(e) => form.setFormData((prev) => ({ ...prev, marca: e.target.value }))}
+                                onChange={(e) => form.setFormData((prev: any) => ({ ...prev, marca: e.target.value }))}
+                                placeholder="Ej: El Olivar"
                                 required />
                             {form.fieldErrors.marca && <div className="invalid-feedback">{form.fieldErrors.marca}</div>}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="cantidad" className="form-label">Cantidad</label>
+                            <label htmlFor="cantidad" className="form-label">Cantidad (Unidades)</label>
                             <input type="number" id="cantidad" min="1"
                                 onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                                 className={`form-control ${form.fieldErrors.cantidad ? 'is-invalid' : ''}`}
                                 value={form.formData.cantidad}
-                                onChange={(e) => form.setFormData((prev) => ({ ...prev, cantidad: e.target.value }))}
+                                onChange={(e) => form.setFormData((prev: any) => ({ ...prev, cantidad: e.target.value }))}
+                                placeholder="0"
                                 required />
                             {form.fieldErrors.cantidad && <div className="invalid-feedback">{form.fieldErrors.cantidad}</div>}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="producto" className="form-label">Producto</label>
+                            <label htmlFor="producto" className="form-label">Selección de Producto</label>
                             <AutocompleteSelect
                                 id="producto"
                                 options={productos}
                                 value={form.formData.productoId}
-                                onChange={(value) => form.setFormData((prev) => ({ ...prev, productoId: value }))}
-                                placeholder="Buscar producto..."
+                                onChange={(value: any) => form.setFormData((prev: any) => ({ ...prev, productoId: value }))}
+                                placeholder="Escriba para buscar producto..."
                                 required
                                 className={`${form.fieldErrors.productoId ? 'is-invalid' : ''}`}
                             />
@@ -288,22 +293,32 @@ export default function RegistroProductosClient() {
                         </div>
                     </div>
 
-                    <div className="form-group mt-3">
-                        <label htmlFor="verificado_por" className="form-label">Verificado por *</label>
-                        <input id="verificado_por" type="text" className="form-control" value={userName} readOnly />
+                    <div className="bg-white p-6 rounded-[2rem] border border-[#f1f5f9] shadow-sm mb-8 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
+                                <i className="bi bi-person-badge-fill text-xl"></i>
+                            </div>
+                            <div>
+                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block mb-0.5">Inspector de Turno</span>
+                                <span className="text-sm font-black text-slate-700">{userName}</span>
+                            </div>
+                        </div>
+                        <div className="bg-emerald-50 px-4 py-2 rounded-xl text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                            Firma Digital Activa
+                        </div>
                     </div>
 
                     {/* Parameters / Controls Section */}
                     {form.formData.productoId && (
                         <div className="mt-4">
                             {form.loadingParametros ? (
-                                <div className="text-center py-3">
-                                    <span className="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                                    <span className="ms-2">Cargando parámetros de control...</span>
+                                <div className="bg-white p-12 rounded-[2rem] border border-[#f1f5f9] shadow-sm text-center">
+                                    <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4"></div>
+                                    <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Sincronizando Parámetros...</span>
                                 </div>
                             ) : form.parametros.length > 0 ? (
                                 <div className="table-container">
-                                    <h4 className="mb-3">Controles de Calidad</h4>
+                                    <h4>Variables de Control de Calidad</h4>
                                     <table className="table">
                                         <thead>
                                             <tr>
@@ -316,9 +331,9 @@ export default function RegistroProductosClient() {
                                         <tbody>
                                             {form.parametros.map((param: Parametro, index: number) => (
                                                 <tr key={param.id}>
-                                                    <td><span className="fw-bold d-block">{param.nombre}</span></td>
-                                                    <td>
-                                                        <span className="badge bg-primary text-white">
+                                                    <td data-label="Parámetro"><span className="fw-bold d-block text-slate-800">{param.nombre}</span></td>
+                                                    <td data-label="Rango / Valor Esperado">
+                                                        <span className="badge-result">
                                                             {param.rango_completo
                                                                 ? param.rango_completo
                                                                 : param.tipo === 'rango'
@@ -326,35 +341,35 @@ export default function RegistroProductosClient() {
                                                                     : param.valor_texto || param.valor}
                                                         </span>
                                                     </td>
-                                                    <td>
+                                                    <td data-label="Resultado Control">
                                                         {param.tipo === 'rango' || param.tipo === 'numero' || param.es_rango ? (
                                                             <input type="number" step="0.01" min="0"
                                                                 onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
-                                                                className={`form-control control-input ${form.controles[index]?.fueraDeRango ? 'is-invalid is-invalid-custom' : 'is-valid-custom'}`}
+                                                                className={`form-control control-input ${form.controles[index]?.fueraDeRango ? 'is-invalid' : ''}`}
                                                                 value={form.controles[index]?.valorControl ?? ''}
                                                                 onChange={(e) => form.handleControlChange(index, 'valor', e.target.value)}
                                                                 onWheel={(e) => e.currentTarget.blur()}
-                                                                placeholder="Ingrese valor..."
+                                                                placeholder="0.00"
                                                                 aria-label={`Valor para ${param.nombre}`}
                                                             />
                                                         ) : (
                                                             <input type="text"
-                                                                className={`form-control control-input ${form.controles[index]?.fueraDeRango ? 'is-invalid is-invalid-custom' : ''}`}
+                                                                className={`form-control control-input ${form.controles[index]?.fueraDeRango ? 'is-invalid' : ''}`}
                                                                 value={form.controles[index]?.textoControl ?? ''}
                                                                 onChange={(e) => form.handleControlChange(index, 'texto', e.target.value)}
-                                                                placeholder="Ingrese resultado..."
+                                                                placeholder="Muestra..."
                                                                 aria-label={`Resultado para ${param.nombre}`}
                                                             />
                                                         )}
                                                         {form.controles[index]?.fueraDeRango && (
-                                                            <div className="invalid-feedback d-block">{form.controles[index].mensajeAlerta}</div>
+                                                            <div className="text-[10px] font-black text-rose-600 uppercase tracking-tighter mt-1">{form.controles[index].mensajeAlerta}</div>
                                                         )}
                                                     </td>
-                                                    <td>
+                                                    <td data-label="Observaciones">
                                                         <input type="text" className="form-control"
                                                             value={form.controles[index]?.observacion ?? ''}
                                                             onChange={(e) => form.handleControlChange(index, 'observacion', e.target.value)}
-                                                            placeholder="Opcional"
+                                                            placeholder="Anotación..."
                                                             aria-label={`Observación para ${param.nombre}`}
                                                         />
                                                     </td>
@@ -374,57 +389,69 @@ export default function RegistroProductosClient() {
                         </div>
                     )}
 
-                    {/* Conclusion */}
-                    <div className="form-group mt-3">
-                        <label htmlFor="observaciones" className="form-label">Conclusión</label>
-                        <textarea id="observaciones" className="form-control" rows={3}
-                            value={form.formData.observacionesGenerales}
-                            onChange={(e) => form.setFormData((prev) => ({ ...prev, observacionesGenerales: e.target.value }))}
-                            placeholder="Conclusión general del registro..."
-                        />
-                    </div>
-
-                    {/* Photo Upload Section */}
-                    <div className="form-group mt-4">
-                        <label className="form-label d-flex align-items-center gap-2">
-                            <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                            Evidencia Fotográfica
-                        </label>
-
-                        <div className="photo-grid">
-                            {[0, 1].map((index) => (
-                                <div key={index} className="photo-card">
-                                    <input type="file" id={`foto-${index}`} accept="image/*" style={{ display: 'none' }}
-                                        onChange={(e) => camera.handleFileChange(e, index)} />
-
-                                    {camera.fotos[index] ? (
-                                        <div className="photo-preview-container">
-                                            <img src={camera.fotos[index]?.preview} alt={`Evidencia ${index + 1}`} className="photo-preview-img" />
-                                            <button type="button" className="btn-remove-photo" onClick={() => camera.removePhoto(index)}>×</button>
-                                        </div>
-                                    ) : (
-                                        <div className="photo-actions">
-                                            <label htmlFor={`foto-${index}`} className="action-btn gallery-btn">
-                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                                <span>Galería</span>
-                                            </label>
-                                            <button type="button" onClick={() => camera.handleCameraRequest(index)} className="action-btn camera-btn" aria-label="Tomar foto con cámara">
-                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                <span className="text-dark">Cámara</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                    {/* Conclusión y Evidencia fotográfica - Stacked para mayor claridad */}
+                    <div className="flex flex-col gap-10 mb-10">
+                        {/* Bloque Conclusión */}
+                        <div className="conclusion-box m-0">
+                            <label htmlFor="observaciones" className="form-label">Conclusión de Inspección</label>
+                            <textarea id="observaciones" className="form-control" rows={4}
+                                value={form.formData.observacionesGenerales}
+                                onChange={(e) => form.setFormData((prev: any) => ({ ...prev, observacionesGenerales: e.target.value }))}
+                                placeholder="Escriba los detalles finales de la inspección..."
+                            />
                         </div>
 
-                        {/* Hidden input for native mobile camera */}
-                        <input ref={camera.nativeCameraInputRef} type="file" accept="image/*" capture="environment"
-                            style={{ display: 'none' }} onChange={camera.handleNativeCameraCapture} />
+                        {/* Bloque Evidencia */}
+                        <div className="bg-white p-10 rounded-[2rem] border border-[#f1f5f9] shadow-sm">
+                            <label className="form-label d-flex align-items-center gap-2 mb-8">
+                                <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                                    <i className="bi bi-camera-fill text-emerald-600"></i>
+                                </div>
+                                <span className="font-black text-slate-700 uppercase tracking-widest text-xs">Evidencia Fotográfica de Control</span>
+                            </label>
+
+                            <div className="photo-grid">
+                                {[0, 1].map((index) => (
+                                    <div key={index} className="photo-card m-0">
+                                        <input type="file" id={`foto-${index}`} accept="image/*" style={{ display: 'none' }}
+                                            onChange={(e) => camera.handleFileChange(e, index)} />
+
+                                        {camera.fotos[index] ? (
+                                            <div className="photo-preview-container">
+                                                <img src={camera.fotos[index]?.preview} alt={`Evidencia ${index + 1}`} className="photo-preview-img" />
+                                                <button type="button" className="btn-remove-photo" onClick={() => camera.removePhoto(index)}>×</button>
+                                            </div>
+                                        ) : (
+                                            <div className="photo-actions">
+                                                <label htmlFor={`foto-${index}`} className="action-btn gallery-btn cursor-pointer">
+                                                    <i className="bi bi-images text-xl"></i>
+                                                    <span className="text-[10px] font-black uppercase tracking-wider">Galería</span>
+                                                </label>
+                                                <button type="button" onClick={() => camera.handleCameraRequest(index)} className="action-btn camera-btn border-none" aria-label="Tomar foto con cámara">
+                                                    <i className="bi bi-camera-fill text-xl"></i>
+                                                    <span className="text-[10px] font-black uppercase tracking-wider">Cámara</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
-                    {error && <div className="alert alert-danger mt-3">{error}</div>}
-                    {success && <div className="alert alert-success mt-3">{success}</div>}
+                    {error && (
+                        <div className="bg-rose-50 text-rose-700 p-4 rounded-2xl mb-6 border border-rose-100 flex items-center gap-3 animate-in slide-in-from-top-4">
+                            <i className="bi bi-exclamation-octagon-fill"></i>
+                            <span className="text-sm font-bold">{error}</span>
+                        </div>
+                    )}
+                    
+                    {success && (
+                        <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl mb-6 border border-emerald-100 flex items-center gap-3 animate-in slide-in-from-top-4">
+                            <i className="bi bi-check-circle-fill"></i>
+                            <span className="text-sm font-bold">{success}</span>
+                        </div>
+                    )}
 
                     {/* Submit Buttons */}
                     {!isOnline ? (
@@ -445,9 +472,14 @@ export default function RegistroProductosClient() {
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center mt-4 mb-4">
-                            <button type="submit" className="btn btn-success btn-lg px-5" disabled={saving} aria-label="Guardar Registro">
-                                {saving ? 'Guardando...' : 'Guardar Registro'}
+                        <div className="submit-container">
+                            <button type="submit" className="btn btn-success" disabled={saving} aria-label="Guardar Registro">
+                                {saving ? 'Guardando...' : (
+                                    <>
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Finalizar Registro
+                                    </>
+                                )}
                             </button>
                         </div>
                     )}

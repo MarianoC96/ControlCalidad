@@ -14,8 +14,9 @@ export const GET = withAuth(async (_request, user) => {
     if (user.usuario === 'sadmin' || user.roles === 'administrador') {
         hasSolicitudesPermission = true;
         permisos_list = [
-            'registro-productos', 'historial', 'historial-descargas', 'solicitudes',
+            'registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'solicitudes',
             'productos', 'parametros-maestros', 'usuarios', 'admin/config-pdf', 'accesos',
+            'control-sistema', 'control-calidad',
             'escaneo', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial'
         ];
     } else if (user.role_id) {

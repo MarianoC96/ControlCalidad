@@ -6,24 +6,62 @@ import { useState, useEffect } from 'react';
 
 export default function DashboardGateway() {
     const router = useRouter();
-    const [hasEscaneo, setHasEscaneo] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [hasQualityAccess, setHasQualityAccess] = useState(false);
+    const [hasSystemAccess, setHasSystemAccess] = useState(false);
+    const [hasEscaneo, setHasEscaneo] = useState(false);
     const [pendingSolicitudes, setPendingSolicitudes] = useState(0);
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        const fetchPermissions = async () => {
+        const fetchPermissionsAndRedirect = async () => {
             try {
-                const res = await fetch('/api/auth/me');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.roles === 'administrador' || data.permiso_escaneo) {
-                        setHasEscaneo(true);
-                    }
-                    if (data.roles === 'administrador') {
-                        setIsAdmin(true);
-                    }
+                // 1. Fetch current user data
+                const meRes = await fetch('/api/auth/me');
+                if (!meRes.ok) throw new Error("Auth failed");
+                const userData = await meRes.json();
+                
+                if (userData.roles === 'administrador') {
+                    setIsAdmin(true);
                 }
+
+                // 2. Fetch specific allowed modules keys
+                const permsRes = await fetch('/api/auth/permisos');
+                if (!permsRes.ok) throw new Error("Permissions failed");
+                const permsData = await permsRes.json();
+                const modules = permsData.allowedModules || [];
+
+                // 3. Check for specific module categories (Parents)
+                const systemAcc = modules.includes('control-sistema') || userData.roles === 'administrador';
+                const qualityAcc = modules.includes('control-calidad') || userData.roles === 'administrador';
+                const scannerAcc = modules.includes('escaneo') || userData.permiso_escaneo;
+
+                setHasSystemAccess(systemAcc);
+                setHasQualityAccess(qualityAcc);
+                setHasEscaneo(scannerAcc);
+
+                // 4. Smart Redirect Logic
+                const activeParents = [];
+                if (systemAcc) activeParents.push('/control-sistema');
+                if (qualityAcc) activeParents.push('/control-calidad/registro-productos');
+                if (scannerAcc) activeParents.push('/escaner-codigos/escaner');
+
+                // IF exactly ONE parent is accessible, redirect immediately
+                if (activeParents.length === 1) {
+                    router.push(activeParents[0]);
+                    return; // Stop rendering
+                }
+                
+                // IF only 'solicitudes' or 'temporal' are accessible but no main parents, redirect to solicitudes
+                if (activeParents.length === 0 && modules.includes('solicitudes')) {
+                    router.push('/control-sistema/centro-solicitudes');
+                    return;
+                }
+
+                setLoading(false);
             } catch (err) {
-                console.error("Error fetching permissions", err);
+                console.error("Error in dashboard initialization", err);
+                setLoading(false);
             }
         };
 
@@ -39,9 +77,18 @@ export default function DashboardGateway() {
             }
         };
 
-        fetchPermissions();
+        fetchPermissionsAndRedirect();
         fetchPendingSolicitudes();
-    }, []);
+    }, [router]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-slate-600 font-medium animate-pulse">Cargando acceso seguro...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--primary-400)_0%,_transparent_25%),_radial-gradient(circle_at_bottom_left,_var(--accent-400)_0%,_transparent_25%)]">
@@ -76,8 +123,8 @@ export default function DashboardGateway() {
             {/* Gateway Cards Container */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl px-4">
 
-                {/* Card 1: Control de Sistema (Solo Admins) */}
-                {isAdmin && (
+                {/* Card 1: Control de Sistema */}
+                {hasSystemAccess && (
                     <Link href="/control-sistema" className="group">
                         <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">
                             {/* Background Image with Overlay */}
@@ -106,32 +153,34 @@ export default function DashboardGateway() {
                 )}
 
                 {/* Card 2: Control de Calidad */}
-                <Link href="/control-calidad/registro-productos" className="group">
-                    <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">
-                        {/* Background Image with Overlay */}
-                        <div
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                            style={{ backgroundImage: 'url("/quality-control.png")' }}
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent group-hover:from-black/90 transition-all duration-500"></div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="absolute inset-0 flex flex-col justify-end p-8">
-                            <div className="bg-primary/20 backdrop-blur-md w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-white/20 group-hover:bg-primary/40 transition-colors">
-                                <i className="bi bi-shield-check text-white text-3xl"></i>
+                {hasQualityAccess && (
+                    <Link href="/control-calidad/registro-productos" className="group">
+                        <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer bg-white border border-slate-200">
+                            {/* Background Image with Overlay */}
+                            <div
+                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                                style={{ backgroundImage: 'url("/quality-control.png")' }}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent group-hover:from-black/90 transition-all duration-500"></div>
                             </div>
-                            <h2 className="text-3xl font-bold text-white mb-3">Control de Calidad</h2>
-                            <p className="text-slate-200 text-lg opacity-90 group-hover:opacity-100 transition-opacity">
-                                Registro de inspecciones técnicas, validación de parámetros y gestión de protocolos normativos.
-                            </p>
 
-                            <div className="mt-6 flex items-center text-primary font-semibold text-lg group-hover:translate-x-2 transition-transform">
-                                Ingresar al módulo <i className="bi bi-arrow-right ml-2"></i>
+                            {/* Content */}
+                            <div className="absolute inset-0 flex flex-col justify-end p-8">
+                                <div className="bg-primary/20 backdrop-blur-md w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-white/20 group-hover:bg-primary/40 transition-colors">
+                                    <i className="bi bi-shield-check text-white text-3xl"></i>
+                                </div>
+                                <h2 className="text-3xl font-bold text-white mb-3">Control de Calidad</h2>
+                                <p className="text-slate-200 text-lg opacity-90 group-hover:opacity-100 transition-opacity">
+                                    Registro de inspecciones técnicas, validación de parámetros y gestión de protocolos normativos.
+                                </p>
+
+                                <div className="mt-6 flex items-center text-primary font-semibold text-lg group-hover:translate-x-2 transition-transform">
+                                    Ingresar al módulo <i className="bi bi-arrow-right ml-2"></i>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
+                )}
 
                 {/* Card 3: Escaneo de Códigos */}
                 {hasEscaneo && (

@@ -184,105 +184,186 @@ export default function UsuariosClient() {
     if (loading) return <LoadingOverlay message="Sincronizando Usuarios..." />;
 
     return (
-        <div className="admin-page-wrapper">
+        <div className="page-wrapper relative min-h-screen overflow-x-hidden">
+            {/* Background Ambient Effects */}
+            <div className="absolute top-0 right-0 w-full h-screen bg-[radial-gradient(circle_at_top_right,_var(--primary-100)_0%,_transparent_24%),_radial-gradient(circle_at_bottom_left,_var(--accent-100)_0%,_transparent_24%)] pointer-events-none -z-10 opacity-60"></div>
 
-
-            <main className="main-content">
-                {/* Header Section */}
-                <div className="header-container shadow-sm border">
-                    <div className="header-info">
-                        <div className="badge-system"><span className="dot-pulse"></span>CONTROL DE ACCESO</div>
-                        <h1 className="title">Personal del Sistema</h1>
-                        <p className="subtitle">Gestione perfiles, roles y estados de cuenta desde un solo lugar.</p>
-                    </div>
-                    <div className="header-stats">
-                        <div className="stat-pill">
-                            <span className="val">{usuarios.length}</span>
-                            <span className="lab">TOTAL</span>
-                        </div>
-                        <button className="btn-add-premium shadow-sm" onClick={() => {
-                            setEditingUser(null);
-                            setFormData({
-                                nombre_completo: '',
-                                usuario: '',
-                                password: '',
-                                roles: 'trabajador',
-                                role_id: null,
-                                activo: true,
-                            });
-                            setShowModal(true);
-                        }}>
-                            <i className="bi bi-person-plus-fill me-2"></i>
-                            <span>Nuevo Personal</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Filters */}
-                <div className="filters-bar shadow-sm border">
-                    <div className="search-group"><i className="bi bi-search"></i><input type="text" placeholder="Buscar personal..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
-                    <select className="filter-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-                        <option value="all">Todos los roles</option>
-                        {rolesList.map(r => (
-                            <option key={r.id} value={r.id.toString()}>{r.nombre}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Feed */}
-                <div className="users-feed">
-                    {filteredUsuarios.map((user) => (
-                        <div key={user.id} className={`user-card border shadow-sm ${!user.activo ? 'card-inactive' : ''}`}>
-                            <div className="card-top">
-                                <div className="user-profile">
-                                    <div className={`avatar ${user.roles === 'administrador' ? 'av-admin' : ''}`}>{user.nombre_completo.charAt(0)}</div>
-                                    <div className="u-meta">
-                                        <div className="u-name">
-                                            {user.nombre_completo}
-                                        </div>
-                                        <div className="u-handle">
-                                            <span>@{user.usuario}</span>
-                                        </div>
-
-                                    </div>
-                                </div>
-                                <div className="user-tags">
-                                    <span className={`chip chip-role ${user.roles}`}>
-                                        {rolesList.find(r => r.id === user.role_id)?.nombre || user.roles}
+            <main className="main-content relative z-10">
+                {/* Header Premium con Retorno y Stats */}
+                <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <button 
+                                onClick={() => router.push('/dashboard')}
+                                className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm group"
+                            >
+                                <i className="bi bi-arrow-left text-xl group-hover:-translate-x-1 transition-transform"></i>
+                            </button>
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="flex items-center gap-1.5 bg-indigo-100 text-indigo-700 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest ring-1 ring-indigo-200">
+                                        <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></span>
+                                        Seguridad de Accesos
                                     </span>
-                                    <span className={`chip chip-status ${user.activo ? 'active' : 'inactive'}`}>{user.activo ? 'Activo' : 'Inactivo'}</span>
+                                </div>
+                                <h1 className="text-4xl font-black text-[#1e293b] tracking-tighter uppercase m-0 leading-none">
+                                    Gestión de Usuarios
+                                </h1>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-3 px-5 shadow-sm flex items-center gap-4">
+                                <div className="text-center">
+                                    <div className="text-xl font-black text-indigo-600 leading-none">{usuarios.length}</div>
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total</div>
+                                </div>
+                                <div className="w-px h-8 bg-slate-100"></div>
+                                <div className="text-center">
+                                    <div className="text-xl font-black text-emerald-600 leading-none">{usuarios.filter(u => u.activo).length}</div>
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Activos</div>
                                 </div>
                             </div>
-                            <div className="card-actions">
+
+                            <button 
+                                className="bg-[#0f172a] text-white px-6 py-3.5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center gap-3"
+                                onClick={() => {
+                                    setEditingUser(null);
+                                    setFormData({
+                                        nombre_completo: '',
+                                        usuario: '',
+                                        password: '',
+                                        roles: 'trabajador',
+                                        role_id: null,
+                                        activo: true,
+                                    });
+                                    setShowModal(true);
+                                }}
+                            >
+                                <i className="bi bi-person-plus-fill text-lg"></i>
+                                Nuevo Registro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filters con Estilo Moderno */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+                    <div className="flex-1 relative group">
+                        <i className="bi bi-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"></i>
+                        <input 
+                            type="text" 
+                            placeholder="Buscar por nombre o usuario..." 
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)} 
+                            className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-6 py-4 text-[#1e293b] font-bold outline-none transition-all focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 shadow-sm"
+                        />
+                    </div>
+                    <div className="relative">
+                        <i className="bi bi-filter absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <select 
+                            className="bg-white border border-slate-200 rounded-2xl pl-12 pr-10 py-4 text-[#1e293b] font-bold outline-none transition-all focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 shadow-sm appearance-none cursor-pointer min-w-[200px]"
+                            value={roleFilter} 
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                        >
+                            <option value="all">TODOS LOS ROLES</option>
+                            {rolesList.map(r => (
+                                <option key={r.id} value={r.id.toString()}>{r.nombre.toUpperCase()}</option>
+                            ))}
+                        </select>
+                        <i className="bi bi-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                {/* Feed de Usuarios Premium */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    {filteredUsuarios.map((user) => (
+                        <div 
+                            key={user.id} 
+                            className={`group bg-white border border-slate-200 rounded-[32px] p-6 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:-translate-y-1 relative overflow-hidden ${!user.activo ? 'opacity-70 animate-pulse-subtle' : ''}`}
+                        >
+                            {/* Blur Ambient Effect on Hover */}
+                            <div className={`absolute -right-4 -top-4 w-24 h-24 blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-700 ${user.roles === 'administrador' ? 'bg-indigo-600' : 'bg-blue-600'}`}></div>
+
+                            <div className="relative flex justify-between items-start mb-6">
+                                <div className="flex gap-4">
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg transition-transform duration-500 group-hover:scale-110 ${user.roles === 'administrador' ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-indigo-200' : 'bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-200'}`}>
+                                        {user.nombre_completo.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black text-[#1e293b] leading-tight group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
+                                            {user.nombre_completo}
+                                        </h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-xs font-bold text-indigo-500">@{user.usuario}</span>
+                                            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                            <span className={`text-[10px] font-black uppercase tracking-widest ${user.activo ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                                {user.activo ? 'Cuenta Activa' : 'Cuenta Inactiva'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ring-1 ${user.roles === 'administrador' ? 'bg-indigo-50 text-indigo-700 ring-indigo-200' : 'bg-slate-50 text-slate-600 ring-slate-200'}`}>
+                                        {rolesList.find(r => r.id === user.role_id)?.nombre || user.roles}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-6 border-t border-slate-50">
                                 {user.usuario !== 'sadmin' ? (
                                     <>
-                                        <button className="btn-c" onClick={() => {
-                                            setEditingUser(user);
-                                            setFormData({
-                                                nombre_completo: user.nombre_completo,
-                                                usuario: user.usuario,
-                                                password: '',
-                                                roles: user.roles,
-                                                role_id: user.role_id,
-                                                activo: user.activo,
-                                            });
-                                            setError('');
-                                            setShowModal(true);
-                                        }} title="Editar Perfil"><i className="bi bi-pencil-fill"></i> Editar</button>
-
-
-
-
-                                        <button className="btn-c btn-danger-solid" onClick={() => openDisableConfirm(user)} title="Eliminar Usuario">
-                                            <i className="bi bi-trash3-fill me-1"></i> Eliminar
+                                        <button 
+                                            className="flex-1 bg-slate-50 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-transparent hover:border-indigo-100 flex items-center justify-center gap-2 active:scale-95"
+                                            onClick={() => {
+                                                setEditingUser(user);
+                                                setFormData({
+                                                    nombre_completo: user.nombre_completo,
+                                                    usuario: user.usuario,
+                                                    password: '',
+                                                    roles: user.roles,
+                                                    role_id: user.role_id,
+                                                    activo: user.activo,
+                                                });
+                                                setError('');
+                                                setShowModal(true);
+                                            }}
+                                        >
+                                            <i className="bi bi-pencil-square"></i> Perfil
+                                        </button>
+                                        <button 
+                                            className="w-12 h-11 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-2xl transition-all border border-transparent hover:border-rose-100 flex items-center justify-center active:scale-90"
+                                            onClick={() => openDisableConfirm(user)}
+                                            title="Eliminar Personal"
+                                        >
+                                            <i className="bi bi-trash3-fill"></i>
                                         </button>
                                     </>
                                 ) : (
-                                    <div className="system-tag"><i className="bi bi-lock-fill"></i> PROTEGIDO POR SISTEMA</div>
+                                    <div className="w-full py-3 bg-slate-900/5 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        <i className="bi bi-shield-lock-fill text-slate-500"></i>
+                                        Protegido por Sistema
+                                    </div>
                                 )}
                             </div>
                         </div>
                     ))}
+
+                    {filteredUsuarios.length === 0 && (
+                        <div className="col-span-1 md:col-span-2 py-20 bg-white border border-slate-200 rounded-[40px] border-dashed flex flex-col items-center text-center px-10">
+                            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-3xl text-slate-300 mb-6 border border-slate-100">
+                                <i className="bi bi-people"></i>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter">Sin coincidencias</h3>
+                            <p className="text-slate-500 text-sm max-w-xs mt-2 font-medium">No encontramos personal que coincida con tu búsqueda actual.</p>
+                            <button 
+                                onClick={() => {setSearchTerm(''); setRoleFilter('all');}}
+                                className="mt-6 text-indigo-600 font-bold text-xs uppercase tracking-widest hover:underline"
+                            >
+                                Limpiar Filtros
+                            </button>
+                        </div>
+                    )}
                 </div>
             </main>
 
@@ -480,228 +561,57 @@ export default function UsuariosClient() {
             )}
 
             <style jsx>{`
-                .admin-page-wrapper { min-height: 100vh; background-color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
-                .main-content { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
-
-                /* Header */
-                .header-container { background: white; border-radius: 24px; padding: 25px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-                .badge-system { display: inline-flex; align-items: center; gap: 8px; color: #2563eb; font-weight: 800; font-size: 0.7rem; margin-bottom: 10px; }
-                .dot-pulse { width: 8px; height: 8px; background: #2563eb; border-radius: 50%; animation: p 2s infinite; }
-                @keyframes p { 0% { box-shadow: 0 0 0 0 rgba(3,105,161,0.4); } 70% { box-shadow: 0 0 0 6px rgba(3,105,161,0); } 100% { box-shadow: 0 0 0 0 rgba(3,105,161,0); } }
-                .title { font-size: 1.6rem; font-weight: 900; color: #1e293b; margin: 0; }
-                .subtitle { color: #64748b; font-size: 0.9rem; }
-                
-                .header-stats { display: flex; gap: 15px; align-items: center; }
-                .stat-pill { background: #f8fafc; padding: 8px 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; text-align: center; }
-                .stat-pill .val { font-weight: 900; font-size: 1.2rem; line-height: 1; }
-                .stat-pill .lab { font-size: 0.6rem; font-weight: 800; color: #94a3b8; }
-                .btn-add-premium { 
-                    background: #10b981; 
-                    color: white; 
-                    border: none; 
-                    padding: 10px 20px; 
-                    border-radius: 14px; 
-                    font-weight: 800; 
-                    font-size: 0.85rem; 
-                    display: flex; 
-                    align-items: center; 
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                .page-wrapper {
+                    padding-top: 60px; /* Altura del header móvil */
+                    transition: all 0.3s ease;
                 }
-                .btn-add-premium:hover { 
-                    transform: translateY(-2px); 
-                    background: #059669; 
-                    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+
+                @media (min-width: 992px) {
+                    .page-wrapper {
+                        padding-top: 0;
+                    }
                 }
-                .btn-add-premium i { font-size: 1.1rem; }
 
-                /* Filters */
-                .filters-bar { background: white; border-radius: 50px; padding: 8px 15px; display: flex; gap: 15px; margin-bottom: 24px; }
-                .search-group { flex: 1; display: flex; align-items: center; gap: 10px; padding-left: 10px; }
-                .search-group i { color: #94a3b8; }
-                .search-group input { border: none; outline: none; width: 100%; font-size: 0.9rem; }
-                .filter-select { border: 1px solid #e2e8f0; border-radius: 50px; padding: 5px 15px; font-size: 0.85rem; outline: none; }
-
-                /* Cards */
-                .user-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 12px; transition: 0.2s; }
-                .user-card:hover { transform: translateY(-3px); }
-                .card-inactive { opacity: 0.7; border-left: 5px solid #94a3b8 !important; }
-                .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-                .user-profile { display: flex; gap: 15px; align-items: center; }
-                .avatar { width: 44px; height: 44px; background: #3b82f6; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
-                .av-admin { background: #6366f1; }
-                .u-name { font-weight: 800; color: #1e293b; font-size: 0.95rem; line-height: 1.2; }
-                .u-handle span { color: #3b82f6; font-weight: 700; font-size: 0.8rem; }
-                .u-email { color: #94a3b8; font-size: 0.8rem; }
-                
-
-                
-                .user-tags { display: flex; gap: 6px; }
-                .chip { padding: 4px 10px; border-radius: 50px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; border: 1px solid rgba(0,0,0,0.05); }
-                .chip-role.administrador { background: #e0e7ff; color: #4338ca; }
-                .chip-role.trabajador { background: #f1f5f9; color: #475569; }
-                .chip-status.active { background: #d1fae5; color: #065f46; }
-                .chip-status.inactive { background: #f1f5f9; color: #94a3b8; }
-
-                .card-actions { border-top: 1px solid #f1f5f9; padding-top: 15px; display: flex; gap: 8px; align-items: center; }
-                .btn-c { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 6px 15px; font-size: 0.8rem; font-weight: 700; transition: 0.2s; cursor: pointer; }
-                .btn-c:hover { background: #f1f5f9; border-color: #cbd5e1; }
-                .btn-warn { color: #d97706; }
-                .btn-danger-solid { 
-                    background: #ef4444; 
-                    color: white; 
-                    border: 1px solid #dc2626;
-                    cursor: pointer;
+                .main-content {
+                    max-width: 1300px;
+                    margin: 0 auto;
+                    padding: 40px 24px;
                 }
-                .btn-danger-solid:hover { 
-                    background: #b91c1c; 
-                    border-color: #991b1b; 
-                    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);
+
+                @keyframes pulse-subtle {
+                    0%, 100% { opacity: 0.7; }
+                    50% { opacity: 0.5; }
                 }
-                .system-tag { font-size: 0.6rem; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; }
+                .animate-pulse-subtle {
+                    animation: pulse-subtle 3s infinite ease-in-out;
+                }
 
-                /* Modals - Premium Design (Optimized) */
-                .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.7); display: flex; align-items: flex-start; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px; }
-                .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 520px; overflow: hidden; animation: slideUp 0.15s ease-out; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); margin: auto; display: flex; flex-direction: column; max-height: calc(100vh - 40px); }
-                @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: #f8fafc;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8;
+                }
 
-                /* Modal Header Premium */
-                .modal-header-premium { position: relative; padding: 30px 24px 20px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); overflow: hidden; }
-                .modal-header-bg { position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
-                .modal-avatar-section { position: relative; display: flex; align-items: center; gap: 16px; }
-                .modal-avatar { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease; }
-                .avatar-worker { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-                .avatar-admin { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
-                .modal-user-preview { display: flex; flex-direction: column; gap: 2px; }
-                .preview-name { color: white; font-weight: 800; font-size: 1.1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-                .preview-handle { color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; }
-                .close-modal-btn { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 1.3rem; font-weight: 300; line-height: 1; }
-                .close-modal-btn:hover { background: rgba(239,68,68,0.9); border-color: transparent; color: white; }
+                .animate-in {
+                    animation: animate-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                }
+                @keyframes animate-in {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
 
-                /* Modal Body Premium */
-                .modal-body-premium { padding: 24px; overflow-y: auto; flex: 1; }
-                .modal-section-title { display: flex; align-items: center; gap: 10px; color: #1e293b; font-weight: 800; font-size: 0.9rem; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; }
-                .modal-section-title i { color: #3b82f6; font-size: 1.1rem; }
-
-                /* Premium Input Groups */
-                .premium-input-group { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding: 14px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; transition: all 0.2s ease; }
-                .premium-input-group:focus-within { border-color: #3b82f6; background: white; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
-                .input-icon { width: 40px; height: 40px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 1.1rem; flex-shrink: 0; border: 1px solid #e2e8f0; }
-                .premium-input-group:focus-within .input-icon { background: #3b82f6; color: white; border-color: #3b82f6; }
-                .input-content { flex: 1; min-width: 0; }
-                .input-content label { display: block; font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-                .optional-tag { background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; margin-left: 6px; text-transform: uppercase; }
-                .input-content input, .input-content select { width: 100%; padding: 8px 0; border: none; background: transparent; font-size: 0.95rem; color: #1e293b; outline: none; font-weight: 500; }
-                .input-content input::placeholder { color: #94a3b8; }
-                .input-content select { cursor: pointer; }
-
-                /* Password Toggle */
-                .password-field-wrapper { position: relative; display: flex; align-items: center; }
-                .password-field-wrapper input { flex: 1; padding-right: 36px; }
-                .toggle-pass-btn { position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px 6px; font-size: 1.1rem; display: flex; align-items: center; transition: color 0.2s; }
-                .toggle-pass-btn:hover { color: var(--primary-500, #005d31); }
-
-                /* Input Grid */
-                .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-                @media (max-width: 500px) { .input-grid { grid-template-columns: 1fr; } }
-
-                /* STATUS CARD - OPTIMIZED */
-                .status-card { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: 20px; margin-top: 8px; margin-bottom: 16px; transition: background 0.2s, border-color 0.2s; }
-                .status-active { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #10b981; color: #10b981; }
-                .status-inactive { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; color: #ef4444; }
-
-                .status-visual { position: relative; }
-                .status-icon-container { position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
-                .status-icon-bg { position: absolute; inset: 0; border-radius: 16px; background: currentColor; opacity: 0.15; }
-                .status-icon-container i { font-size: 1.6rem; }
-
-                .status-info { flex: 1; }
-                .status-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 6px; color: #1e293b; }
-                .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px; }
-                .status-badge.active { background: #10b981; color: white; }
-                .status-badge.inactive { background: #ef4444; color: white; }
-                .status-description p { margin: 6px 0 0; font-size: 0.8rem; color: #64748b; }
-
-                /* Custom Toggle Button */
-                .status-toggle { flex-shrink: 0; }
-                .toggle-btn { background: none; border: none; cursor: pointer; padding: 0; outline: none; }
-                .toggle-track { display: block; width: 56px; height: 32px; border-radius: 50px; position: relative; transition: background 0.2s; }
-                .toggle-on .toggle-track { background: #10b981; }
-                .toggle-off .toggle-track { background: #94a3b8; }
-                .toggle-thumb { position: absolute; top: 3px; width: 26px; height: 26px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 900; transition: left 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
-                .toggle-on .toggle-thumb { left: 27px; color: #10b981; }
-                .toggle-off .toggle-thumb { left: 3px; color: #64748b; }
-
-
-                /* Error Banner */
-                .error-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, #fef2f2, #fee2e2); border: 1px solid #fca5a5; border-radius: 14px; color: #b91c1c; font-size: 0.85rem; font-weight: 600; animation: shake 0.4s ease-in-out; }
-                @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
-                .error-banner i { font-size: 1.1rem; }
-
-                /* Modal Footer Premium */
-                .modal-footer-premium { padding: 20px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; gap: 12px; flex-shrink: 0; }
-                .btn-modal-cancel { display: flex; align-items: center; gap: 8px; padding: 12px 24px; background: white; border: 2px solid #e2e8f0; border-radius: 14px; color: #64748b; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
-                .btn-modal-cancel:hover { border-color: #cbd5e1; background: #f8fafc; color: #475569; }
-                .btn-modal-save { display: flex; align-items: center; gap: 8px; padding: 12px 28px; background: linear-gradient(135deg, #1e293b, #334155); border: none; border-radius: 14px; color: white; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(30,41,59,0.3); }
-                .btn-modal-save:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30,41,59,0.4); }
-                .btn-modal-save:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
-                .spinner-save { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
-                @keyframes spin { to { transform: rotate(360deg); } }
-
-                /* Confirm Box */
-                .confirm-box { background: white; border-radius: 24px; width: 350px; }
-                .icon-circle { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-                .i-danger { background: #fee2e2; color: #ef4444; }
-                .i-warning { background: #fef3c7; color: #d97706; }
-                .error-msg { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; }
-
-                .btn-cancel { background: #f1f5f9; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; color: #64748b; cursor: pointer; }
-                .btn-confirm { background: #1e293b; border: none; color: white; padding: 10px 25px; border-radius: 50px; font-weight: 700; cursor: pointer; }
-
-                .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; font-weight: 900; color: #2563eb; letter-spacing: 2px; }
-
-
-
-                /* ===== RESPONSIVE ===== */
-                @media (max-width: 640px) {
-                    .main-content { padding: 20px 12px; }
-                    .header-container { flex-direction: column; gap: 16px; text-align: center; padding: 20px 16px; border-radius: 18px; }
-                    .header-stats { width: 100%; justify-content: center; }
-                    .btn-add-premium { width: 100%; justify-content: center; }
-                    .title { font-size: 1.3rem; }
-                    .filters-bar { flex-direction: column; border-radius: 18px; padding: 12px; gap: 10px; }
-                    .filter-select { width: 100%; }
-                    .user-card { border-radius: 16px; padding: 16px; }
-                    .card-top { flex-direction: column; gap: 12px; }
-                    .user-tags { align-self: flex-start; }
-                    .card-actions { flex-wrap: wrap; }
-                    .card-actions .btn-c { flex: 1; min-width: 0; justify-content: center; text-align: center; font-size: 0.75rem; padding: 6px 10px; }
-
-                    /* Modal responsive */
-                    .modal-overlay { padding: 10px; }
-                    .modal-content { border-radius: 20px; max-height: calc(100vh - 20px); }
-                    .modal-header-premium { padding: 20px 16px 16px; }
-                    .modal-avatar { width: 44px; height: 44px; font-size: 1.2rem; border-radius: 12px; }
-                    .preview-name { font-size: 0.95rem; }
-                    .preview-handle { font-size: 0.75rem; }
-                    .modal-body-premium { padding: 16px; }
-                    .modal-section-title { font-size: 0.8rem; margin-bottom: 14px; }
-                    .premium-input-group { padding: 10px; margin-bottom: 12px; border-radius: 12px; }
-                    .input-icon { width: 34px; height: 34px; border-radius: 10px; font-size: 0.95rem; }
-                    .input-content label { font-size: 0.65rem; }
-                    .input-content input, .input-content select { font-size: 0.85rem; padding: 6px 0; }
-                    .status-card { padding: 14px; border-radius: 14px; gap: 12px; flex-wrap: wrap; }
-                    .status-icon-container { width: 40px; height: 40px; }
-                    .status-icon-container i { font-size: 1.3rem; }
-                    .status-badge { font-size: 0.65rem; }
-                    .status-description p { font-size: 0.75rem; }
-                    .modal-footer-premium { padding: 14px 16px; flex-direction: row; }
-                    .btn-modal-cancel { padding: 10px 16px; font-size: 0.8rem; flex: 1; justify-content: center; }
-                    .btn-modal-save { padding: 10px 16px; font-size: 0.8rem; flex: 1; justify-content: center; }
-
-                    /* Confirm box responsive */
-                    .confirm-box { width: 90% !important; max-width: 320px; }
+                @media (max-width: 768px) {
+                    .main-content {
+                        padding: 24px 16px;
+                    }
                 }
             `}</style>
         </div>

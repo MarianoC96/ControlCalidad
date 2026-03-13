@@ -220,249 +220,247 @@ export default function SolicitudesClient() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'pendiente': return <span className="custom-badge badge-pending">Pendiente</span>;
-            case 'aprobado': return <span className="custom-badge badge-approved">Aprobado</span>;
-            case 'rechazado': return <span className="custom-badge badge-rejected">Rechazado</span>;
-            case 'usado': return <span className="custom-badge badge-used">Usado (1/1)</span>;
-            default: return <span className="custom-badge bg-secondary text-white">{status}</span>;
+            case 'pendiente': return <span className="status-final-premium pendiente"><i className="bi bi-clock"></i> Pendiente</span>;
+            case 'aprobado': return <span className="status-final-premium aprobado"><i className="bi bi-check-circle-fill"></i> Aprobado</span>;
+            case 'rechazado': return <span className="status-final-premium rechazado"><i className="bi bi-x-circle-fill"></i> Rechazado</span>;
+            case 'usado': return <span className="status-final-premium usado"><i className="bi bi-check-circle-fill"></i> Usado (1/1)</span>;
+            default: return <span className="status-final-premium">{status}</span>;
         }
     };
+
     if (loading) return <LoadingOverlay message="Sincronizando Solicitudes..." />;
 
     return (
-        <div className="admin-page-wrapper">
+        <div className="admin-page-wrapper animate-in">
+            {/* Ambient Background Effects */}
+            <div className="ambient-background">
+                <div className="ambient-sphere-1"></div>
+                <div className="ambient-sphere-2"></div>
+            </div>
 
+            <main className="main-content relative z-10">
+                {/* Header Premium con Navegación */}
+                <div className="header-premium-stack">
 
-            <main className="main-content">
-                {/* Header Premium */}
-                <div className="header-container shadow-sm border">
-                    <div className="header-info">
-                        <div className="badge-system"><span className="dot-pulse"></span>ADMINISTRACIÓN</div>
-                        <h1 className="title">Solicitudes de Edición</h1>
-                        <p className="subtitle">Gestione las peticiones de cambios extraordinarios de forma segura.</p>
-                    </div>
-                    <div className="header-stats">
-                        <div className="stat-pill pending">
-                            <span className="val">{requests.filter(r => r.status === 'pendiente').length}</span>
-                            <span className="lab">PENDIENTES</span>
+                    <div className="header-container-premium">
+                        <div className="header-info">
+                            <div className="badge-system-premium">
+                                <span className="dot-pulse"></span>
+                                <span className="badge-text">CONTROL DE ACCESO CENTRALIZADO</span>
+                            </div>
+                            <h1 className="title-premium">Centro de Solicitudes</h1>
+                            <p className="subtitle-premium">Validación y auditoría de cambios extraordinarios en registros del sistema.</p>
                         </div>
-                        <div className="stat-pill">
-                            <span className="val">{requests.length}</span>
-                            <span className="lab">TOTAL</span>
+                        
+                        <div className="header-stats-premium">
+                            <div className="stat-pill-premium pending">
+                                <div className="stat-icon-bg">
+                                    <i className="bi bi-clock-history"></i>
+                                </div>
+                                <div className="stat-content">
+                                    <span className="val">{requests.filter(r => r.status === 'pendiente').length}</span>
+                                    <span className="lab">PENDIENTES</span>
+                                </div>
+                            </div>
+                            <div className="stat-pill-premium total">
+                                <div className="stat-icon-bg">
+                                    <i className="bi bi-database-check"></i>
+                                </div>
+                                <div className="stat-content">
+                                    <span className="val">{requests.length}</span>
+                                    <span className="lab">REGISTROS</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="card shadow-sm border-0 bg-white" style={{ borderRadius: '12px', minHeight: '600px' }}>
-                    {/* Tabs Navigation */}
-                    <div className="tabs-container">
+                <div className="content-card-premium">
+                    {/* Tabs Navigation Premium */}
+                    <div className="tabs-container-premium">
                         <button
-                            className={`tab-btn ${activeTab === 'pendientes' ? 'active' : ''}`}
+                            className={`tab-btn-premium ${activeTab === 'pendientes' ? 'active' : ''}`}
                             onClick={() => {
                                 setActiveTab('pendientes');
                                 setStatusFilter('all');
                             }}
                         >
-                            <i className="bi bi-clock-history"></i>
-                            Pendientes
-                            <span className="count-badge">{requests.filter(r => r.status === 'pendiente').length}</span>
+                            <i className="bi bi-hourglass-split"></i>
+                            <span>Por Procesar</span>
+                            {requests.filter(r => r.status === 'pendiente').length > 0 && (
+                                <span className="count-pill">{requests.filter(r => r.status === 'pendiente').length}</span>
+                            )}
                         </button>
                         <button
-                            className={`tab-btn ${activeTab === 'historial' ? 'active' : ''}`}
+                            className={`tab-btn-premium ${activeTab === 'historial' ? 'active' : ''}`}
                             onClick={() => {
                                 setActiveTab('historial');
                                 setStatusFilter('all');
                             }}
                         >
-                            <i className="bi bi-journal-text"></i>
-                            Historial
+                            <i className="bi bi-archive"></i>
+                            <span>Historial Completo</span>
                         </button>
                     </div>
 
-                    <div className="card-body p-4">
-
-                        {/* Toolbar */}
-                        {/* Toolbar */}
-                        <div className="toolbar-row">
-                            {/* Left Side: Search */}
-                            <div className="toolbar-search">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="search-icon" viewBox="0 0 16 16">
-                                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-                                </svg>
+                    <div className="p-6">
+                        {/* Toolbar Row */}
+                        <div className="toolbar-premium">
+                            <div className="search-box-premium">
+                                <i className="bi bi-search"></i>
                                 <input
                                     type="text"
-                                    className="form-control border-secondary-subtle rounded-pill text-secondary shadow-none bg-light"
-                                    placeholder="Buscar personal o producto..."
+                                    placeholder="Consultar por usuario, producto o ID (S-JAN...)"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    style={{ fontSize: '0.9rem', backgroundColor: '#f8f9fa', paddingLeft: '35px' }}
                                 />
                             </div>
 
-                            {/* Right Side: Filters */}
-                            <div className="toolbar-filters">
+                            <div className="filter-group-premium">
                                 {activeTab === 'historial' && (
-                                    <select
-                                        className="form-select form-select-sm rounded-pill border-secondary-subtle bg-light text-secondary fw-medium shadow-none"
-                                        value={statusFilter}
-                                        onChange={(e) => setStatusFilter(e.target.value)}
-                                        style={{ width: 'auto' }}
-                                    >
-                                        <option value="all">Todos los resueltos</option>
-                                        <option value="aprobado">Solo Aprobados</option>
-                                        <option value="rechazado">Solo Rechazados</option>
-                                        <option value="usado">Solo Usados</option>
-                                    </select>
+                                    <div className="select-wrapper-premium">
+                                        <i className="bi bi-filter-right"></i>
+                                        <select
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                        >
+                                            <option value="all">Todos los estados</option>
+                                            <option value="aprobado">Solo Aprobados</option>
+                                            <option value="rechazado">Solo Rechazados</option>
+                                            <option value="usado">Solo Usados</option>
+                                        </select>
+                                    </div>
                                 )}
-                                <div style={{ position: 'relative', width: 'auto', display: 'inline-flex', alignItems: 'center' }}>
+                                <div className="date-wrapper-premium">
+                                    <i className="bi bi-calendar3"></i>
                                     <input
                                         type="text"
                                         readOnly
-                                        className="form-control form-control-sm rounded-pill border-secondary-subtle bg-light text-secondary shadow-none"
                                         value={dateFilter ? dateFilter.split('-').reverse().join('/') : ''}
-                                        placeholder="DD/MM/AAAA"
+                                        placeholder="Filtrar fecha"
                                         onClick={(e) => {
                                             const hiddenInput = (e.target as HTMLElement).parentElement?.querySelector('input[type="date"]') as HTMLInputElement;
                                             hiddenInput?.showPicker?.();
                                         }}
-                                        style={{ width: '145px', cursor: 'pointer', paddingRight: dateFilter ? '30px' : '12px' }}
                                     />
                                     <input
                                         type="date"
+                                        className="hidden-date-input"
                                         value={dateFilter}
                                         onChange={(e) => setDateFilter(e.target.value)}
-                                        style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
-                                        tabIndex={-1}
                                     />
                                     {dateFilter && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setDateFilter('')}
-                                            style={{
-                                                position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
-                                                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                                                fontSize: '1rem', color: '#6c757d', lineHeight: 1
-                                            }}
-                                            title="Limpiar fecha"
-                                        >
-                                            ×
+                                        <button className="clear-date-btn" onClick={() => setDateFilter('')}>
+                                            <i className="bi bi-x"></i>
                                         </button>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Table Content */}
-                        {/* Desktop Table */}
-                        <div className="desktop-table">
-                            <div className="table-responsive">
-                                <table className="table table-hover mb-0 align-middle">
-                                    <thead className="table-light text-secondary text-uppercase small">
+                        {/* Contenido Principal */}
+                        <div className="desktop-view-premium">
+                            <div className="table-responsive-premium custom-scrollbar">
+                                <table className="table-premium">
+                                    <thead>
                                         <tr>
-                                            <th className="ps-3 fw-semibold text-secondary">ID</th>
-                                            <th className="fw-semibold text-secondary">ID Historial</th>
-                                            <th className="fw-semibold text-secondary">Usuario</th>
-                                            <th className="fw-semibold text-secondary">Producto</th>
-                                            <th className="fw-semibold text-secondary">Lote</th>
-                                            <th className="fw-semibold text-secondary">Fecha</th>
-                                            <th className="fw-semibold text-secondary">Motivo</th>
-                                            <th className="fw-semibold text-secondary">Origen</th>
-                                            <th className="fw-semibold text-secondary">Aprobado por</th>
-                                            <th className="text-end pe-3 fw-semibold text-secondary">Acciones</th>
+                                            <th>ID TICKET</th>
+                                            <th>USUARIO SOLICITANTE</th>
+                                            <th>INFORMACIÓN REGISTRO</th>
+                                            <th>DETALLE / MOTIVO</th>
+                                            <th>PROVENIENCIA</th>
+                                            <th>RESPONSABLE</th>
+                                            <th className="text-right">ACCIONES</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {loading ? (
+                                        {filteredRequests.length === 0 ? (
                                             <tr>
-                                                <td colSpan={8} className="text-center py-5">
-                                                    <div className="spinner-border text-primary" role="status">
-                                                        <span className="visually-hidden">Cargando...</span>
+                                                <td colSpan={7} className="text-center py-20">
+                                                    <div className="empty-state-premium">
+                                                        <i className="bi bi-search-heart"></i>
+                                                        <h3>Sin coincidencias</h3>
+                                                        <p>No se encontraron solicitudes con los criterios actuales.</p>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        ) : filteredRequests.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={9} className="text-center py-5 text-muted">
-                                                    No hay solicitudes que coincidan con los filtros.
                                                 </td>
                                             </tr>
                                         ) : (
                                             filteredRequests.map((req) => (
-                                                <tr key={req.id} className={req.status === 'pendiente' ? 'table-warning' : ''}>
-                                                    <td className="ps-3 fw-bold text-primary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{buildDisplayId(req)}</td>
-                                                    <td className="fw-bold text-secondary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{buildHistorialId(req)}</td>
-                                                    <td className="ps-3">
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
+                                                <tr key={req.id} className={`row-premium ${req.status === 'pendiente' ? 'row-highlight' : ''}`}>
+                                                    <td>
+                                                        <div className="id-badge-premium">
+                                                            <span className="id-main">{buildDisplayId(req)}</span>
+                                                            <span className="id-sub">REF: {buildHistorialId(req)}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className="user-profile-premium">
+                                                            <div className="avatar-premium">
                                                                 {req.usuarios.nombre_completo.charAt(0)}
                                                             </div>
-                                                            <div>
-                                                                <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
-                                                                <div className="text-muted small">@{req.usuarios.usuario}</div>
+                                                            <div className="user-info">
+                                                                <span className="name">{req.usuarios.nombre_completo}</span>
+                                                                <span className="handle">@{req.usuarios.usuario}</span>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="text-dark" style={{ fontSize: '0.9rem' }}>
-                                                        {req.registros.producto_nombre}
+                                                    <td>
+                                                        <div className="record-details-premium">
+                                                            <span className="prod-name">{req.registros.producto_nombre}</span>
+                                                            <span className="lote-tag">LOTE: <b>{req.registros.lote_interno}</b></span>
+                                                        </div>
                                                     </td>
-                                                    <td className="fw-bold text-dark">{req.registros.lote_interno}</td>
-                                                    <td className="text-muted small">{new Date(req.created_at).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}</td>
-                                                    <td className="text-dark" style={{ fontSize: '0.85rem', maxWidth: '200px' }}>
-                                                        {req.motivo ? (
-                                                            <span style={{ lineHeight: '1.4' }}>{req.motivo}</span>
-                                                        ) : (
-                                                            <span className="text-muted small">—</span>
-                                                        )}
+                                                    <td>
+                                                        <div className="reason-container-premium">
+                                                            {req.motivo ? (
+                                                                <p className="reason-text">"{req.motivo}"</p>
+                                                            ) : (
+                                                                <span className="no-reason">Sin justificación</span>
+                                                            )}
+                                                        </div>
                                                     </td>
-                                                    <td className="text-center align-middle">
-                                                        {req.origen === 'escaneo' ? (
-                                                            <span className="bg-info bg-opacity-10 border border-info rounded-pill px-2 py-1 d-inline-flex align-items-center text-nowrap" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0dcaf0', whiteSpace: 'nowrap' }}>
-                                                                <i className="bi bi-upc-scan me-1"></i> Escaneo
-                                                            </span>
-                                                        ) : (
-                                                            <span className="bg-secondary bg-opacity-10 border border-secondary rounded-pill px-2 py-1 d-inline-flex align-items-center text-nowrap" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6c757d', whiteSpace: 'nowrap' }}>
-                                                                <i className="bi bi-box-seam me-1"></i> Calidad
-                                                            </span>
-                                                        )}
+                                                    <td>
+                                                        <div className={`origin-pill-premium ${req.origen || 'calidad'}`}>
+                                                            {req.origen === 'escaneo' ? <i className="bi bi-upc-scan"></i> : <i className="bi bi-box-seam"></i>}
+                                                            <span>{req.origen?.toUpperCase() || 'CALIDAD'}</span>
+                                                        </div>
                                                     </td>
                                                     <td>
                                                         {req.resuelto_por ? (
-                                                            <div>
-                                                                <div className="fw-semibold text-dark" style={{ fontSize: '0.85rem' }}>{req.resuelto_por.nombre_completo}</div>
-                                                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>@{req.resuelto_por.usuario}</div>
+                                                            <div className="resolver-info-premium">
+                                                                <span className="name">{req.resuelto_por.nombre_completo}</span>
+                                                                <span className="date">{new Date(req.resolved_at || '').toLocaleDateString('es-PE')}</span>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-muted small">—</span>
+                                                            <span className="unassigned">Pendiente de Revisión</span>
                                                         )}
                                                     </td>
-                                                    <td className="text-end pe-3">
+                                                    <td className="text-right">
                                                         {req.status === 'pendiente' ? (
-                                                            <div className="d-flex justify-content-end gap-2">
+                                                            <div className="action-button-group">
                                                                 <button
-                                                                    className="btn btn-sm btn-success rounded-pill px-3"
+                                                                    className="btn-action-premium approve"
                                                                     onClick={() => openConfirmModal(req, 'aprobar')}
                                                                     disabled={actionLoading === req.id}
-                                                                    style={{ fontSize: '0.8rem' }}
                                                                 >
-                                                                    {actionLoading === req.id ? (
-                                                                        <span className="spinner-border spinner-border-sm" role="status"></span>
-                                                                    ) : 'Aprobar'}
+                                                                    {actionLoading === req.id ? <div className="spinner-micro"></div> : <i className="bi bi-check-lg"></i>}
                                                                 </button>
                                                                 <button
-                                                                    className="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                                    className="btn-action-premium reject"
                                                                     onClick={() => openConfirmModal(req, 'rechazar')}
                                                                     disabled={actionLoading === req.id}
-                                                                    style={{ fontSize: '0.8rem' }}
                                                                 >
-                                                                    Rechazar
+                                                                    <i className="bi bi-x-lg"></i>
                                                                 </button>
                                                             </div>
-                                                        ) : req.status === 'aprobado' || req.status === 'usado' ? (
-                                                            <span className="fw-bold" style={{ color: '#198754', fontSize: '0.85rem' }}>✓ Aprobado</span>
-                                                        ) : req.status === 'rechazado' ? (
-                                                            <span className="fw-bold" style={{ color: '#dc3545', fontSize: '0.85rem' }}>✗ Rechazado</span>
                                                         ) : (
-                                                            <span className="text-muted small">—</span>
+                                                            <div className={`status-final-premium ${req.status}`}>
+                                                                {req.status === 'aprobado' || req.status === 'usado' ? (
+                                                                    <><i className="bi bi-check-circle-fill"></i> {req.status === 'usado' ? 'USADO' : 'APROBADO'}</>
+                                                                ) : (
+                                                                    <><i className="bi bi-x-circle-fill"></i> RECHAZADO</>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -473,833 +471,440 @@ export default function SolicitudesClient() {
                             </div>
                         </div>
 
-                        {/* Mobile Cards */}
-                        <div className="mobile-cards">
-                            {loading ? (
-                                <div className="text-center py-5">
-                                    <div className="spinner-border text-primary" role="status">
-                                        <span className="visually-hidden">Cargando...</span>
+                        {/* Mobile View Premium */}
+                        <div className="mobile-view-premium">
+                            {filteredRequests.map(req => (
+                                <div key={req.id} className={`mobile-card-premium ${req.status}`}>
+                                    <div className="m-card-header">
+                                        <div className="id-label">{buildDisplayId(req)}</div>
+                                        <div className={`origin-pill-premium ${req.origen || 'calidad'}`}>{req.origen === 'escaneo' ? 'Escaneo' : 'Calidad'}</div>
                                     </div>
-                                </div>
-                            ) : filteredRequests.length === 0 ? (
-                                <div className="text-center py-5 text-muted">
-                                    No hay solicitudes que coincidan con los filtros.
-                                </div>
-                            ) : (
-                                filteredRequests.map(req => (
-                                    <div key={req.id} className={`mobile-card ${req.status === 'pendiente' ? 'border-warning' : ''}`}>
-                                        <div className="mobile-card-header">
-                                            <div className="d-flex align-items-center gap-2">
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
-                                                    {req.usuarios.nombre_completo.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <div className="d-flex align-items-center gap-2">
-                                                        <div className="fw-bold text-primary" style={{ fontSize: '0.8rem' }}>{buildDisplayId(req)}</div>
-                                                        <div className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>Hist: {buildHistorialId(req)}</div>
-                                                    </div>
-                                                    <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{req.usuarios.nombre_completo}</div>
-                                                </div>
+                                    <div className="m-card-content">
+                                        <div className="user-profile-premium mb-3">
+                                            <div className="avatar-premium" style={{width: '32px', height: '32px', fontSize: '0.8rem'}}>{req.usuarios.nombre_completo.charAt(0)}</div>
+                                            <div className="user-info">
+                                                <span className="name">{req.usuarios.nombre_completo}</span>
                                             </div>
                                         </div>
-                                        <div className="mobile-card-body">
-                                            <div className="mobile-card-row">
-                                                <span className="label">Motivo:</span>
-                                                <span className="value" style={{ fontSize: '0.8rem' }}>{req.motivo || '—'}</span>
-                                            </div>
-                                            <div className="mobile-card-row">
-                                                <span className="label">Origen:</span>
-                                                <span className="value">
-                                                    {req.origen === 'escaneo' ? (
-                                                        <span className="bg-info bg-opacity-10 border border-info rounded-pill px-2 py-1 d-inline-flex align-items-center text-nowrap" style={{ fontSize: '0.65rem', fontWeight: 600, color: '#0dcaf0', whiteSpace: 'nowrap' }}>
-                                                            <i className="bi bi-upc-scan me-1"></i> Escaneo
-                                                        </span>
-                                                    ) : (
-                                                        <span className="bg-secondary bg-opacity-10 border border-secondary rounded-pill px-2 py-1 d-inline-flex align-items-center text-nowrap" style={{ fontSize: '0.65rem', fontWeight: 600, color: '#6c757d', whiteSpace: 'nowrap' }}>
-                                                            <i className="bi bi-box-seam me-1"></i> Calidad
-                                                        </span>
-                                                    )}
-                                                </span>
-                                            </div>
-                                            <div className="mobile-card-row">
-                                                <span className="label">Producto:</span>
-                                                <span className="value">
-                                                    {req.registros.producto_nombre}
-                                                </span>
-                                            </div>
-                                            <div className="mobile-card-row">
-                                                <span className="label">Lote:</span>
-                                                <span className="value">{req.registros.lote_interno}</span>
-                                            </div>
-                                            <div className="mobile-card-row">
-                                                <span className="label">Fecha:</span>
-                                                <span className="value">{new Date(req.created_at).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}</span>
-                                            </div>
-                                            {req.resuelto_por && (
-                                                <div className="mobile-card-row">
-                                                    <span className="label">Aprobado por:</span>
-                                                    <span className="value">{req.resuelto_por.nombre_completo} - @{req.resuelto_por.usuario}</span>
-                                                </div>
-                                            )}
+                                        <div className="record-details-premium mb-3">
+                                            <span className="prod-name">{req.registros.producto_nombre}</span>
+                                            <span className="lote-tag">LOTE: <b>{req.registros.lote_interno}</b></span>
                                         </div>
+                                        <div className="reason-container-premium mb-3">
+                                            <p className="reason-text">{req.motivo ? `"${req.motivo}"` : 'Sin justificación'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="m-card-footer">
                                         {req.status === 'pendiente' ? (
-                                            <div className="mobile-card-actions">
-                                                <button
-                                                    className="mobile-action-btn approve"
-                                                    onClick={() => openConfirmModal(req, 'aprobar')}
-                                                    disabled={actionLoading === req.id}
-                                                >
-                                                    Aprobar
-                                                </button>
-                                                <button
-                                                    className="mobile-action-btn reject"
-                                                    onClick={() => openConfirmModal(req, 'rechazar')}
-                                                    disabled={actionLoading === req.id}
-                                                >
-                                                    Rechazar
-                                                </button>
+                                            <div className="action-button-group" style={{justifyContent: 'flex-start', width: '100%'}}>
+                                                <button className="btn-confirm-premium aprobar" style={{flex: 1, padding: '10px'}} onClick={() => openConfirmModal(req, 'aprobar')}>Aprobar</button>
+                                                <button className="btn-confirm-premium rechazazar" style={{flex: 1, padding: '10px', backgroundColor: '#dc2626'}} onClick={() => openConfirmModal(req, 'rechazar')}>Rechazar</button>
                                             </div>
                                         ) : (
-                                            <div className="mobile-card-actions">
-                                                {(req.status === 'aprobado' || req.status === 'usado') && (
-                                                    <span className="fw-bold" style={{ color: '#198754', fontSize: '0.85rem', padding: '6px 0' }}>✓ Aprobado</span>
-                                                )}
-                                                {req.status === 'rechazado' && (
-                                                    <span className="fw-bold" style={{ color: '#dc3545', fontSize: '0.85rem', padding: '6px 0' }}>✗ Rechazado</span>
-                                                )}
+                                            <div className={`status-final-premium ${req.status}`}>
+                                                {req.status === 'aprobado' || req.status === 'usado' ? <i className="bi bi-check-circle-fill"></i> : <i className="bi bi-x-circle-fill"></i>}
+                                                {req.status.toUpperCase()}
                                             </div>
                                         )}
                                     </div>
-                                ))
-                            )}
+                                </div>
+                            ))}
                         </div>
-
-                        {/* Footer */}
-                        {filteredRequests.length > 0 && (
-                            <div className="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                                <span className="small text-muted">
-                                    Mostrando {filteredRequests.length} de {requests.length} solicitudes
-                                </span>
-                                {(searchTerm || statusFilter !== 'all' || dateFilter) && (
-                                    <button
-                                        className="btn btn-sm btn-link text-decoration-none"
-                                        onClick={() => { setSearchTerm(''); setStatusFilter('all'); setDateFilter(''); }}
-                                    >
-                                        Limpiar filtros
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
                     </div>
                 </div>
             </main>
 
-            {/* Modal de Detalle de Motivo */}
-            {viewingMotivo && (
-                <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setViewingMotivo(null)}></div>
-                    <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-lg">
-                        <div className="p-4 sm:p-5 bg-white border-b border-[#e2e8f0] flex justify-between items-center">
-                            <h5 className="font-black uppercase tracking-widest text-[#1e293b] text-sm m-0 flex items-center gap-2">
-                                <i className="bi bi-info-circle text-blue-500"></i> Detalle del Motivo
-                            </h5>
-                            <button
-                                type="button"
-                                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors border-0"
-                                onClick={() => setViewingMotivo(null)}
-                            >
-                                <i className="bi bi-x-lg text-xs"></i>
-                            </button>
-                        </div>
-                        <div className="p-5 sm:p-8">
-                            <div className="bg-[#f8fafc] p-6 rounded-2xl border border-[#e2e8f0]">
-                                <p className="text-base font-bold text-[#334155] m-0 italic leading-relaxed">
-                                    "{viewingMotivo}"
-                                </p>
-                            </div>
-                        </div>
-                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end">
-                            <button
-                                type="button"
-                                onClick={() => setViewingMotivo(null)}
-                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
-                            >
-                                Cerrar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL DE CONFIRMACIÓN - ESTILO HISTORIAL */}
+            {/* MODALES PREMIUM */}
             {confirmModal.show && (
-                <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setConfirmModal({ ...confirmModal, show: false })}></div>
-                    <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-md">
-                        {/* Header con icono circular */}
-                        <div className="p-8 pb-4 text-center">
-                            <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4 transition-transform ${
-                                confirmModal.type === 'aprobar' 
-                                    ? 'bg-emerald-100 text-emerald-600 shadow-emerald-100' 
-                                    : 'bg-rose-100 text-rose-600 shadow-rose-100'
-                            }`} style={{ boxShadow: '0 0 40px -10px currentColor' }}>
-                                {confirmModal.type === 'aprobar' ? (
-                                    <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                        <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-                                        <circle cx="12" cy="12" r="10" />
-                                    </svg>
-                                ) : (
-                                    <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M15 9l-6 6M9 9l6 6" strokeLinecap="round" />
-                                    </svg>
-                                )}
-                            </div>
-                            <h3 className="text-xl font-black text-[#1e293b] tracking-tight m-0">
-                                {confirmModal.type === 'aprobar' ? '¿Aprobar Solicitud?' : '¿Rechazar Solicitud?'}
-                            </h3>
-                            <p className="text-[#64748b] text-sm mt-2 font-medium">
-                                {confirmModal.type === 'aprobar'
-                                    ? 'El usuario podrá editar el registro una vez.'
-                                    : 'Esta acción no se puede deshacer.'}
-                            </p>
+                <div className="modal-overlay-premium">
+                    <div className="modal-backdrop-premium" onClick={() => setConfirmModal({ ...confirmModal, show: false })}></div>
+                    <div className={`modal-box-premium ${confirmModal.type}`}>
+                        <div className="modal-icon-circle-premium">
+                            {confirmModal.type === 'aprobar' ? <i className="bi bi-check2-circle"></i> : <i className="bi bi-exclamation-triangle"></i>}
                         </div>
-
-                        {/* Info card */}
-                        <div className="px-8 py-4">
-                            <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-4 space-y-3">
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-[#94a3b8] font-bold uppercase tracking-widest">Usuario</span>
-                                    <span className="text-[#334155] font-black">{confirmModal.userName}</span>
-                                </div>
-                                <div className="h-px bg-[#e2e8f0]"></div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-[#94a3b8] font-bold uppercase tracking-widest">Producto</span>
-                                    <span className="text-[#334155] font-black">{confirmModal.productName}</span>
-                                </div>
-                            </div>
+                        <h3 className="modal-title-premium">
+                            {confirmModal.type === 'aprobar' ? 'Confirmar Aprobación' : 'Confirmar Rechazo'}
+                        </h3>
+                        <p className="modal-desc-premium">
+                            {confirmModal.type === 'aprobar' 
+                                ? 'Se habilitará permanentemente el permiso de edición única para este registro.' 
+                                : 'Esta acción notificará al usuario y mantendrá el registro en su estado actual.'}
+                        </p>
+                        <div className="modal-details-card-premium">
+                            <div className="detail-row"><span className="label">PERSONAL:</span><span className="val">{confirmModal.userName}</span></div>
+                            <div className="detail-row"><span className="label">PRODUCTO:</span><span className="val">{confirmModal.productName}</span></div>
                         </div>
-
-                        {/* Acciones */}
-                        <div className="p-8 pt-4 flex gap-3">
-                            <button
-                                className="flex-1 px-6 py-3.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-all border-0"
-                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
-                            >
-                                Cancelar
+                        <div className="modal-actions-premium">
+                            <button className="btn-confirm-premium aprobar" style={{backgroundColor: confirmModal.type === 'aprobar' ? '#16a34a' : '#dc2626'}} onClick={executeAction}>
+                                {confirmModal.type === 'aprobar' ? 'Sí, Aprobar edición' : 'Sí, Rechazar solicitud'}
                             </button>
-                            <button
-                                className={`flex-1 px-6 py-3.5 rounded-xl font-black text-sm text-white transition-all shadow-lg border-0 flex items-center justify-center gap-2 ${
-                                    confirmModal.type === 'aprobar'
-                                        ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30'
-                                        : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30'
-                                }`}
-                                onClick={executeAction}
-                            >
-                                {confirmModal.type === 'aprobar' ? (
-                                    <><i className="bi bi-check-lg"></i> Sí, Aprobar</>
-                                ) : (
-                                    <><i className="bi bi-x-lg"></i> Sí, Rechazar</>
-                                )}
-                            </button>
+                            <button className="btn-cancel-premium" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>Mantener pendiente</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* REALTIME TOAST NOTIFICATION */}
+            {/* REALTIME TOAST NOTIFICATION PREMIUM */}
             {realtimeNotification?.show && (
-                <div className="realtime-toast" onClick={() => setRealtimeNotification(null)}>
-                    <div className="toast-content">
-                        <div className="toast-icon">
-                            <i className="bi bi-bell-fill"></i>
-                        </div>
-                        <div className="toast-text">
-                            <span className="toast-title">Nueva Notificación</span>
-                            <span className="toast-msg">{realtimeNotification.message}</span>
-                        </div>
-                        <button className="toast-close">&times;</button>
+                <div className="toast-notification-premium" onClick={() => setRealtimeNotification(null)}>
+                    <div className="toast-icon-pulse">
+                        <i className="bi bi-bell"></i>
                     </div>
+                    <div className="toast-body">
+                        <span className="toast-label">NOTIFICACIÓN REAL-TIME</span>
+                        <span className="toast-msg">{realtimeNotification.message}</span>
+                    </div>
+                    <button className="toast-close-btn" style={{background: 'none', border: 'none', fontSize: '1.2rem', marginLeft: 'auto'}}>&times;</button>
                 </div>
             )}
 
             <style jsx>{`
+                /* Modern SaaS Premium UI Design System */
                 .admin-page-wrapper {
                     min-height: 100vh;
-                    background-color: #f4f7f9;
-                    font-family: 'Segoe UI', system-ui, sans-serif;
+                    background-color: #f8fafc;
+                    padding: 2rem;
+                    padding-top: calc(60px + 2rem); /* Header móvil + padding original */
+                    padding-left: 2rem;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+                    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                }
+
+                @media (min-width: 992px) {
+                    .admin-page-wrapper {
+                        padding-top: 2rem;
+                    }
                 }
 
                 .main-content {
-                    max-width: 1200px;
+                    max-width: 1300px;
                     margin: 0 auto;
-                    padding: 40px 20px;
+                    position: relative;
                 }
 
-                /* Header - High Contrast White Card */
-                .header-container {
-                    background: white;
-                    border-radius: 24px;
-                    padding: 30px;
+                .animate-in {
+                    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                /* Ambient Background */
+                .ambient-background {
+                    position: fixed;
+                    inset: 0;
+                    overflow: hidden;
+                    pointer-events: none;
+                    z-index: 0;
+                }
+
+                .ambient-sphere-1 {
+                    position: absolute;
+                    top: -10%;
+                    right: -5%;
+                    width: 600px;
+                    height: 600px;
+                    background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0) 70%);
+                    border-radius: 50%;
+                    filter: blur(60px);
+                }
+
+                .ambient-sphere-2 {
+                    position: absolute;
+                    bottom: -10%;
+                    left: -5%;
+                    width: 500px;
+                    height: 500px;
+                    background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0) 70%);
+                    border-radius: 50%;
+                    filter: blur(60px);
+                }
+
+                /* Header Premium */
+                .header-premium-stack { margin-bottom: 2.5rem; position: relative; z-index: 10; }
+
+
+                .header-container-premium {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 24px;
+                    align-items: flex-end;
+                    gap: 2rem;
                 }
 
-                .header-info .badge-system {
+                .badge-system-premium {
                     display: inline-flex;
                     align-items: center;
-                    gap: 8px;
-                    background: #e0f2fe;
-                    color: #2563eb;
-                    padding: 4px 12px;
-                    border-radius: 50px;
-                    font-size: 0.75rem;
-                    font-weight: 800;
-                    margin-bottom: 12px;
-                }
-
-                .dot-pulse {
-                    width: 8px;
-                    height: 8px;
-                    background: #2563eb;
-                    border-radius: 50%;
-                    animation: pulse 2s infinite;
-                }
-
-                @keyframes pulse {
-                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(3, 105, 161, 0.7); }
-                    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(3, 105, 161, 0); }
-                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(3, 105, 161, 0); }
-                }
-
-                .title { font-size: 1.8rem; font-weight: 900; color: #1e293b; margin: 0; }
-                .subtitle { color: #64748b; font-size: 0.95rem; margin: 8px 0 0; }
-
-                .header-stats { display: flex; gap: 16px; align-items: center; }
-                .stat-pill {
-                    background: #f8fafc;
-                    padding: 8px 15px;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                    display: flex;
-                    flex-direction: column;
-                    text-align: center;
-                }
-                .stat-pill .val { font-weight: 900; font-size: 1.2rem; line-height: 1; color: #1e293b; }
-                .stat-pill .lab { font-size: 0.6rem; font-weight: 800; color: #94a3b8; }
-                .stat-pill.pending { border-color: #fbbf24; background: #fef3c7; }
-                .stat-pill.pending .val { color: #92400e; }
-
-                /* Premium Tabs */
-                .tabs-container {
-                    display: flex;
-                    padding: 20px 24px 0;
-                    border-bottom: 1px solid #e2e8f0;
-                    gap: 8px;
-                }
-
-                .tab-btn {
-                    padding: 12px 24px;
-                    border: none;
-                    background: none;
-                    font-weight: 700;
-                    font-size: 0.95rem;
-                    color: #64748b;
-                    cursor: pointer;
-                    position: relative;
-                    transition: all 0.2s;
-                    display: flex;
-                    align-items: center;
                     gap: 10px;
-                    border-radius: 12px 12px 0 0;
-                }
-
-                .tab-btn i { font-size: 1.1rem; }
-
-                .tab-btn:hover {
-                    color: #1e293b;
-                    background: #f8fafc;
-                }
-
-                .tab-btn.active {
-                    color: #2563eb;
                     background: white;
-                }
-
-                .tab-btn.active::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -1px;
-                    left: 0;
-                    right: 0;
-                    height: 3px;
-                    background: #2563eb;
-                    border-radius: 3px 3px 0 0;
-                }
-
-                .count-badge {
-                    background: #fee2e2;
-                    color: #ef4444;
-                    padding: 2px 8px;
-                    border-radius: 20px;
-                    font-size: 0.75rem;
-                    font-weight: 800;
-                }
-
-                .tab-btn.active .count-badge {
-                    background: #2563eb;
-                    color: white;
-                }
-
-                /* Filter Bar - Modern & Clear */
-                .filters-bar {
-                    background: white;
+                    padding: 8px 18px;
                     border-radius: 50px;
-                    padding: 10px 20px;
-                    display: flex;
-                    gap: 12px;
-                    align-items: center;
-                    margin-bottom: 24px;
-                    border: 1px solid #e2e8f0;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                    border: 1px solid #f1f5f9;
+                    margin-bottom: 1.2rem;
                 }
 
-                .search-input-group { flex: 1; display: flex; align-items: center; gap: 10px; }
-                .search-input-group i { color: #94a3b8; }
-                .search-input-group input { border: none; outline: none; width: 100%; font-size: 0.9rem; }
+                .dot-pulse { width: 10px; height: 10px; background: #0ea5e9; border-radius: 50%; position: relative; }
+                .dot-pulse::after {
+                    content: ''; position: absolute; inset: 0; border-radius: 50%;
+                    background: #0ea5e9; animation: dot-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+                }
+                @keyframes dot-ping { 75%, 100% { transform: scale(3); opacity: 0; } }
 
-                .filter-select, .filter-date {
-                    border: 1px solid #e2e8f0;
-                    border-radius: 50px;
-                    padding: 6px 15px;
-                    font-size: 0.85rem;
-                    color: #475569;
-                    outline: none;
+                .badge-text { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.05em; color: #475569; text-transform: uppercase; }
+
+                .title-premium { font-size: 2.8rem; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; margin: 0; line-height: 1; }
+                .subtitle-premium { color: #64748b; font-size: 1.1rem; margin-top: 1rem; max-width: 650px; font-weight: 500; line-height: 1.5; }
+
+                .header-stats-premium { display: flex; gap: 16px; }
+                .stat-pill-premium {
+                    background: white; padding: 14px 24px; border-radius: 22px;
+                    display: flex; align-items: center; gap: 16px; min-width: 180px;
+                    border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                    transition: all 0.3s;
+                }
+                .stat-pill-premium:hover { transform: translateY(-4px); box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.08); }
+
+                .stat-icon-bg {
+                    width: 48px; height: 48px; background: #f1f5f9; border-radius: 14px;
+                    display: flex; align-items: center; justify-content: center;
+                    color: #64748b; font-size: 1.4rem;
                 }
 
-                /* Request Items */
-                .request-item {
-                    background: white;
-                    border-radius: 20px;
-                    padding: 24px;
-                    margin-bottom: 16px;
-                    transition: transform 0.2s;
+                .stat-pill-premium.pending {
+                    border-color: #fef3c7;
+                    background: linear-gradient(to bottom right, #ffffff, #fffbeb);
                 }
-                .request-item:hover { transform: translateY(-2px); }
-                .pending-border { border-left: 6px solid #ef4444 !important; }
+                .stat-pill-premium.pending .stat-icon-bg { background: #fef3c7; color: #d97706; }
+                .stat-pill-premium.pending .val { color: #b45309; }
 
-                .item-layout { display: flex; align-items: center; justify-content: space-between; }
+                .stat-content { display: flex; flex-direction: column; }
+                .stat-content .val { font-size: 1.5rem; font-weight: 900; color: #0f172a; line-height: 1; }
+                .stat-content .lab { font-size: 0.7rem; font-weight: 800; color: #94a3b8; margin-top: 6px; letter-spacing: 0.05em; text-transform: uppercase; }
 
-                .user-col { display: flex; align-items: center; gap: 16px; flex: 1; }
-                .avatar { width: 44px; height: 44px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; }
-                .user-name { font-weight: 800; color: #1e293b; font-size: 1rem; }
-                .user-tag { color: #94a3b8; font-size: 0.8rem; }
-
-                .product-col { flex: 1; border-left: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; padding: 0 24px; }
-                .product-name { font-weight: 700; color: #475569; font-size: 0.9rem; }
-                .product-lote { font-size: 0.75rem; color: #94a3b8; }
-                .product-lote span { font-weight: 700; color: #64748b; }
-
-                .actions-col { flex-shrink: 0; padding-left: 24px; }
-                .action-buttons { display: flex; flex-direction: column; gap: 8px; }
-                .btn-approve { background: #10b981; color: white; border: none; border-radius: 50px; padding: 8px 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
-                .btn-approve:hover { background: #059669; transform: translateY(-1px); }
-                .btn-reject { background: transparent; color: #ef4444; border: 1px solid #fee2e2; border-radius: 50px; padding: 8px 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
-                .btn-reject:hover { background: #fef2f2; border-color: #fca5a5; }
-
-                .reason-bubble {
-                    margin-top: 16px;
-                    background: #f1f5f9;
-                    padding: 10px 16px;
-                    border-radius: 12px;
-                    font-size: 0.85rem;
-                    color: #475569;
-                    cursor: pointer;
-                    border: 1px solid transparent;
-                }
-                .reason-bubble:hover { border-color: #cbd5e1; background: #e2e8f0; }
-
-                /* Badges */
-                .custom-badge { padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
-                .badge-pending { background: #fef3c7; color: #92400e; }
-                .badge-approved { background: #d1fae5; color: #065f46; }
-                .badge-rejected { background: #fee2e2; color: #991b1b; }
-                .badge-used { background: #dbeafe; color: #1e40af; }
-
-                /* Modal */
-
-                /* Realtime Toast Styles */
-                .realtime-toast {
-                    position: fixed;
-                    top: 24px;
-                    right: 24px;
-                    z-index: 3000;
-                    background: white;
-                    border-radius: 12px;
-                    padding: 16px;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-                    border-left: 4px solid #2563eb;
-                    cursor: pointer;
-                    animation: slideInRight 0.3s ease-out;
-                    min-width: 280px;
-                    border: 1px solid #e2e8f0;
+                /* Content Card */
+                .content-card-premium {
+                    background: white; border-radius: 32px; border: 1px solid #f1f5f9;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+                    overflow: hidden; position: relative; z-index: 10; margin-bottom: 2rem;
                 }
 
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
+                /* Tabs Original Restyled */
+                .tabs-container-premium {
+                    display: flex; background: #f8fafc; padding: 10px 14px; gap: 10px;
+                    border-bottom: 1px solid #f1f5f9;
                 }
 
-                .toast-content {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
+                .tab-btn-premium {
+                    display: flex; align-items: center; gap: 12px; padding: 14px 28px;
+                    border-radius: 18px; border: none; background: transparent;
+                    color: #64748b; font-weight: 700; font-size: 0.95rem;
+                    transition: all 0.3s; cursor: pointer;
                 }
 
-                .toast-icon {
-                    width: 40px;
-                    height: 40px;
-                    background: #eff6ff;
-                    color: #2563eb;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1.2rem;
-                    animation: bell-shake 0.5s ease-in-out infinite alternate;
+                .tab-btn-premium:hover { color: #1e293b; background: rgba(255, 255, 255, 0.8); }
+                .tab-btn-premium.active {
+                    color: #0ea5e9; background: white;
+                    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.05);
                 }
 
-                @keyframes bell-shake {
-                    from { transform: rotate(-10deg); }
-                    to { transform: rotate(10deg); }
-                }
-
-                .toast-text {
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .toast-title {
-                    font-weight: 800;
-                    color: #1e293b;
-                    font-size: 0.9rem;
-                }
-
-                .toast-msg {
-                    color: #64748b;
-                    font-size: 0.8rem;
-                }
-
-                .toast-close {
-                    background: none;
-                    border: none;
-                    color: #94a3b8;
-                    font-size: 1.2rem;
-                    margin-left: auto;
-                    padding: 0 4px;
-                }
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 2000;
-                    padding: 20px;
-                    backdrop-filter: blur(4px);
-                }
-
-                /* Realtime Toast Styles */
-                .realtime-toast {
-                    position: fixed;
-                    top: 24px;
-                    right: 24px;
-                    z-index: 3000;
-                    background: white;
-                    border-radius: 12px;
-                    padding: 16px;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-                    border-left: 4px solid #2563eb;
-                    cursor: pointer;
-                    animation: slideInRight 0.3s ease-out;
-                    min-width: 280px;
-                    border-bottom: 1px solid #e2e8f0;
-                    border-top: 1px solid #e2e8f0;
-                    border-right: 1px solid #e2e8f0;
-                }
-
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-
-                .toast-content {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .toast-icon {
-                    width: 40px;
-                    height: 40px;
-                    background: #eff6ff;
-                    color: #2563eb;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1.2rem;
-                    animation: bell-shake 0.5s ease-in-out infinite alternate;
-                }
-
-                @keyframes bell-shake {
-                    from { transform: rotate(-10deg); }
-                    to { transform: rotate(10deg); }
-                }
-
-                .toast-text {
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .toast-title {
-                    font-weight: 800;
-                    color: #1e293b;
-                    font-size: 0.9rem;
-                }
-
-                .toast-msg {
-                    color: #64748b;
-                    font-size: 0.8rem;
-                }
-
-                .toast-close {
-                    background: none;
-                    border: none;
-                    color: #94a3b8;
-                    font-size: 1.2rem;
-                    margin-left: auto;
-                    padding: 0 4px;
-                }
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 2000;
-                    padding: 20px;
-                    backdrop-filter: blur(4px);
-                }
-
-                /* Realtime Toast Styles */
-                .realtime-toast {
-                    position: fixed;
-                    top: 24px;
-                    right: 24px;
-                    z-index: 3000;
-                    background: white;
-                    border-radius: 12px;
-                    padding: 16px;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-                    border-left: 4px solid #2563eb;
-                    cursor: pointer;
-                    animation: slideInRight 0.3s ease-out;
-                    min-width: 280px;
-                }
-
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-
-                .toast-content {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .toast-icon {
-                    width: 40px;
-                    height: 40px;
-                    background: #eff6ff;
-                    color: #2563eb;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1.2rem;
-                    animation: bell-shake 0.5s ease-in-out infinite alternate;
-                }
-
-                @keyframes bell-shake {
-                    from { transform: rotate(-10deg); }
-                    to { transform: rotate(10deg); }
-                }
-
-                .toast-text {
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .toast-title {
-                    font-weight: 800;
-                    color: #1e293b;
-                    font-size: 0.9rem;
-                }
-
-                .toast-msg {
-                    color: #64748b;
-                    font-size: 0.8rem;
-                }
-
-                .toast-close {
-                    background: none;
-                    border: none;
-                    color: #94a3b8;
-                    font-size: 1.2rem;
-                    margin-left: auto;
-                    padding: 0 4px;
+                .count-pill {
+                    background: #ef4444; color: white; font-size: 0.75rem;
+                    font-weight: 900; padding: 3px 9px; border-radius: 50px;
                 }
 
                 /* Toolbar */
-                .toolbar-row {
-                    display: flex;
-                    flex-direction: row;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 1.5rem;
-                    padding-bottom: 1.5rem;
-                    border-bottom: 1px solid #dee2e6;
-                    gap: 12px;
-                }
-                .toolbar-filters {
-                    display: flex;
-                    flex-direction: row;
-                    gap: 10px;
-                    align-items: center;
-                }
-                .toolbar-search {
-                    width: 300px;
-                    min-width: 200px;
-                    position: relative;
-                }
-                .search-icon {
-                    position: absolute;
-                    left: 12px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    z-index: 10;
-                    color: #6c757d;
+                .toolbar-premium {
+                    padding: 24px; display: flex; justify-content: space-between;
+                    align-items: center; gap: 24px; background: white;
                 }
 
-                /* Layout Toggles */
-                .desktop-table { display: block; width: 100%; }
-                .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-                .mobile-cards { display: none; }
+                .search-box-premium {
+                    flex: 1; background: #f1f5f9; border-radius: 20px;
+                    padding: 0 24px; display: flex; align-items: center; gap: 16px;
+                    height: 56px; border: 2px solid transparent; transition: all 0.3s;
+                }
+                .search-box-premium:focus-within {
+                    background: white; border-color: #0ea5e9;
+                    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+                }
+                .search-box-premium input {
+                    flex: 1; background: transparent; border: none; outline: none;
+                    font-size: 1rem; color: #1e293b; font-weight: 600;
+                }
 
-                /* Mobile Card Styles */
-                .mobile-card {
+                .filter-group-premium { display: flex; gap: 16px; }
+                .select-wrapper-premium, .date-wrapper-premium {
+                    background: #f1f5f9; border-radius: 18px; padding: 0 20px;
+                    display: flex; align-items: center; gap: 12px; height: 56px;
+                    border: 2px solid transparent; transition: all 0.3s; cursor: pointer; position: relative;
+                }
+                .select-wrapper-premium select {
+                    background: transparent; border: none; outline: none;
+                    font-size: 0.95rem; font-weight: 700; color: #475569; cursor: pointer;
+                }
+                .date-wrapper-premium input {
+                    background: transparent; border: none; outline: none;
+                    font-size: 0.95rem; font-weight: 700; color: #475569; cursor: pointer; width: 100px;
+                }
+                .hidden-date-input { position: absolute; opacity: 0; width: 0; pointer-events: none; }
+                .clear-date-btn { background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; align-items: center; }
+
+                /* Table Design */
+                .table-responsive-premium { 
+                    border-top: 1px solid #f1f5f9; 
+                    overflow-x: auto;
+                    width: 100%;
                     background: white;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 12px;
-                    padding: 16px;
-                    margin-bottom: 12px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
                 }
-                .mobile-card.border-warning { border-color: #fbbf24; border-left-width: 4px; }
-                
-                .mobile-card-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    margin-bottom: 12px;
-                    padding-bottom: 12px;
-                    border-bottom: 1px solid #f1f5f9;
+                .table-premium { 
+                    width: 100%; 
+                    min-width: 1150px; /* Evita que las columnas se compriman */
+                    border-collapse: collapse; 
                 }
-                .mobile-card-body {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                    margin-bottom: 16px;
+                .table-premium th {
+                    background: #f8fafc; padding: 18px 24px; font-size: 0.75rem;
+                    font-weight: 800; color: #94a3b8; text-transform: uppercase;
+                    letter-spacing: 0.1em; text-align: left;
                 }
-                .mobile-card-row {
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 0.9rem;
+                .row-premium { border-bottom: 1px solid #f1f5f9; transition: all 0.2s; }
+                .row-premium:hover { background: #f8fafc; }
+                .row-highlight { background: rgba(254, 252, 232, 0.5); }
+                .table-premium td { padding: 20px 24px; vertical-align: middle; }
+
+                /* ID and User Styles */
+                .id-badge-premium { display: flex; flex-direction: column; }
+                .id-main { font-size: 1rem; font-weight: 950; color: #0284c7; }
+                .id-sub { font-size: 0.7rem; font-weight: 700; color: #94a3b8; margin-top: 2px; }
+
+                .user-profile-premium { display: flex; align-items: center; gap: 14px; }
+                .avatar-premium {
+                    width: 42px; height: 42px; background: linear-gradient(135deg, #0ea5e9, #6366f1);
+                    color: white; border-radius: 14px; display: flex; align-items: center;
+                    justify-content: center; font-weight: 900; font-size: 1rem;
                 }
-                .mobile-card-row .label { color: #64748b; font-weight: 500; }
-                .mobile-card-row .value { color: #1e293b; font-weight: 600; text-align: right; }
-                
-                .mobile-card-actions {
-                    display: flex;
-                    gap: 8px;
+                .user-info .name { font-size: 0.95rem; font-weight: 800; color: #1e293b; display: block; }
+                .user-info .handle { font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
+
+                .record-details-premium { display: flex; flex-direction: column; }
+                .prod-name { font-size: 0.95rem; font-weight: 800; color: #334155; }
+                .lote-tag { font-size: 0.75rem; color: #94a3b8; font-weight: 600; margin-top: 4px; }
+                .reason-text { font-size: 0.85rem; color: #64748b; font-style: italic; margin: 0; }
+
+                /* Action Buttons */
+                .action-button-group { display: flex; gap: 10px; }
+                .btn-action-premium {
+                    width: 44px; height: 44px; border-radius: 14px; border: none;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 1.3rem; cursor: pointer; transition: all 0.2s;
                 }
-                .mobile-action-btn {
-                    flex: 1;
-                    padding: 10px 0;
-                    border: none;
-                    border-radius: 8px;
-                    font-weight: 600;
-                    font-size: 0.9rem;
-                    cursor: pointer;
-                    transition: opacity 0.2s;
+                .btn-action-premium.approve { background: #f0fdf4; color: #16a34a; }
+                .btn-action-premium.approve:hover { background: #16a34a; color: white; transform: scale(1.1); }
+                .btn-action-premium.reject { background: #fef2f2; color: #dc2626; }
+                .btn-action-premium.reject:hover { background: #dc2626; color: white; transform: scale(1.1); }
+
+                /* Status Indicators */
+                .status-final-premium {
+                    display: inline-flex; align-items: center; gap: 8px;
+                    padding: 8px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 900;
+                    text-transform: uppercase; letter-spacing: 0.05em;
                 }
-                .mobile-action-btn.approve { background: #10b981; color: white; }
-                .mobile-action-btn.reject { background: #fee2e2; color: #991b1b; }
-                .mobile-action-btn:disabled { opacity: 0.5; }
+                .status-final-premium.aprobado { background: #f0fdf4; color: #16a34a; }
+                .status-final-premium.rechazado { background: #fef2f2; color: #dc2626; }
+                .status-final-premium.usado { background: #eff6ff; color: #1d4ed8; }
+
+                /* Mobile View */
+                .mobile-view-premium { display: none; padding: 16px; }
+                .mobile-card-premium {
+                    background: white; border: 1px solid #f1f5f9; border-radius: 24px;
+                    padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+                }
 
                 @media (max-width: 768px) {
-                    /* Header Compacto */
-                    .header-container { 
-                        flex-direction: column; 
-                        text-align: center; 
-                        gap: 16px; 
-                        padding: 24px 16px !important;
-                        border-radius: 20px; 
-                    }
-                    .title { font-size: 1.5rem !important; }
-                    .subtitle { font-size: 0.85rem !important; margin-top: 4px; }
-                    
-                    /* Stats Horizontales */
-                    .header-stats { 
-                        width: 100%; 
-                        justify-content: space-between; 
-                        gap: 10px; 
-                    }
-                    .stat-pill {
-                        flex: 1;
-                        flex-direction: row;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 8px;
-                        padding: 8px 10px;
-                    }
-                    .stat-pill .val { font-size: 1.1rem; }
-                    .stat-pill .lab { font-size: 0.65rem; text-align: left; line-height: 1.1; }
-
-                    /* Toolbar Stacks */
-                    .toolbar-row { flex-direction: column; gap: 12px; align-items: stretch; margin-bottom: 1rem; padding-bottom: 1rem; }
-                    .toolbar-search { width: 100%; }
-                    .toolbar-filters { width: 100%; gap: 8px; }
-                    .toolbar-filters select, .toolbar-filters input { 
-                        flex: 1; 
-                        width: 100% !important; 
-                        height: 42px; /* Touch target */
-                    }
-                    
-                    /* Table -> Cards */
-                    .desktop-table { display: none !important; }
-                    .mobile-cards { display: block !important; }
-                    
-                    .mobile-cards > .text-center {
-                        background: #f8fafc;
-                        border: 2px dashed #e2e8f0;
-                        border-radius: 16px;
-                        padding: 32px 20px !important;
-                        margin-top: 10px;
-                        font-size: 0.95rem;
-                    }
-                    
-                    .confirm-actions { flex-direction: column; }
+                    .desktop-view-premium { display: none; }
+                    .mobile-view-premium { display: block; }
+                    .header-container-premium { flex-direction: column; align-items: flex-start; }
+                    .header-stats-premium { width: 100%; margin-top: 1.5rem; }
+                    .stat-pill-premium { flex: 1; padding: 10px 16px; }
+                    .title-premium { font-size: 2rem; }
+                    .toolbar-premium { flex-direction: column; align-items: stretch; }
                 }
+
+                /* Modals Premium */
+                .modal-overlay-premium {
+                    position: fixed; inset: 0; z-index: 1000; display: flex;
+                    align-items: center; justify-content: center; padding: 2rem;
+                }
+                .modal-backdrop-premium {
+                    position: absolute; inset: 0; background: rgba(15, 23, 42, 0.4);
+                    backdrop-filter: blur(12px);
+                }
+                .modal-box-premium {
+                    position: relative; background: white; width: 100%; max-width: 480px;
+                    border-radius: 36px; padding: 40px; text-align: center;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                }
+                .modal-icon-circle-premium {
+                    width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 20px;
+                    display: flex; align-items: center; justify-content: center; font-size: 2.2rem;
+                }
+                .modal-box-premium.aprobar .modal-icon-circle-premium { background: #f0fdf4; color: #16a34a; }
+                .modal-box-premium.rechazar .modal-icon-circle-premium { background: #fef2f2; color: #dc2626; }
+                
+                .btn-confirm-premium {
+                    padding: 14px 28px; border-radius: 16px; border: none; color: white;
+                    font-weight: 800; cursor: pointer; transition: all 0.2s;
+                }
+                .btn-cancel-premium {
+                    padding: 14px 28px; border-radius: 16px; border: none; background: #f1f5f9;
+                    color: #64748b; font-weight: 700; cursor: pointer; margin-top: 10px;
+                }
+
+                .modal-details-card-premium {
+                    background: #f8fafc; padding: 16px; border-radius: 18px; text-align: left;
+                    margin-bottom: 24px;
+                }
+                .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+                .detail-row .label { font-size: 0.7rem; color: #94a3b8; font-weight: 800; }
+                .detail-row .val { font-size: 0.85rem; color: #1e293b; font-weight: 800; }
+
+                /* Realtime Toast */
+                .toast-notification-premium {
+                    position: fixed; bottom: 2rem; right: 2rem; z-index: 2000;
+                    background: white; padding: 20px 28px; border-radius: 28px;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                    display: flex; align-items: center; gap: 20px;
+                    border: 1px solid #f1f5f9; animation: slideIn 0.5s ease-out;
+                }
+                .toast-icon-pulse {
+                    width: 44px; height: 44px; background: #eff6ff; color: #2563eb;
+                    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                    font-size: 1.3rem;
+                }
+                @keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+                /* Origin Pills */
+                .origin-pill-premium {
+                    display: inline-flex; align-items: center; gap: 6px;
+                    padding: 4px 12px; border-radius: 50px; font-size: 0.7rem; font-weight: 900;
+                }
+                .origin-pill-premium.escaneo { background: #e0f2fe; color: #0369a1; }
+                .origin-pill-premium.calidad { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+                /* Spinner Micro */
+                .spinner-micro {
+                    width: 18px; height: 18px; border: 2px solid rgba(0,0,0,0.1);
+                    border-top-color: currentColor; border-radius: 50%; animation: spin 0.8s linear infinite;
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
             `}</style>
         </div>
     );
 }
+

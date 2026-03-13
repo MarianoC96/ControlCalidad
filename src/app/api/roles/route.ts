@@ -6,6 +6,7 @@ const createAdminClient = () => createServiceClient();
 const ALL_MODULES = [
     'registro-productos',
     'historial',
+    'registros-modificados',
     'historial-descargas',
     'solicitudes',
     'productos',
@@ -13,6 +14,8 @@ const ALL_MODULES = [
     'usuarios',
     'admin/config-pdf',
     'accesos',
+    'control-sistema',
+    'control-calidad',
     'escaneo',
     'escaneo-productos',
     'escaneo-cajas',
