@@ -20,7 +20,7 @@ export default function DashboardGateway() {
                 const meRes = await fetch('/api/auth/me');
                 if (!meRes.ok) throw new Error("Auth failed");
                 const userData = await meRes.json();
-                
+
                 if (userData.roles === 'administrador') {
                     setIsAdmin(true);
                 }
@@ -51,7 +51,7 @@ export default function DashboardGateway() {
                     router.push(activeParents[0]);
                     return; // Stop rendering
                 }
-                
+
                 // IF only 'solicitudes' or 'temporal' are accessible but no main parents, redirect to solicitudes
                 if (activeParents.length === 0 && modules.includes('solicitudes')) {
                     router.push('/control-sistema/centro-solicitudes');
@@ -93,7 +93,7 @@ export default function DashboardGateway() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--primary-400)_0%,_transparent_25%),_radial-gradient(circle_at_bottom_left,_var(--accent-400)_0%,_transparent_25%)]">
             {/* Header Section */}
-            <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-700 relative w-full max-w-5xl">
+            <div className="text-center mb-12 relative w-full max-w-5xl">
                 {/* Solicitudes Floating Badge for Dashboard */}
                 {isAdmin && pendingSolicitudes > 0 && (
                     <Link href="/control-sistema/centro-solicitudes" className="absolute top-0 right-4 group">

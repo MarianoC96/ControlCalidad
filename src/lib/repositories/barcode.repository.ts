@@ -7,12 +7,14 @@ export interface BarcodeProduct {
     registro_sanitario?: string;
     presentacion: string;
     unidades_por_caja: number;
+    imagen_url?: string;
 }
 
 export interface BarcodeBox {
     barcode: string;
     tipo_caja: string;
     capacidad_max: number;
+    imagen_url?: string;
 }
 
 export interface BarcodeTransaction {

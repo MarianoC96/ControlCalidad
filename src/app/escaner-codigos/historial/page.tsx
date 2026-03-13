@@ -47,6 +47,8 @@ export default function HistorialPage() {
                     operador: item.usuarios?.nombre_completo || 'Sistema',
                     edit_started_at: item.edit_started_at,
                     edit_expires_at: item.edit_expires_at,
+                    // Imagen: prioridad snapshot > master
+                    imagen_url: snapshot?.imagen_url || master?.imagen_url || null,
                     // Reconstruct masterData from snapshot if available for the detail modal
                     masterData: snapshot ? {
                         ...master,
@@ -55,7 +57,8 @@ export default function HistorialPage() {
                         unidades_por_caja: snapshot.unidades,
                         capacidad_max: snapshot.capacidad_max,
                         vida_util: snapshot.vida_util,
-                        registro_sanitario: snapshot.registro_sanitario
+                        registro_sanitario: snapshot.registro_sanitario,
+                        imagen_url: snapshot.imagen_url
                     } : master,
                     hasSnapshot: !!snapshot
                 };
@@ -529,6 +532,18 @@ export default function HistorialPage() {
                         </div>
 
                         <div className="p-5 sm:p-6 overflow-y-auto flex-grow custom-scrollbar space-y-6">
+                            {/* Imagen del producto/caja en modo edición */}
+                            {editingRecord.imagen_url && (
+                                <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm flex items-center justify-center">
+                                    <img
+                                        src={editingRecord.imagen_url}
+                                        alt={editingRecord.nombre || editingRecord.tipo}
+                                        className="max-h-40 object-contain rounded-xl cursor-pointer hover:scale-105 transition-transform"
+                                        onClick={() => setZoomImage({ url: editingRecord.imagen_url, description: editingRecord.nombre || editingRecord.tipo })}
+                                    />
+                                </div>
+                            )}
+
                             {/* Record Info & Tech Specs */}
                             <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-sm space-y-4">
                                 <div className="flex items-center gap-4 border-b border-slate-50 pb-4">
@@ -745,6 +760,18 @@ export default function HistorialPage() {
                         </div>
 
                         <div className="p-6 space-y-6">
+                            {/* Imagen del producto/caja */}
+                            {viewingRecord.imagen_url && (
+                                <div className="bg-white p-6 rounded-2xl border border-[#e2e8f0] shadow-sm flex items-center justify-center">
+                                    <img
+                                        src={viewingRecord.imagen_url}
+                                        alt={viewingRecord.nombre || viewingRecord.tipo}
+                                        className="max-h-48 object-contain rounded-xl cursor-pointer hover:scale-105 transition-transform drop-shadow-md"
+                                        onClick={() => setZoomImage({ url: viewingRecord.imagen_url, description: viewingRecord.nombre || viewingRecord.tipo })}
+                                    />
+                                </div>
+                            )}
+
                             {/* Product Header */}
                             <div className="text-center pb-2">
                                 <div className="mb-2 flex flex-col items-center gap-2">

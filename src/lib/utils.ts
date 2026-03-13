@@ -184,3 +184,17 @@ export function getPeruDateString(date: Date): string {
 
     return peruDate.toISOString().split('T')[0];
 }
+
+/**
+ * Normaliza el código de barras rellenando con ceros a la izquierda
+ * según el estándar de la empresa:
+ * - Productos: 13 dígitos
+ * - Cajas: 14 dígitos
+ * 
+ * S.O.L.I.D. - Single Responsibility: Esta función solo se encarga de la normalización.
+ */
+export function formatBarcode(barcode: string, mode: 'producto' | 'caja'): string {
+    const targetLength = mode === 'producto' ? 13 : 14;
+    return barcode.trim().padStart(targetLength, '0');
+}
+

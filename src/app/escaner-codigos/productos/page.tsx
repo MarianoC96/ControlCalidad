@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { BarcodeRepository, BarcodeProduct } from '@/lib/repositories/barcode.repository';
+import { formatBarcode } from '@/lib/utils';
 
 export default function ProductosMasterPage() {
     const router = useRouter();
@@ -25,8 +26,14 @@ export default function ProductosMasterPage() {
         vida_util: '',
         registro_sanitario: '',
         presentacion: '',
-        unidades_por_caja: '0'
+        unidades_por_caja: '0',
+        imagen_url: ''
     });
+
+    // Image upload states
+    const [imageMode, setImageMode] = useState<'file' | 'url'>('file');
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchProducts = async () => {
         setIsLoading(true);
@@ -52,8 +59,11 @@ export default function ProductosMasterPage() {
             vida_util: '',
             registro_sanitario: '',
             presentacion: '',
-            unidades_por_caja: '0'
+            unidades_por_caja: '0',
+            imagen_url: ''
         });
+        setImagePreview(null);
+        setImageMode('file');
         setShowModal(true);
     };
 
@@ -64,8 +74,11 @@ export default function ProductosMasterPage() {
             vida_util: product.vida_util || '',
             registro_sanitario: product.registro_sanitario || '',
             presentacion: product.presentacion,
-            unidades_por_caja: String(product.unidades_por_caja)
+            unidades_por_caja: String(product.unidades_por_caja),
+            imagen_url: product.imagen_url || ''
         });
+        setImagePreview(product.imagen_url || null);
+        setImageMode(product.imagen_url?.startsWith('data:') ? 'file' : 'url');
         setShowModal(true);
     };
 
@@ -87,11 +100,12 @@ export default function ProductosMasterPage() {
         setIsSaving(true);
 
         const payload = {
-            barcode: formData.barcode,
+            barcode: formatBarcode(formData.barcode, 'producto'),
             vida_util: formData.vida_util,
             registro_sanitario: formData.registro_sanitario,
             presentacion: formData.presentacion,
-            unidades_por_caja: parseInt(formData.unidades_por_caja) || 0
+            unidades_por_caja: parseInt(formData.unidades_por_caja) || 0,
+            imagen_url: formData.imagen_url || undefined
         };
 
         try {
@@ -324,6 +338,10 @@ export default function ProductosMasterPage() {
                                         />
                                         <i className="bi bi-upc-scan absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
                                     </div>
+                                    <p className="text-[10px] text-blue-600 font-bold mt-2 ml-1 flex items-center gap-2">
+                                        <i className="bi bi-info-circle-fill"></i>
+                                        Si no se completan los 13 dígitos, se añadirán ceros al inicio automáticamente.
+                                    </p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -366,6 +384,108 @@ export default function ProductosMasterPage() {
                                         className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all"
                                         placeholder="RS-XXXX-A"
                                     />
+                                </div>
+
+                                {/* Imagen del Producto */}
+                                <div className="space-y-3">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Imagen del Producto</label>
+
+                                    {/* Toggle entre archivo y URL */}
+                                    <div className="flex bg-[#f1f5f9] rounded-xl p-1 gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setImageMode('file')}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border-0 flex items-center justify-center gap-2 ${imageMode === 'file' ? 'bg-white text-[#1e293b] shadow-sm' : 'bg-transparent text-[#94a3b8] hover:text-[#64748b]'}`}
+                                        >
+                                            <i className="bi bi-upload"></i>
+                                            Subir Archivo
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setImageMode('url')}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border-0 flex items-center justify-center gap-2 ${imageMode === 'url' ? 'bg-white text-[#1e293b] shadow-sm' : 'bg-transparent text-[#94a3b8] hover:text-[#64748b]'}`}
+                                        >
+                                            <i className="bi bi-link-45deg"></i>
+                                            Pegar URL
+                                        </button>
+                                    </div>
+
+                                    {imageMode === 'file' ? (
+                                        <div
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="w-full border-2 border-dashed border-[#cbd5e1] hover:border-[#208754] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:bg-[#208754]/5 group min-h-[120px]"
+                                        >
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    const reader = new FileReader();
+                                                    reader.onload = (event) => {
+                                                        const base64 = event.target?.result as string;
+                                                        setFormData({ ...formData, imagen_url: base64 });
+                                                        setImagePreview(base64);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }}
+                                            />
+                                            {imagePreview && imageMode === 'file' ? (
+                                                <div className="relative w-full flex justify-center">
+                                                    <img src={imagePreview} alt="Preview" className="max-h-32 rounded-xl object-contain" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setImagePreview(null);
+                                                            setFormData({ ...formData, imagen_url: '' });
+                                                            if (fileInputRef.current) fileInputRef.current.value = '';
+                                                        }}
+                                                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-xs border-2 border-white shadow-md hover:bg-red-600 transition-colors"
+                                                    >
+                                                        <i className="bi bi-x-lg"></i>
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 group-hover:bg-[#208754]/10 flex items-center justify-center text-[#94a3b8] group-hover:text-[#208754] transition-all">
+                                                        <i className="bi bi-image text-xl"></i>
+                                                    </div>
+                                                    <span className="text-[10px] text-[#94a3b8] group-hover:text-[#208754] font-bold uppercase tracking-widest transition-colors">Toca para seleccionar imagen</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div className="relative">
+                                                <input
+                                                    type="url"
+                                                    value={formData.imagen_url.startsWith('data:') ? '' : formData.imagen_url}
+                                                    onChange={(e) => {
+                                                        const url = e.target.value;
+                                                        setFormData({ ...formData, imagen_url: url });
+                                                        setImagePreview(url || null);
+                                                    }}
+                                                    className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all text-sm"
+                                                    placeholder="https://ejemplo.com/imagen.jpg"
+                                                />
+                                                <i className="bi bi-link-45deg absolute right-5 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+                                            </div>
+                                            {imagePreview && !imagePreview.startsWith('data:') && (
+                                                <div className="flex justify-center p-3 bg-[#f8fafc] rounded-2xl border border-dashed border-slate-200">
+                                                    <img
+                                                        src={imagePreview}
+                                                        alt="Preview URL"
+                                                        className="max-h-32 rounded-xl object-contain"
+                                                        onError={() => setImagePreview(null)}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

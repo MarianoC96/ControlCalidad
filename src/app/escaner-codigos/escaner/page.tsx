@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { BarcodeRepository } from '@/lib/repositories/barcode.repository';
 import { useAuth } from '@/hooks/useAuth';
+import { formatBarcode } from '@/lib/utils';
 
 interface ScanInfo {
     barcode: string;
@@ -14,6 +15,7 @@ interface ScanInfo {
     unidades_por_caja: string;
     is_match: boolean;
     scanTime: string;
+    imagen_url?: string;
 }
 
 export default function EscaneoPage() {
@@ -85,8 +87,10 @@ export default function EscaneoPage() {
         const currentMode = scanModeRef.current;
         if (!currentMode) return;
 
+        const normalizedBarcode = formatBarcode(barcode, currentMode);
+
         try {
-            const { data, error } = await BarcodeRepository.findByBarcode(barcode, currentMode);
+            const { data, error } = await BarcodeRepository.findByBarcode(normalizedBarcode, currentMode);
 
             // Si hay error de red o no hay datos por falta de conexión
             if (error && (error.message.includes('network') || error.message.includes('Fetch') || !navigator.onLine)) {
@@ -110,13 +114,14 @@ export default function EscaneoPage() {
             }
 
             const scanResult: ScanInfo = {
-                barcode,
+                barcode: normalizedBarcode,
                 scanTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 is_match: !error && !!data,
                 presentacion: presentacionText,
                 unidades_por_caja: unidadesText,
                 vida_util: data?.vida_util,
-                registro_sanitario: data?.registro_sanitario
+                registro_sanitario: data?.registro_sanitario,
+                imagen_url: data?.imagen_url
             };
 
             setLastScanned(scanResult);
@@ -136,7 +141,7 @@ export default function EscaneoPage() {
 
             // FALLBACK OFFLINE: Si falla la red, permitimos el registro
             const fallbackResult: ScanInfo = {
-                barcode,
+                barcode: normalizedBarcode,
                 scanTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 is_match: true, // Permitimos guardar offline
                 presentacion: 'Escaneo sin conexión (Offline)',
@@ -223,7 +228,8 @@ export default function EscaneoPage() {
                     presentacion: lastScanned.presentacion,
                     unidades: lastScanned.unidades_por_caja,
                     vida_util: lastScanned.vida_util,
-                    registro_sanitario: lastScanned.registro_sanitario
+                    registro_sanitario: lastScanned.registro_sanitario,
+                    imagen_url: lastScanned.imagen_url
                 }
             }, scanMode);
 
@@ -245,6 +251,7 @@ export default function EscaneoPage() {
                     usuario_id: user?.id || null,
                     mode: scanMode,
                     presentacion: lastScanned.presentacion,
+                    imagen_url: lastScanned.imagen_url,
                     created_at: new Date().toISOString()
                 });
                 localStorage.setItem('scanner_offline_queue', JSON.stringify(queue));
@@ -435,9 +442,9 @@ export default function EscaneoPage() {
             )}
 
 
-            {/* --- VISTA 2: FORMULARIO DE LOTE --- */}
+            {/* --- VISTA 2: FORMULARIO DE LOTE (Layout 2 columnas) --- */}
             {scanMode && lastScanned && (
-                <main className="max-w-xl mx-auto w-full p-4 sm:p-6 mt-4 sm:mt-10 animate-in slide-in-from-bottom-10 duration-500">
+                <main className="max-w-5xl mx-auto w-full p-4 sm:p-6 mt-4 sm:mt-10 animate-in slide-in-from-bottom-10 duration-500">
                     {/* Botón Volver */}
                     <button
                         onClick={handleBackToModules}
@@ -447,115 +454,142 @@ export default function EscaneoPage() {
                         Regresar al Menú
                     </button>
 
-                    <div className="bg-white rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-[#e2e8f0]">
-                        {/* Header del Formulario */}
-                        <div className={`p-6 sm:p-8 text-center border-b border-slate-50 ${lastScanned.is_match ? (scanMode === 'producto' ? 'bg-green-50/50' : 'bg-amber-50/50') : 'bg-red-50/50'}`}>
-                            <div className={`w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 rounded-[2rem] flex items-center justify-center text-4xl sm:text-5xl shadow-inner border transition-all ${lastScanned.is_match
-                                ? (scanMode === 'producto' ? 'bg-white text-[#208754] border-green-100' : 'bg-white text-amber-500 border-amber-100')
-                                : 'bg-white text-red-500 border-red-100 animate-shake'
-                                }`}>
-                                <i className={`bi ${lastScanned.is_match ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}`}></i>
-                            </div>
-                            <h2 className="text-[#1e293b] text-2xl sm:text-3xl font-black uppercase tracking-tight m-0 leading-tight">
-                                {lastScanned.presentacion}
-                            </h2>
-                            <div className="mt-4 flex flex-col items-center gap-2">
-                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border ${lastScanned.is_match ? 'bg-white text-slate-600 border-slate-200' : 'bg-red-100 text-red-600 border-red-200 font-bold'
-                                    }`}>
-                                    ID: {lastScanned.barcode}
-                                </span>
-                                {!lastScanned.is_match && (
-                                    <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest">Código no registrado en sistema</p>
-                                )}
-                            </div>
-                        </div>
+                    <div className="max-w-2xl mx-auto w-full">
+                        <div className="bg-white rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-[#e2e8f0]">
 
-                        {/* Cuerpo del Formulario */}
-                        <div className="p-6 sm:p-8 space-y-8">
-                            {/* Información Extra (Grid) */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200">
-                                    <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Capacidad/Caja</span>
-                                    <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
-                                        <i className="bi bi-layers-fill text-blue-500"></i>
-                                        {lastScanned.unidades_por_caja} Unid.
+                            {/* Header con cajas encapsuladas (Mockup style) */}
+                            <div className={`p-6 sm:p-8 ${lastScanned.is_match ? (scanMode === 'producto' ? 'bg-green-50/40' : 'bg-amber-50/40') : 'bg-red-50/40'}`}>
+
+                                <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-stretch justify-center">
+                                    {/* CAJA 1: Imagen Encapsulada */}
+                                    <div className="w-[180px] h-[180px] sm:w-[220px] sm:h-[220px] bg-white rounded-[2rem] shadow-sm border border-slate-100 flex items-center justify-center p-6 shrink-0">
+                                        {lastScanned.imagen_url ? (
+                                            <img
+                                                src={lastScanned.imagen_url}
+                                                alt={lastScanned.presentacion}
+                                                className="max-w-full max-h-full object-contain rounded-xl"
+                                            />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center gap-2 text-[#cbd5e1]">
+                                                <i className={`bi ${scanMode === 'producto' ? 'bi-image' : 'bi-box-seam'} text-4xl`}></i>
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-center">Sin imagen</span>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                                <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200">
-                                    <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Hora Escaneo</span>
-                                    <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
-                                        <i className="bi bi-clock-fill text-blue-500"></i>
-                                        {lastScanned.scanTime}
-                                    </div>
-                                </div>
-                                {lastScanned.vida_util && (
-                                    <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200 col-span-2">
-                                        <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Vida Útil</span>
-                                        <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
-                                            <i className="bi bi-calendar-check text-green-500"></i>
-                                            {lastScanned.vida_util}
+
+                                    {/* CAJA 2: Información Encapsulada */}
+                                    <div className="flex-1 w-full bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 flex flex-col items-center justify-center text-center sm:min-h-[220px]">
+                                        <div className={`w-14 h-14 mb-4 rounded-2xl flex items-center justify-center text-3xl shadow-inner border transition-all ${lastScanned.is_match
+                                            ? (scanMode === 'producto' ? 'bg-white text-[#208754] border-green-100' : 'bg-white text-amber-500 border-amber-100')
+                                            : 'bg-white text-red-500 border-red-100 animate-shake'
+                                            }`}>
+                                            <i className={`bi ${lastScanned.is_match ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}`}></i>
+                                        </div>
+
+                                        <h2 className="text-[#1e293b] text-xl sm:text-2xl font-black uppercase tracking-tight m-0 leading-tight">
+                                            {lastScanned.presentacion}
+                                        </h2>
+
+                                        <div className="mt-4">
+                                            <span className={`px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-sm ${lastScanned.is_match ? 'bg-white text-slate-600 border-slate-200' : 'bg-red-100 text-red-600 border-red-200'
+                                                }`}>
+                                                ID: {lastScanned.barcode}
+                                            </span>
+                                            {!lastScanned.is_match && (
+                                                <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest mt-2">Código no registrado</p>
+                                            )}
                                         </div>
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Input de Lote */}
-                            <div className="space-y-4">
-                                <label className="block text-xs font-black text-[#1e293b] uppercase tracking-[0.2em] px-2">
-                                    Ingresar Lote Interno:
-                                </label>
-                                <div className="relative group/input">
-                                    <div className="absolute inset-x-0 bottom-0 h-1 bg-blue-500 rounded-b-2xl scale-x-0 group-focus-within/input:scale-x-100 transition-transform duration-500 z-10"></div>
-                                    <input
-                                        type="text"
-                                        placeholder="EJ: MAR-2401-A"
-                                        value={loteValue}
-                                        onChange={(e) => setLoteValue(e.target.value.toUpperCase())}
-                                        className="w-full bg-[#f8fafc] border-2 border-[#e2e8f0] focus:border-blue-500/20 rounded-2xl px-6 py-5 text-2xl font-black text-[#1e293b] text-center tracking-[0.2em] outline-none transition-all placeholder:text-[#cbd5e1] shadow-inner"
-                                        autoFocus
-                                    />
-                                    <div className="absolute top-1/2 -translate-y-1/2 right-6">
-                                        <i className="bi bi-pencil-fill text-[#cbd5e1] group-focus-within/input:text-blue-500 transition-colors"></i>
-                                    </div>
                                 </div>
                             </div>
 
-                            {/* Botón de Acción */}
-                            <button
-                                onClick={saveTransaction}
-                                disabled={isSaving || !loteValue.trim() || !lastScanned.is_match}
-                                className={`w-full py-6 rounded-2xl font-black text-sm uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 border-0 ${isSaving || !loteValue.trim() || !lastScanned.is_match
-                                    ? 'bg-[#f1f5f9] text-[#cbd5e1] cursor-not-allowed shadow-none'
-                                    : (scanMode === 'producto' ? 'bg-[#208754] hover:bg-[#156d42] text-white shadow-[#208754]/20' : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20')
-                                    }`}
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        Procesando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="bi bi-cloud-arrow-up-fill text-xl"></i>
-                                        Confirmar Registro
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
+                            {/* Cuerpo del Formulario */}
+                            <div className="p-6 sm:p-8 space-y-8">
+                                {/* Información Extra (Grid) */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200">
+                                        <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Capacidad/Caja</span>
+                                        <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
+                                            <i className="bi bi-layers-fill text-blue-500"></i>
+                                            {lastScanned.unidades_por_caja} Unid.
+                                        </div>
+                                    </div>
+                                    <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200">
+                                        <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Hora Escaneo</span>
+                                        <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
+                                            <i className="bi bi-clock-fill text-blue-500"></i>
+                                            {lastScanned.scanTime}
+                                        </div>
+                                    </div>
+                                    {lastScanned.vida_util && (
+                                        <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200 col-span-2">
+                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Vida Útil</span>
+                                            <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
+                                                <i className="bi bi-calendar-check text-green-500"></i>
+                                                {lastScanned.vida_util}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
-                    <div className="mt-8 text-center space-y-4">
-                        <button
-                            onClick={() => startScanner(scanMode!)}
-                            className="bg-white/60 hover:bg-white text-[#475569] hover:text-blue-500 px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 transition-all shadow-sm active:scale-95"
-                        >
-                            <i className="bi bi-arrow-repeat mr-2"></i>
-                            Volver a Escanear
-                        </button>
-                        <p className="text-[#94a3b8] text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
-                            Los datos se guardan en la nube tras confirmación
-                        </p>
+                                {/* Input de Lote */}
+                                <div className="space-y-4">
+                                    <label className="block text-xs font-black text-[#1e293b] uppercase tracking-[0.2em] px-2">
+                                        Ingresar Lote Interno:
+                                    </label>
+                                    <div className="relative group/input">
+                                        <div className="absolute inset-x-0 bottom-0 h-1 bg-blue-500 rounded-b-2xl scale-x-0 group-focus-within/input:scale-x-100 transition-transform duration-500 z-10"></div>
+                                        <input
+                                            type="text"
+                                            placeholder="EJ: MAR-2401-A"
+                                            value={loteValue}
+                                            onChange={(e) => setLoteValue(e.target.value.toUpperCase())}
+                                            className="w-full bg-[#f8fafc] border-2 border-[#e2e8f0] focus:border-blue-500/20 rounded-2xl px-6 py-5 text-2xl font-black text-[#1e293b] text-center tracking-[0.2em] outline-none transition-all placeholder:text-[#cbd5e1] shadow-inner"
+                                            autoFocus
+                                        />
+                                        <div className="absolute top-1/2 -translate-y-1/2 right-6">
+                                            <i className="bi bi-pencil-fill text-[#cbd5e1] group-focus-within/input:text-blue-500 transition-colors"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Botón de Acción */}
+                                <button
+                                    onClick={saveTransaction}
+                                    disabled={isSaving || !loteValue.trim() || !lastScanned.is_match}
+                                    className={`w-full py-6 rounded-2xl font-black text-sm uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 border-0 ${isSaving || !loteValue.trim() || !lastScanned.is_match
+                                        ? 'bg-[#f1f5f9] text-[#cbd5e1] cursor-not-allowed shadow-none'
+                                        : (scanMode === 'producto' ? 'bg-[#208754] hover:bg-[#156d42] text-white shadow-[#208754]/20' : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20')
+                                        }`}
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Procesando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-cloud-arrow-up-fill text-xl"></i>
+                                            Confirmar Registro
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 text-center space-y-4">
+                            <button
+                                onClick={() => startScanner(scanMode!)}
+                                className="bg-white/60 hover:bg-white text-[#475569] hover:text-blue-500 px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 transition-all shadow-sm active:scale-95"
+                            >
+                                <i className="bi bi-arrow-repeat mr-2"></i>
+                                Volver a Escanear
+                            </button>
+                            <p className="text-[#94a3b8] text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
+                                Los datos se guardan en la nube tras confirmación
+                            </p>
+                        </div>
                     </div>
                 </main>
             )}
