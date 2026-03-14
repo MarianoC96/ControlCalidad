@@ -168,13 +168,23 @@ export default function Navbar({ userName, userRole, permissions }: NavbarProps)
                   <li key={link.href} className="nav-item">
                     <Link
                       href={link.href}
-                      className={`nav-link ${active ? 'active' : ''}`}
+                      className={`flex items-center gap-[14px] px-[18px] h-[46px] rounded-[10px] transition-all relative w-full ${
+                        active 
+                          ? 'text-white bg-gradient-to-r from-[#005d31] to-[#005d31]/40 shadow-[inset_4px_0_0_#acc62d,0_4px_20px_rgba(0,93,49,0.4)]' 
+                          : 'text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-white/10 hover:translate-x-1'
+                      } ${isCollapsed ? 'justify-center px-0 h-[48px]' : ''}`}
                       title={isCollapsed ? link.label : ''}
                       onClick={() => setIsMobileOpen(false)}
                     >
-                      <span className="nav-icon">{link.icon}</span>
-                      {!isCollapsed && <span className="nav-text">{link.label}</span>}
-                      {isCollapsed && active && <div className="active-dot" />}
+                      <span className={`flex items-center justify-center shrink-0 w-6 h-6 relative ${active ? 'text-[#acc62d] drop-shadow-[0_0_8px_rgba(172,198,45,0.6)]' : ''}`}>
+                        {link.icon}
+                      </span>
+                      {!isCollapsed && (
+                        <span className={`whitespace-nowrap leading-tight tracking-[0.01em] text-[0.85rem] ${active ? 'font-bold' : 'font-medium'}`}>
+                          {link.label}
+                        </span>
+                      )}
+                      {isCollapsed && active && <div className="absolute right-1 top-1 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_5px_white]" />}
                     </Link>
                   </li>
                 );
@@ -419,8 +429,17 @@ export default function Navbar({ userName, userRole, permissions }: NavbarProps)
 
                 .nav-link.active {
                     color: #fff;
-                    background: #005d31; /* Verde activo */
-                    box-shadow: 0 4px 20px rgba(0, 93, 49, 0.3);
+                    background: linear-gradient(90deg, #005d31 0%, rgba(0, 93, 49, 0.4) 100%); 
+                    box-shadow: inset 4px 0 0 #acc62d, 0 4px 20px rgba(0, 93, 49, 0.4);
+                }
+                
+                .nav-link.active .nav-icon {
+                    color: #acc62d;
+                    filter: drop-shadow(0 0 8px rgba(172, 198, 45, 0.6));
+                }
+                
+                .nav-link.active .nav-text {
+                    font-weight: 700;
                 }
                 
                 .nav-link.active:hover {

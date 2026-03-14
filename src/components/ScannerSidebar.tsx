@@ -58,7 +58,10 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
             href: '/escaner-codigos/escaner',
             label: 'Escáner Central',
             icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h.01M16 12h.01M8 12h.01M12 16h.01M16 16h.01M8 16h.01M10 8h4a2 2 0 012 2v8a2 2 0 01-2 2h-4a2 2 0 01-2-2v-8a2 2 0 012-2z" /></svg>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 8v8M12 8v8M16 8v8" />
+                </svg>
             )
         },
         {
@@ -175,13 +178,23 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                                     <li key={link.href} className="nav-item">
                                         <Link
                                             href={link.href}
-                                            className={`nav-link ${active ? 'active' : ''}`}
+                                            className={`flex items-center gap-[14px] px-[18px] h-[46px] rounded-[10px] transition-all relative w-full ${
+                                                active 
+                                                    ? 'text-white bg-gradient-to-r from-[#005d31] to-[#005d31]/40 shadow-[inset_4px_0_0_#acc62d,0_4px_20px_rgba(0,93,49,0.4)]' 
+                                                    : 'text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-white/10 hover:translate-x-1'
+                                            } ${isCollapsed ? 'justify-center px-0 h-[48px]' : ''}`}
                                             title={isCollapsed ? link.label : ''}
                                             onClick={() => setIsMobileOpen(false)}
                                         >
-                                            <span className="nav-icon">{link.icon}</span>
-                                            {!isCollapsed && <span className="nav-text">{link.label}</span>}
-                                            {isCollapsed && active && <div className="active-dot" />}
+                                            <span className={`flex items-center justify-center shrink-0 w-6 h-6 relative ${active ? 'text-[#acc62d] drop-shadow-[0_0_8px_rgba(172,198,45,0.6)]' : ''}`}>
+                                                {link.icon}
+                                            </span>
+                                            {!isCollapsed && (
+                                                <span className={`whitespace-nowrap leading-tight tracking-[0.01em] text-[0.95rem] ${active ? 'font-bold' : 'font-medium'}`}>
+                                                    {link.label}
+                                                </span>
+                                            )}
+                                            {isCollapsed && active && <div className="absolute right-1 top-1 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_5px_white]" />}
                                         </Link>
                                     </li>
                                 );
@@ -423,8 +436,17 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
 
                 .nav-link.active {
                     color: #fff;
-                    background: #005d31; 
-                    box-shadow: 0 4px 20px rgba(0, 93, 49, 0.3);
+                    background: linear-gradient(90deg, #005d31 0%, rgba(0, 93, 49, 0.4) 100%); 
+                    box-shadow: inset 4px 0 0 #acc62d, 0 4px 20px rgba(0, 93, 49, 0.4);
+                }
+                
+                .nav-link.active .nav-icon {
+                    color: #acc62d;
+                    filter: drop-shadow(0 0 8px rgba(172, 198, 45, 0.6));
+                }
+                
+                .nav-link.active .nav-text {
+                    font-weight: 700;
                 }
                 
                 .nav-link.active:hover {

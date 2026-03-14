@@ -150,7 +150,7 @@ export default function CajasMasterPage() {
                     </div>
                     <button
                         onClick={openCreateModal}
-                        className="w-full sm:w-auto bg-[#969836] hover:bg-[#7b7c2b] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-[#969836]/20 active:scale-95 flex items-center justify-center gap-3 shrink-0"
+                        className="w-full sm:w-auto bg-[#969836] hover:bg-[#7b7c2b] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-[#969836]/20 active:scale-95 flex items-center justify-center gap-3 shrink-0 cursor-pointer"
                     >
                         <i className="bi bi-plus-circle-fill text-lg"></i>
                         Nuevo Tipo
@@ -223,7 +223,7 @@ export default function CajasMasterPage() {
                                     <div className="flex items-center justify-end gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-[#f1f5f9]">
                                         <button
                                             onClick={() => openEditModal(caja)}
-                                            className="flex-1 md:flex-none h-11 w-11 rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition-all border border-orange-100 flex items-center justify-center shadow-sm"
+                                            className="flex-1 md:flex-none h-11 w-11 rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition-all border border-orange-100 flex items-center justify-center shadow-sm cursor-pointer"
                                             title="Editar"
                                         >
                                             <i className="bi bi-pencil-square text-lg"></i>
@@ -231,7 +231,7 @@ export default function CajasMasterPage() {
                                         </button>
                                         <button
                                             onClick={() => handleDelete(caja.barcode)}
-                                            className="flex-1 md:flex-none h-11 w-11 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-100 flex items-center justify-center shadow-sm"
+                                            className="flex-1 md:flex-none h-11 w-11 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-100 flex items-center justify-center shadow-sm cursor-pointer"
                                             title="Eliminar"
                                         >
                                             <i className="bi bi-trash3 text-lg"></i>
