@@ -529,6 +529,8 @@ export default function EscaneoPage() {
                                             {lastScanned.scanTime}
                                         </div>
                                     </div>
+
+                                    {/* Segunda Fila: Envase y Vida Útil */}
                                     {lastScanned.tipo_envase && (
                                         <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200">
                                             <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Tipo de Envase</span>
@@ -538,21 +540,32 @@ export default function EscaneoPage() {
                                             </div>
                                         </div>
                                     )}
-                                    {lastScanned.unidades_por_paleta && lastScanned.unidades_por_paleta !== '0' && (
-                                        <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200">
-                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Uds / Paleta</span>
+                                    {lastScanned.vida_util && (
+                                        <div className={`bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200 ${!lastScanned.tipo_envase ? 'col-span-2' : ''}`}>
+                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Vida Útil</span>
                                             <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
-                                                <i className="bi bi-grid-3x3-gap-fill text-purple-500"></i>
-                                                {lastScanned.unidades_por_paleta}
+                                                <i className="bi bi-calendar-check-fill text-green-500"></i>
+                                                {lastScanned.vida_util}
                                             </div>
                                         </div>
                                     )}
-                                    {lastScanned.vida_util && (
-                                        <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200 col-span-2">
-                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Vida Útil</span>
+
+                                    {/* Tercera Fila: RS y Unidades Paleta (si aplica) */}
+                                    {lastScanned.registro_sanitario && (
+                                        <div className={`bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200 ${!(lastScanned.unidades_por_paleta && lastScanned.unidades_por_paleta !== '0') ? 'col-span-2' : ''}`}>
+                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Registro Sanitario</span>
+                                            <div className="flex items-center gap-2 text-[#475569] font-black text-[10px] sm:text-xs">
+                                                <i className="bi bi-shield-check-fill text-blue-500"></i>
+                                                {lastScanned.registro_sanitario}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {lastScanned.unidades_por_paleta && lastScanned.unidades_por_paleta !== '0' && (
+                                        <div className={`bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200 ${!lastScanned.registro_sanitario ? 'col-span-2' : ''}`}>
+                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Uds / Paleta</span>
                                             <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
-                                                <i className="bi bi-calendar-check text-green-500"></i>
-                                                {lastScanned.vida_util}
+                                                <i className="bi bi-grid-3x3-gap-fill text-orange-500"></i>
+                                                {lastScanned.unidades_por_paleta}
                                             </div>
                                         </div>
                                     )}
