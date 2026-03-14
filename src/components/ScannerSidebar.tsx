@@ -14,6 +14,20 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
     const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [permissions, setPermissions] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    setPermissions(data.role_permisos || []);
+                }
+            } catch (e) { }
+        };
+        fetchUserData();
+    }, []);
 
     // Determinar si una ruta está activa
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
@@ -91,6 +105,28 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
         }
     ];
 
+    // Filtro de enlaces basado en permisos
+    const filteredNavLinks = navLinks.filter(link => {
+        if (['/dashboard'].includes(link.href)) return true;
+        
+        const permsMap: Record<string, string[]> = {
+            '/escaner-codigos/escaner': ['escaneo-central'],
+            '/escaner-codigos/centro-solicitudes': ['solicitudes'],
+            '/escaner-codigos/productos': ['escaneo-productos'],
+            '/escaner-codigos/cajas': ['escaneo-cajas'],
+            '/escaner-codigos/temporal': ['temporal'],
+            '/escaner-codigos/historial': ['escaneo-historial']
+        };
+
+        const required = permsMap[link.href];
+        if (!required) return true;
+        
+        // El módulo temporal es universal por contingencia
+        if (required.includes('temporal')) return true;
+
+        return required.some(p => permissions.includes(p));
+    });
+
     return (
         <>
             {/* Mobile Header Toggle */}
@@ -133,7 +169,7 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                 <div className="sidebar-content">
                     <nav className="sidebar-nav">
                         <ul className="nav-list">
-                            {navLinks.map((link) => {
+                            {filteredNavLinks.map((link) => {
                                 const active = isActive(link.href) && (link.href !== '/dashboard');
                                 return (
                                     <li key={link.href} className="nav-item">
@@ -158,18 +194,18 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                 {userName && (
                     <div className="sidebar-footer">
                         <div className="user-profile-container">
-                            <div className="user-profile-link">
-                                <div className="avatar" style={{ backgroundColor: '#2563eb' }}>
+                            <Link href="/escaner-codigos/perfil" className="user-profile-link" title="Ir a mi perfil" style={{ textDecoration: 'none' }}>
+                                <div className="avatar">
                                     {userName.charAt(0).toUpperCase()}
                                 </div>
 
                                 {!isCollapsed && (
                                     <div className="user-details">
                                         <span className="user-name">{userName.split(' ')[0]}</span>
-                                        <span className="user-role">{userRole || 'Operador'}</span>
+                                        <span className="user-role">{userRole?.toUpperCase() || 'TRABAJADOR'}</span>
                                     </div>
                                 )}
-                            </div>
+                            </Link>
 
                             <button className="logout-btn" onClick={handleLogout} title="Cerrar Sesión">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
@@ -472,6 +508,8 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                 .avatar {
                     width: 40px;
                     height: 40px;
+                    background: #111827;
+                    border: 2px solid #b5b74b;
                     color: white;
                     border-radius: 50%;
                     display: flex;
@@ -481,6 +519,10 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                     font-size: 1rem;
                     flex-shrink: 0;
                     transition: transform 0.2s;
+                }
+
+                .user-profile-link:hover .avatar {
+                    transform: scale(1.05);
                 }
 
                 .user-details {
@@ -498,8 +540,11 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
                 }
 
                 .user-role {
-                    font-size: 0.75rem;
-                    color: #94a3b8;
+                    font-size: 0.70rem;
+                    font-weight: 800;
+                    color: #b5b74b;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
                     white-space: nowrap;
                 }
 

@@ -14,10 +14,10 @@ export const GET = withAuth(async (_request, user) => {
     if (user.usuario === 'sadmin' || user.roles === 'administrador') {
         hasSolicitudesPermission = true;
         permisos_list = [
-            'registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'solicitudes',
-            'productos', 'parametros-maestros', 'usuarios', 'admin/config-pdf', 'accesos',
+            'registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'historial-descargas-masivas', 'solicitudes',
+            'productos', 'parametros-maestros', 'usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos',
             'control-sistema', 'control-calidad',
-            'escaneo', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial'
+            'escaneo', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central'
         ];
     } else if (user.role_id) {
         const { data: permisos } = await supabase

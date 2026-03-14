@@ -14,7 +14,7 @@ const PATH_TO_MODULE: Record<string, string> = {
     '/control-calidad/productos': 'productos',
     '/control-calidad/parametros-maestros': 'parametros-maestros',
     '/control-sistema/gestion-usuarios': 'usuarios',
-    '/control-sistema/config-reporte': 'admin/config-pdf',
+    '/control-sistema/config-reporte': 'admin/config-reportes', // Preferido ahora
     '/control-sistema/auditoria-accesos': 'accesos',
     '/control-calidad/temporal': 'temporal',
 };

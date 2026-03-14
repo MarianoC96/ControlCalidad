@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 export default function ControlSistemaGateway() {
     const router = useRouter();
     const [isAdmin, setIsAdmin] = useState(false);
+    const [userPerms, setUserPerms] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -15,7 +16,9 @@ export default function ControlSistemaGateway() {
                 const res = await fetch('/api/auth/me');
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.roles === 'administrador') {
+                    const hasControlAccess = data.role_permisos?.includes('control-sistema');
+                    setUserPerms(data.role_permisos || []);
+                    if (hasControlAccess) {
                         setIsAdmin(true);
                     } else {
                         router.push('/dashboard');
@@ -86,68 +89,76 @@ export default function ControlSistemaGateway() {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                     
                     {/* Tarjeta 1: Usuarios */}
-                    <Link href="/control-sistema/gestion-usuarios" className="card-module-premium group">
-                        <div className="icon-wrapper bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white">
-                            <i className="bi bi-people-fill"></i>
-                        </div>
-                        <div className="card-body">
-                            <h3>Gestión de Usuarios</h3>
-                            <p>Administra cuentas, roles y niveles de acceso para todo el personal.</p>
-                        </div>
-                        <div className="card-footer">
-                            <span>CONFIGURAR</span>
-                            <i className="bi bi-arrow-right"></i>
-                        </div>
-                        <div className="ambient-glow bg-emerald-400/10"></div>
-                    </Link>
+                    {userPerms.includes('usuarios') && (
+                        <Link href="/control-sistema/gestion-usuarios" className="card-module-premium group">
+                            <div className="icon-wrapper bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white">
+                                <i className="bi bi-people-fill"></i>
+                            </div>
+                            <div className="card-body">
+                                <h3>Gestión de Usuarios</h3>
+                                <p>Administra cuentas, roles y niveles de acceso para todo el personal.</p>
+                            </div>
+                            <div className="card-footer">
+                                <span>CONFIGURAR</span>
+                                <i className="bi bi-arrow-right"></i>
+                            </div>
+                            <div className="ambient-glow bg-emerald-400/10"></div>
+                        </Link>
+                    )}
 
                     {/* Tarjeta 2: Solicitudes */}
-                    <Link href="/control-sistema/centro-solicitudes" className="card-module-premium group">
-                        <div className="icon-wrapper bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white">
-                            <i className="bi bi-patch-check-fill"></i>
-                        </div>
-                        <div className="card-body">
-                            <h3>Centro de Solicitudes</h3>
-                            <p>Supervisa y autoriza ediciones extraordinarias en registros históricos.</p>
-                        </div>
-                        <div className="card-footer">
-                            <span className="text-rose-600">REVISAR</span>
-                            <i className="bi bi-arrow-right text-rose-600"></i>
-                        </div>
-                        <div className="ambient-glow bg-rose-400/10"></div>
-                    </Link>
+                    {userPerms.includes('solicitudes') && (
+                        <Link href="/control-sistema/centro-solicitudes" className="card-module-premium group">
+                            <div className="icon-wrapper bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white">
+                                <i className="bi bi-patch-check-fill"></i>
+                            </div>
+                            <div className="card-body">
+                                <h3>Centro de Solicitudes</h3>
+                                <p>Supervisa y autoriza ediciones extraordinarias en registros históricos.</p>
+                            </div>
+                            <div className="card-footer">
+                                <span className="text-rose-600">REVISAR</span>
+                                <i className="bi bi-arrow-right text-rose-600"></i>
+                            </div>
+                            <div className="ambient-glow bg-rose-400/10"></div>
+                        </Link>
+                    )}
 
                     {/* Tarjeta 3: Auditoría */}
-                    <Link href="/control-sistema/auditoria-accesos" className="card-module-premium group">
-                        <div className="icon-wrapper bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white">
-                            <i className="bi bi-terminal-split"></i>
-                        </div>
-                        <div className="card-body">
-                            <h3>Auditoría y Accesos</h3>
-                            <p>Trazabilidad completa de conexiones y operaciones críticas en el sistema.</p>
-                        </div>
-                        <div className="card-footer">
-                            <span className="text-sky-600">VER REGISTROS</span>
-                            <i className="bi bi-arrow-right text-sky-600"></i>
-                        </div>
-                        <div className="ambient-glow bg-sky-400/10"></div>
-                    </Link>
+                    {userPerms.includes('accesos') && (
+                        <Link href="/control-sistema/auditoria-accesos" className="card-module-premium group">
+                            <div className="icon-wrapper bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white">
+                                <i className="bi bi-terminal-split"></i>
+                            </div>
+                            <div className="card-body">
+                                <h3>Auditoría y Accesos</h3>
+                                <p>Trazabilidad completa de conexiones y operaciones críticas en el sistema.</p>
+                            </div>
+                            <div className="card-footer">
+                                <span className="text-sky-600">VER REGISTROS</span>
+                                <i className="bi bi-arrow-right text-sky-600"></i>
+                            </div>
+                            <div className="ambient-glow bg-sky-400/10"></div>
+                        </Link>
+                    )}
 
                     {/* Tarjeta 4: Reportes */}
-                    <Link href="/control-sistema/config-reporte" className="card-module-premium group">
-                        <div className="icon-wrapper bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white">
-                            <i className="bi bi-file-earmark-pdf-fill"></i>
-                        </div>
-                        <div className="card-body">
-                            <h3>Config. de Reportes</h3>
-                            <p>Personalización de logos, firmas y márgenes para documentos PDF.</p>
-                        </div>
-                        <div className="card-footer">
-                            <span className="text-violet-600">AJUSTAR</span>
-                            <i className="bi bi-arrow-right text-violet-600"></i>
-                        </div>
-                        <div className="ambient-glow bg-violet-400/10"></div>
-                    </Link>
+                    {(userPerms.includes('admin/config-pdf') || userPerms.includes('admin/config-reportes')) && (
+                        <Link href="/control-sistema/config-reporte" className="card-module-premium group">
+                            <div className="icon-wrapper bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white">
+                                <i className="bi bi-file-earmark-pdf-fill"></i>
+                            </div>
+                            <div className="card-body">
+                                <h3>Config. de Reportes</h3>
+                                <p>Personalización de logos, firmas y márgenes para documentos PDF.</p>
+                            </div>
+                            <div className="card-footer">
+                                <span className="text-violet-600">AJUSTAR</span>
+                                <i className="bi bi-arrow-right text-violet-600"></i>
+                            </div>
+                            <div className="ambient-glow bg-violet-400/10"></div>
+                        </Link>
+                    )}
 
                 </div>
 

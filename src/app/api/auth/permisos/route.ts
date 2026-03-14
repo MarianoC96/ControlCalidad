@@ -13,10 +13,10 @@ export const GET = withAuth(async (_request, user) => {
         return NextResponse.json({
             allowedModules: [
                 'registro-productos', 'historial', 'registros-modificados', 'historial-descargas',
-                'solicitudes', 'productos', 'parametros-maestros',
-                'usuarios', 'admin/config-pdf', 'accesos',
+                'historial-descargas-masivas', 'solicitudes', 'productos', 'parametros-maestros',
+                'usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos',
                 'control-sistema', 'control-calidad', 'escaneo',
-                'escaneo-productos', 'escaneo-cajas', 'escaneo-historial',
+                'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central',
                 'temporal',
             ],
             isSadmin: true,
@@ -30,10 +30,10 @@ export const GET = withAuth(async (_request, user) => {
             return NextResponse.json({
                 allowedModules: [
                     'registro-productos', 'historial', 'registros-modificados', 'historial-descargas',
-                    'solicitudes', 'productos', 'parametros-maestros',
-                    'usuarios', 'admin/config-pdf', 'accesos',
+                    'historial-descargas-masivas', 'solicitudes', 'productos', 'parametros-maestros',
+                    'usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos',
                     'control-sistema', 'control-calidad', 'escaneo',
-                    'escaneo-productos', 'escaneo-cajas', 'escaneo-historial',
+                    'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central',
                     'temporal',
                 ],
                 isSadmin: false,

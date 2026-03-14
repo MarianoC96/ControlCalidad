@@ -32,9 +32,9 @@ export default function ConfigPdfClient() {
         }
         const user = await response.json();
         setUserName(user.nombre_completo);
-        setUserRole(user.roles);
+        const hasPermission = user.role_permisos?.includes('admin/config-reportes');
 
-        if (user.roles !== 'administrador') {
+        if (!hasPermission) {
             router.push('/control-calidad/registro-productos');
         }
     };

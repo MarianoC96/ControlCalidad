@@ -7,22 +7,41 @@ import bcrypt from 'bcryptjs';
  */
 const createAdminClient = () => createServiceClient();
 
+async function canManageUsers(userId: string | undefined, supabase: any) {
+    if (!userId) return false;
+    const { data: user } = await supabase
+        .from('usuarios')
+        .select('usuario, roles, role_id')
+        .eq('id', parseInt(userId))
+        .single();
+        
+    if (!user) return false;
+    if (user.usuario === 'sadmin') return true;
+    
+    if (user.role_id) {
+        const { data: perm } = await supabase
+            .from('role_permisos')
+            .select('habilitado')
+            .eq('role_id', user.role_id)
+            .eq('modulo_key', 'usuarios')
+            .eq('habilitado', true)
+            .single();
+        if (perm?.habilitado) return true;
+    }
+    
+    return user.roles === 'administrador';
+}
+
 export async function GET() {
     try {
         const auth = await getAuthUserId();
         const userId = auth?.userId;
         const supabase = createAdminClient();
 
-        let isAdmin = false;
-        if (userId) {
-            const { data: u } = await supabase.from('usuarios').select('roles').eq('id', parseInt(userId)).single();
-            if (u?.roles === 'administrador') isAdmin = true;
-        }
-
-        if (!isAdmin) {
+        if (!await canManageUsers(userId, supabase)) {
             console.log('API Usuarios/GET: Acceso denegado.', { userId });
             return NextResponse.json(
-                { error: 'No autorizado. Se requiere rol de administrador.' },
+                { error: 'No autorizado. Se requiere permiso de usuarios.' },
                 { status: 403 }
             );
         }
@@ -48,14 +67,10 @@ export async function POST(request: NextRequest) {
         const userId = auth?.userId;
         const supabase = createAdminClient();
 
-        // 1. Validar Admin
-        let isAdmin = false;
-        if (userId) {
-            const { data: u } = await supabase.from('usuarios').select('roles').eq('id', parseInt(userId)).single();
-            if (u?.roles === 'administrador') isAdmin = true;
+        // 1. Validar Permisos
+        if (!await canManageUsers(userId, supabase)) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
-
-        if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
         const body = await request.json();
         const {
@@ -116,12 +131,9 @@ export async function PUT(request: NextRequest) {
         const userId = auth?.userId;
         const supabase = createAdminClient();
 
-        let isAdmin = false;
-        if (userId) {
-            const { data: u } = await supabase.from('usuarios').select('roles').eq('id', parseInt(userId)).single();
-            if (u?.roles === 'administrador') isAdmin = true;
+        if (!await canManageUsers(userId, supabase)) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
-        if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
         const body = await request.json();
         const {

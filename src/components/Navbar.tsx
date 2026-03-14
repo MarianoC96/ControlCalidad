@@ -187,7 +187,7 @@ export default function Navbar({ userName, userRole, permissions }: NavbarProps)
         {userName && (
           <div className="sidebar-footer">
             <div className="user-profile-container">
-              <Link href="/perfil" className="user-profile-link">
+              <Link href="/control-calidad/perfil" className="user-profile-link">
                 <div className="avatar">
                   {userName.charAt(0).toUpperCase()}
                 </div>
@@ -195,7 +195,7 @@ export default function Navbar({ userName, userRole, permissions }: NavbarProps)
                 {!isCollapsed && (
                   <div className="user-details">
                     <span className="user-name">{userName.split(' ')[0]}</span>
-                    <span className="user-role">{userRole || 'Usuario'}</span>
+                    <span className="user-role">{userRole?.toUpperCase() || 'TRABAJADOR'}</span>
                   </div>
                 )}
               </Link>
@@ -509,7 +509,8 @@ export default function Navbar({ userName, userRole, permissions }: NavbarProps)
                 .avatar {
                     width: 40px;
                     height: 40px;
-                    background: #6366f1;
+                    background: #111827;
+                    border: 2px solid #b5b74b;
                     color: white;
                     border-radius: 50%;
                     display: flex;
@@ -540,8 +541,11 @@ export default function Navbar({ userName, userRole, permissions }: NavbarProps)
                 }
 
                 .user-role {
-                    font-size: 0.75rem;
-                    color: #94a3b8;
+                    font-size: 0.70rem;
+                    font-weight: 800;
+                    color: #b5b74b;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
                     white-space: nowrap;
                 }
 

@@ -22,14 +22,29 @@ export async function POST(request: NextRequest) {
 
         const supabase = createServiceClient();
 
-        // Check Admin
+        // Check Permissions
         const { data: user } = await supabase
             .from('usuarios')
-            .select('roles')
+            .select('usuario, roles, role_id')
             .eq('id', userId)
             .single();
 
-        if (!user || user.roles !== 'administrador') {
+        let hasAccess = false;
+        if (user?.usuario === 'sadmin') hasAccess = true;
+        else if (user?.role_id) {
+            const { data: perm } = await supabase
+                .from('role_permisos')
+                .select('habilitado')
+                .eq('role_id', user.role_id)
+                .eq('modulo_key', 'admin/config-reportes')
+                .eq('habilitado', true)
+                .single();
+            if (perm?.habilitado) hasAccess = true;
+        } else if (user?.roles === 'administrador') {
+            hasAccess = true;
+        }
+
+        if (!hasAccess) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 

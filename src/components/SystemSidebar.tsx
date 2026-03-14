@@ -16,6 +16,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [pendingSolicitudes, setPendingSolicitudes] = useState(0);
+    const [permissions, setPermissions] = useState<string[]>([]);
 
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -34,6 +35,17 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
 
     // On mount
     useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    setPermissions(data.role_permisos || []);
+                }
+            } catch (e) { }
+        };
+
+        fetchUserData();
         fetchPendingCounts();
         const interval = setInterval(fetchPendingCounts, 10000); // 10s polling as fallback
         return () => clearInterval(interval);
@@ -120,6 +132,25 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
         }
     ];
 
+    // Filtro de enlaces basado en permisos
+    const filteredNavLinks = navLinks.filter(link => {
+        // Enlaces universales
+        if (['/control-sistema', '/dashboard'].includes(link.href)) return true;
+        
+        // Mapeo manual de permisos para el sidebar
+        const permsMap: Record<string, string[]> = {
+            '/control-sistema/gestion-usuarios': ['usuarios'],
+            '/control-sistema/centro-solicitudes': ['solicitudes'],
+            '/control-sistema/auditoria-accesos': ['accesos'],
+            '/control-sistema/config-reporte': ['admin/config-reportes']
+        };
+
+        const requiredPerms = permsMap[link.href];
+        if (!requiredPerms) return true; // Si no está en el mapa, mostrar por defecto (o manejar como restringido)
+
+        return requiredPerms.some(p => permissions.includes(p));
+    });
+
     const handleLogout = async () => {
         try {
             await fetch('/api/auth/logout', { method: 'POST' });
@@ -177,7 +208,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                 <div className="sidebar-content">
                     <nav className="sidebar-nav">
                         <ul className="nav-list">
-                            {navLinks.map((link) => {
+                            {filteredNavLinks.map((link) => {
                                 const badgeCount = link.badge || 0;
                                 const active = isActive(link.href) && link.href !== '/dashboard'; // fix for highlighting issue
                                 
@@ -215,7 +246,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                 {userName && (
                     <div className="sidebar-footer">
                         <div className="user-profile-container">
-                            <Link href="/perfil" className="user-profile-link" title="Ir a mi perfil">
+                            <Link href="/control-sistema/perfil" className="user-profile-link" title="Ir a mi perfil">
                                 <div className="avatar">
                                     {userName.charAt(0).toUpperCase()}
                                 </div>
@@ -223,7 +254,7 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                                 {!isCollapsed && (
                                     <div className="user-details">
                                         <span className="user-name">{userName.split(' ')[0]}</span>
-                                        <span className="user-role">ADMIN</span>
+                                        <span className="user-role">{userRole?.toUpperCase() || 'TRABAJADOR'}</span>
                                     </div>
                                 )}
                             </Link>

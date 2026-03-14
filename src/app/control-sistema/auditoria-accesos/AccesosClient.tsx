@@ -23,11 +23,14 @@ const MODULE_LABELS: Record<string, string> = {
     'registro-productos': 'Registrar',
     'historial': 'Historial',
     'historial-descargas': 'Historial de Descargas',
+    'historial-descargas-masivas': 'Historial de Descargas Masivas',
+    'registros-modificados': 'Registros Modificados',
     'solicitudes': 'Solicitudes',
     'productos': 'Productos',
     'parametros-maestros': 'Parámetros Maestros',
     'usuarios': 'Usuarios',
     'admin/config-pdf': 'Edición de PDF',
+    'admin/config-reportes': 'Config. Reportes',
     'accesos': 'Accesos a Sistema',
     'control-sistema': 'Control del Sistema (Padre)',
     'control-calidad': 'Control de Calidad (Padre)',
@@ -35,6 +38,7 @@ const MODULE_LABELS: Record<string, string> = {
     'escaneo-productos': 'Sección: Agregar Productos',
     'escaneo-cajas': 'Sección: Agregar Cajas',
     'escaneo-historial': 'Historial Logístico',
+    'escaneo-central': 'Escaner Central',
 };
 
 export default function AccesosClient() {
@@ -53,6 +57,11 @@ export default function AccesosClient() {
     const [confirmDelete, setConfirmDelete] = useState<Role | null>(null);
     const [userName, setUserName] = useState('');
     const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('administrador');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredRoles = roles.filter(role => 
+        role.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     useEffect(() => {
         const getCookie = (name: string) => {
@@ -105,9 +114,9 @@ export default function AccesosClient() {
         }
 
         // Parent/Child Cascade Logic
-        const systemChildren = ['usuarios', 'admin/config-pdf', 'accesos'];
-        const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros'];
-        const scannerChildren = ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'];
+        const systemChildren = ['usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos'];
+        const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas-masivas'];
+        const scannerChildren = ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central'];
 
         // If disabling a parent, disable all children
         if (moduleKey === 'control-sistema' && !nextState) {
@@ -187,9 +196,9 @@ export default function AccesosClient() {
             const nextState = !prev.includes(mod);
             let nextPerms = nextState ? [...prev, mod] : prev.filter(p => p !== mod);
 
-            const systemChildren = ['usuarios', 'admin/config-pdf', 'accesos'];
-            const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros'];
-            const scannerChildren = ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial'];
+            const systemChildren = ['usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos'];
+            const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas-masivas'];
+            const scannerChildren = ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central'];
 
             // Parent Disable => Child Disable
             if (mod === 'control-sistema' && !nextState) nextPerms = nextPerms.filter(p => !systemChildren.includes(p));
@@ -282,9 +291,7 @@ export default function AccesosClient() {
     }
 
     return (
-        <div>
-
-            <div className="page-wrapper">
+        <div className="page-wrapper">
                 <div className="main-content">
                     {/* Header */}
                     <div className="page-header">
@@ -324,11 +331,32 @@ export default function AccesosClient() {
                         {/* Roles List */}
                         <div className="roles-panel">
                             <div className="panel-header">
-                                <h2>Roles del Sistema</h2>
-                                <span className="badge-count">{roles.length}</span>
+                                <div className="flex flex-col gap-1">
+                                    <h2>Roles del Sistema</h2>
+                                    <span className="text-[10px] font-bold text-[#58623f] uppercase tracking-wider">Gestión de Acceso</span>
+                                </div>
+                                <span className="badge-count">{filteredRoles.length}</span>
                             </div>
-                            <div className="roles-list">
-                                {roles.map((role, index) => {
+
+                            {/* Búsqueda Inteligente */}
+                            <div className="search-box-container">
+                                <i className="bi bi-search search-icon"></i>
+                                <input 
+                                    type="text" 
+                                    placeholder="Buscar rol por nombre..." 
+                                    className="search-input"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                {searchTerm && (
+                                    <button className="clear-search" onClick={() => setSearchTerm('')}>
+                                        <i className="bi bi-x-circle-fill"></i>
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="roles-list custom-scrollbar">
+                                {filteredRoles.map((role, index) => {
                                     const nonSystemRoles = roles.filter(r => !r.is_system);
                                     const nonSystemIdx = nonSystemRoles.findIndex(r => r.id === role.id);
                                     const isFirst = nonSystemIdx === 0;
@@ -438,55 +466,55 @@ export default function AccesosClient() {
                                                 label: 'Control del Sistema',
                                                 icon: 'bi-cpu-fill',
                                                 color: 'indigo',
-                                                children: ['usuarios', 'accesos', 'admin/config-pdf']
+                                                children: ['usuarios', 'accesos', 'admin/config-pdf', 'admin/config-reportes']
                                             },
                                             {
                                                 id: 'control-calidad',
                                                 label: 'Control de Calidad',
                                                 icon: 'bi-check-all',
                                                 color: 'emerald',
-                                                children: ['registro-productos', 'historial', 'productos', 'parametros-maestros']
+                                                children: ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas-masivas']
                                             },
                                             {
                                                 id: 'escaneo',
                                                 label: 'Escaneo de Códigos',
                                                 icon: 'bi-upc-scan',
                                                 color: 'blue',
-                                                children: ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial']
+                                                children: ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central']
                                             }
                                         ].map(parent => {
                                             const parentPerm = selectedRole.permisos.find(p => p.modulo_key === parent.id);
                                             const parentEnabled = parentPerm?.habilitado ?? false;
                                             const parentLocked = selectedRole.is_system;
 
-                                            // Static color mapping to ensure Tailwind classes are generated
+                                            // El Olivar Sobrio color mapping (Refined)
                                             const colorMap: Record<string, any> = {
                                                 indigo: {
-                                                    bgLight: 'bg-indigo-50',
-                                                    bgMain: 'bg-indigo-600',
-                                                    bgMuted: 'bg-indigo-100',
-                                                    border: 'border-indigo-300',
-                                                    text: 'text-indigo-600',
-                                                    textMain: 'text-indigo-900',
-                                                    toggle: 'bg-indigo-600'
+                                                    bgLight: 'bg-[#f1f3ed]', 
+                                                    bgMain: 'bg-[#005d31]',  
+                                                    bgMuted: 'bg-[#e2e8d8]',
+                                                    border: 'border-[#005d31]/30',
+                                                    text: 'text-[#005d31]',
+                                                    textMain: 'text-[#004d29]', // Aclarado para que no parezca negro
+                                                    toggle: 'bg-[#005d31]'
                                                 },
                                                 emerald: {
-                                                    bgLight: 'bg-emerald-50',
-                                                    bgMain: 'bg-emerald-600',
-                                                    bgMuted: 'bg-emerald-100',
-                                                    border: 'border-emerald-300',
-                                                    text: 'text-emerald-600',
-                                                    textMain: 'text-emerald-900',
-                                                    toggle: 'bg-emerald-600'
+                                                    bgLight: 'bg-[#f4f4f0]',
+                                                    bgMain: 'bg-[#58623f]',  
+                                                    bgMuted: 'bg-[#e5e5dc]',
+                                                    border: 'border-[#58623f]/30',
+                                                    text: 'text-[#58623f]',
+                                                    textMain: 'text-[#3a412a]',
+                                                    toggle: 'bg-[#58623f]'
                                                 },
                                                 blue: {
-                                                    bgLight: 'bg-blue-50',
-                                                    bgMain: 'bg-blue-600',
-                                                    bgMuted: 'bg-blue-100',
-                                                    border: 'border-blue-300',
-                                                    text: 'text-blue-600',
-                                                    textMain: 'text-blue-900',
-                                                    toggle: 'bg-blue-600'
+                                                    bgLight: 'bg-[#f1f3ed]',
+                                                    bgMain: 'bg-[#004d29]',
+                                                    bgMuted: 'bg-[#e2e8d8]',
+                                                    border: 'border-[#004d29]/30',
+                                                    text: 'text-[#004d29]',
+                                                    textMain: 'text-[#005d31]',
+                                                    toggle: 'bg-[#004d29]'
                                                 }
                                             };
 
@@ -504,11 +532,6 @@ export default function AccesosClient() {
                                                                 <h4 className="text-sm font-black text-[#1e293b] uppercase tracking-tight m-0">{parent.label}</h4>
                                                                 <div className="flex items-center gap-2">
                                                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest m-0">{parentEnabled ? 'Grupo Activo' : 'Grupo Bloqueado'}</p>
-                                                                    {parent.id === 'control-sistema' && (
-                                                                        <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase ring-1 ring-amber-200">
-                                                                            <i className="bi bi-person-fill-lock"></i> Solo Admin
-                                                                        </span>
-                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -521,18 +544,11 @@ export default function AccesosClient() {
                                                                     <div className={`absolute top-1 bottom-1 w-5 bg-white rounded-full transition-all duration-300 shadow-sm ${parentEnabled ? 'right-1' : 'left-1'}`}></div>
                                                                 </div>
                                                             ) : (
-                                                                <div className="bg-amber-100 text-amber-700 text-[10px] font-black px-3 py-1 rounded-full uppercase italic">Sistema</div>
+                                                                <div className="bg-[#f1f3ed] text-[#58623f] text-[10px] font-black px-3 py-1 rounded-full uppercase italic ring-1 ring-[#e2e8d8]">Sistema</div>
                                                             )}
                                                         </div>
                                                     </div>
 
-                                                    {/* Special Notice for Control Sistema */}
-                                                    {parent.id === 'control-sistema' && parentEnabled && (
-                                                        <div className="bg-indigo-600/5 px-6 py-2 border-b border-indigo-100 flex items-center gap-2">
-                                                            <i className="bi bi-info-circle-fill text-indigo-500 text-xs text-xs"></i>
-                                                            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">Acceso restringido únicamente a usuarios con rol ADMINISTRADOR.</span>
-                                                        </div>
-                                                    )}
 
                                                     {/* Children Grid */}
                                                     <div className={`p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 transition-all ${parentEnabled ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
@@ -543,7 +559,7 @@ export default function AccesosClient() {
                                                                 <div 
                                                                     key={child}
                                                                     onClick={() => !parentLocked && parentEnabled && handleTogglePermission(child)}
-                                                                    className={`p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${childEnabled ? `bg-white ${colors.border} shadow-md transform -translate-y-0.5` : 'bg-slate-50 border-slate-100 hover:border-slate-200'}`}
+                                                                    className={`p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${childEnabled ? `bg-white ${colors.border} shadow-md transform -translate-y-0.5` : 'bg-[#f8faf5] border-[#e2e8d8] hover:border-[#c5cdba]'}`}
                                                                 >
                                                                     <div className="flex items-center gap-3">
                                                                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${childEnabled ? `${colors.bgMuted} ${colors.text}` : 'bg-white text-slate-300 border border-slate-100'}`}>
@@ -565,28 +581,28 @@ export default function AccesosClient() {
                                         })}
 
                                         {/* Acceso Universal: Centro de Solicitudes */}
-                                        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group">
+                                        <div className="rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group" style={{ background: 'linear-gradient(135deg, #164e33, #004d29)' }}>
                                             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
                                                 <i className="bi bi-clock-history text-8xl"></i>
                                             </div>
                                             <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
                                                 <div className="flex items-center gap-5">
                                                     <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl border border-white/20 shadow-2xl">
-                                                        <i className="bi bi-person-workspace text-amber-400"></i>
+                                                        <i className="bi bi-person-workspace text-[#969836]"></i>
                                                     </div>
                                                     <div>
                                                         <h4 className="text-lg font-black uppercase tracking-tight m-0 text-white">Centro de Solicitudes</h4>
-                                                        <p className="text-xs font-medium text-slate-400 m-0">Acceso Universal Transversal</p>
+                                                        <p className="text-xs font-medium text-emerald-100/80 m-0">Acceso Universal Transversal</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col items-center gap-2">
                                                     <div 
-                                                        className={`w-20 h-9 rounded-full relative cursor-pointer transition-all duration-300 ${selectedRole.permisos.find(p => p.modulo_key === 'solicitudes')?.habilitado ? 'bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'bg-slate-700'}`}
+                                                        className={`w-20 h-9 rounded-full relative cursor-pointer transition-all duration-300 ${selectedRole.permisos.find(p => p.modulo_key === 'solicitudes')?.habilitado ? 'bg-[#969836] shadow-[0_0_20px_rgba(150,152,54,0.4)]' : 'bg-slate-700'}`}
                                                         onClick={() => !selectedRole.is_system && handleTogglePermission('solicitudes')}
                                                     >
                                                         <div className={`absolute top-1 bottom-1 w-7 bg-white rounded-full transition-all duration-300 shadow-sm ${(selectedRole.permisos.find(p => p.modulo_key === 'solicitudes')?.habilitado) ? 'right-1' : 'left-1'}`}></div>
                                                     </div>
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-50/70">
                                                         {(selectedRole.permisos.find(p => p.modulo_key === 'solicitudes')?.habilitado) ? 'Acceso Permitido' : 'Acceso Restringido'}
                                                     </span>
                                                 </div>
@@ -594,51 +610,40 @@ export default function AccesosClient() {
                                         </div>
                                     </div>
 
-                                    {/* Módulos de Soporte (Hidden from Main View but kept for internal logic if needed) */}
-                                    <div className="hidden">
-                                        {modules.filter(m => !['control-sistema', 'control-calidad', 'escaneo', 'usuarios', 'accesos', 'admin/config-pdf', 'registro-productos', 'historial', 'productos', 'parametros-maestros', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'solicitudes'].includes(m)).map(mod => (
-                                            <div key={mod} onClick={() => handleTogglePermission(mod)}>{mod}</div>
-                                        ))}
-                                    </div>
-
                                     {!selectedRole.is_system && (
                                         <div className="save-bar">
-                                            <button className="btn-save" onClick={handleSavePermissions} disabled={saving}>
-                                                {saving ? (
-                                                    <><span className="spinner" /> Guardando...</>
-                                                ) : (
-                                                    <>
-                                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                                        Guardar Permisos
-                                                    </>
-                                                )}
+                                            <button
+                                                className="btn-save"
+                                                onClick={handleSavePermissions}
+                                                disabled={saving}
+                                            >
+                                                {saving ? <span className="spinner"></span> : <><i className="bi bi-save-fill"></i> Guardar Cambios</>}
                                             </button>
                                         </div>
                                     )}
                                 </>
-                            ) : (
-                                <div className="empty-state">
-                                    <div className="empty-icon">
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
-                                    </div>
-                                    <h3>Selecciona un rol</h3>
-                                    <p>Haz clic en un rol de la lista para ver y modificar sus permisos de acceso a módulos del sistema.</p>
+                        ) : (
+                            <div className="empty-state">
+                                <div className="empty-icon">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
                                 </div>
-                            )}
-                        </div>
+                                <h3>Selecciona un rol</h3>
+                                <p>Haz clic en un rol de la lista para ver y modificar sus permisos de acceso a módulos del sistema.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-                     {showNewRoleModal && (
+            {showNewRoleModal && (
                 <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm" onClick={handleCloseModal}></div>
+                    <div className="absolute inset-0 bg-[#003019]/80 backdrop-blur-sm" onClick={handleCloseModal}></div>
                     <div className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-2xl max-h-[90vh]" style={{ zIndex: 10 }} onClick={e => e.stopPropagation()}>
                         
                         {/* Header Estilo Historial */}
                         <div className="p-5 sm:p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] flex-shrink-0 rounded-t-3xl">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0">
+                                <div className="w-12 h-12 bg-slate-100 text-slate-800 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0">
                                     <i className="bi bi-shield-lock-fill"></i>
                                 </div>
                                 <div>
@@ -684,137 +689,145 @@ export default function AccesosClient() {
                                     />
                                 </div>
 
-                                {/* Módulos habilitados */}
                                 <div className="space-y-4 pt-2">
-                                    <div className="flex justify-between items-center px-1">
-                                        <div className="flex items-center gap-2">
-                                            <i className="bi bi-grid-fill text-[#0f172a]"></i>
-                                            <span className="text-xs font-black text-[#1e293b] uppercase tracking-widest">Módulos Habilitados</span>
+                                        <div className="flex justify-between items-center px-1">
+                                            <div className="flex items-center gap-2">
+                                                <i className="bi bi-grid-fill text-[#004d29]"></i>
+                                                <span className="text-xs font-black text-[#004d29] uppercase tracking-widest">Configuración de Privilegios</span>
+                                            </div>
+                                            <span className="text-[10px] font-black bg-[#f1f3ed] text-[#58623f] px-3 py-1 rounded-full uppercase">
+                                                {newRolePermisos.length} / {modules.filter(m => isSadmin || m !== 'accesos').length} seleccionados
+                                            </span>
                                         </div>
-                                        <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full uppercase">
-                                            {newRolePermisos.length} / {modules.filter(m => isSadmin || m !== 'accesos').length} seleccionados
-                                        </span>
-                                    </div>
 
-                                    <div className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden divide-y divide-[#f1f5f9]">
-                                        {/* Módulos regulares */}
-                                        {modules.filter(m => !m.startsWith('escaneo') && (isSadmin || m !== 'accesos')).map(mod => {
-                                            const isChecked = newRolePermisos.includes(mod);
-                                            return (
-                                                <div
-                                                    key={mod}
-                                                    className={`p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer ${isChecked ? 'bg-indigo-50/10' : ''}`}
-                                                    onClick={() => handleToggleNewRolePermission(mod)}
-                                                >
+                                        <div className="space-y-4">
+                                            {/* SECCIÓN: ACCESO UNIVERSAL */}
+                                            {modules.includes('solicitudes') && (
+                                                <div className="p-4 rounded-2xl border border-[#e2e8d8] bg-[#f8faf5] flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${isChecked ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                                            <i className={`bi ${mod === 'dashboard' ? 'bi-speedometer2' : mod === 'usuarios' ? 'bi-people' : mod === 'accesos' ? 'bi-shield-lock' : 'bi-gear'}`}></i>
+                                                        <div className="w-10 h-10 rounded-xl bg-[#969836] text-white flex items-center justify-center text-lg shadow-sm">
+                                                            <i className="bi bi-person-workspace"></i>
                                                         </div>
-                                                        <span className={`text-sm font-bold ${isChecked ? 'text-indigo-900' : 'text-slate-600'}`}>{MODULE_LABELS[mod] || mod}</span>
+                                                        <div>
+                                                            <span className="text-sm font-black text-[#004d29] block">Centro de Solicitudes</span>
+                                                            <span className="text-[10px] font-bold text-[#7b7c2b] uppercase tracking-tighter">Acceso Universal</span>
+                                                        </div>
                                                     </div>
-                                                    <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${isChecked ? 'bg-indigo-600' : 'bg-slate-300'}`}>
-                                                        <div className={`absolute top-1 bottom-1 w-4 bg-white rounded-full transition-all duration-300 shadow-sm ${isChecked ? 'right-1' : 'left-1'}`}></div>
+                                                    <div 
+                                                        className={`w-12 h-6 rounded-full relative transition-colors cursor-pointer ${newRolePermisos.includes('solicitudes') ? 'bg-[#969836]' : 'bg-[#cbd5e1]'}`}
+                                                        onClick={() => handleToggleNewRolePermission('solicitudes')}
+                                                    >
+                                                        <div className={`absolute top-1 bottom-1 w-4 bg-white rounded-full transition-all ${newRolePermisos.includes('solicitudes') ? 'right-1' : 'left-1'}`}></div>
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
+                                            )}
 
-                                        {/* Separador logístico */}
-                                        <div className="bg-slate-50 p-4">
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <i className="bi bi-box-seam-fill text-blue-600"></i>
-                                                <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Módulo Logístico</span>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                {/* Parent Escaneo */}
-                                                {(() => {
-                                                    const mod = 'escaneo';
-                                                    const isChecked = newRolePermisos.includes(mod);
-                                                    return (
-                                                        <div
-                                                            className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${isChecked ? 'bg-white border-blue-200 shadow-sm' : 'bg-slate-100/50 border-slate-200 opacity-60'}`}
-                                                            onClick={() => handleToggleNewRolePermission(mod)}
+                                            {/* AGRUPACIÓN DINÁMICA: PADRES E HIJOS */}
+                                            {[
+                                                { key: 'control-sistema', label: 'Control del Sistema', icon: 'bi-cpu-fill', children: ['usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos'], color: { bg: 'bg-[#004d29]', border: 'border-[#004d29]', text: 'text-[#004d29]', bgMuted: 'bg-[#eef2ea]' } },
+                                                { key: 'control-calidad', label: 'Control de Calidad', icon: 'bi-shield-check', children: ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas-masivas'], color: { bg: 'bg-[#58623f]', border: 'border-[#58623f]', text: 'text-[#58623f]', bgMuted: 'bg-[#f4f5f0]' } },
+                                                { key: 'escaneo', label: 'Escaneo de Códigos', icon: 'bi-upc-scan', children: ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central'], color: { bg: 'bg-[#7b7c2b]', border: 'border-[#7b7c2b]', text: 'text-[#7b7c2b]', bgMuted: 'bg-[#f8faf5]' } }
+                                            ].map((group) => {
+                                                const parentEnabled = newRolePermisos.includes(group.key);
+                                                return (
+                                                    <div key={group.key} className="bg-white border border-[#e2e8d8] rounded-2xl overflow-hidden shadow-sm">
+                                                        {/* Header del Padre */}
+                                                        <div 
+                                                            className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${parentEnabled ? group.color.bgMuted : 'bg-gray-50'}`}
+                                                            onClick={() => handleToggleNewRolePermission(group.key)}
                                                         >
                                                             <div className="flex items-center gap-3">
-                                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${isChecked ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                                                                    <i className="bi bi-upc-scan"></i>
+                                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${parentEnabled ? `${group.color.bg} text-white` : 'bg-white text-slate-300 border border-slate-100'}`}>
+                                                                    <i className={`bi ${group.icon}`}></i>
                                                                 </div>
-                                                                <span className={`text-sm font-black ${isChecked ? 'text-blue-900' : 'text-slate-600'}`}>{MODULE_LABELS[mod]}</span>
+                                                                <div className="flex flex-col">
+                                                                    <span className={`text-sm font-black uppercase tracking-tight ${parentEnabled ? group.color.text : 'text-slate-400'}`}>{group.label}</span>
+                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{parentEnabled ? 'Grupo Habilitado' : 'Grupo Bloqueado'}</span>
+                                                                </div>
                                                             </div>
-                                                            <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isChecked ? 'bg-blue-600' : 'bg-slate-300'}`}>
-                                                                <div className={`absolute top-0.5 bottom-0.5 w-4 bg-white rounded-full transition-all duration-300 shadow-sm ${isChecked ? 'right-0.5' : 'left-0.5'}`}></div>
+                                                            <div className={`w-12 h-6 rounded-full relative transition-colors ${parentEnabled ? group.color.bg : 'bg-slate-200'}`}>
+                                                                <div className={`absolute top-1 bottom-1 w-4 bg-white rounded-full transition-all ${parentEnabled ? 'right-1' : 'left-1'}`}></div>
                                                             </div>
                                                         </div>
-                                                    );
-                                                })()}
 
-                                                {/* Permisos Hijos */}
-                                                <div className={`logistics-children-grid transition-all duration-300 ${newRolePermisos.includes('escaneo') ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-                                                    {modules.filter(m => m.startsWith('escaneo-')).map(mod => {
-                                                        const isChecked = newRolePermisos.includes(mod);
-                                                        return (
-                                                            <div
-                                                                key={mod}
-                                                                className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all group ${isChecked ? 'bg-white border-blue-400 shadow-sm' : 'bg-white border-slate-100'}`}
-                                                                onClick={() => handleToggleNewRolePermission(mod)}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isChecked ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
-                                                                        {isChecked ? <i className="bi bi-check-lg text-xs"></i> : <i className="bi bi-dash text-sm"></i>}
+                                                        {/* Lista de Hijos */}
+                                                        <div className={`p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white transition-all duration-300 ${parentEnabled ? 'opacity-100' : 'opacity-40 pointer-events-none grayscale'}`}>
+                                                            {group.children.filter(child => isSadmin || child !== 'accesos').map(child => {
+                                                                const childEnabled = newRolePermisos.includes(child);
+                                                                return (
+                                                                    <div 
+                                                                        key={child}
+                                                                        onClick={() => parentEnabled && handleToggleNewRolePermission(child)}
+                                                                        className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${childEnabled ? `bg-white ${group.color.border} shadow-sm transform -translate-y-0.5` : 'bg-[#f8faf5] border-[#e2e8d8]'}`}
+                                                                    >
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs ${childEnabled ? `${group.color.bgMuted} ${group.color.text}` : 'bg-white text-slate-200'}`}>
+                                                                                {childEnabled ? <i className="bi bi-check-lg"></i> : <i className="bi bi-dash"></i>}
+                                                                            </div>
+                                                                            <span className={`text-[10px] font-bold leading-none ${childEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                                                                                {MODULE_LABELS[child]?.replace('Sección: ', '') || child}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className={`w-8 h-4 rounded-full relative transition-colors ${childEnabled ? group.color.bg : 'bg-slate-200'}`}>
+                                                                            <div className={`absolute top-0.5 bottom-0.5 w-3 bg-white rounded-full transition-all ${childEnabled ? 'right-0.5' : 'left-0.5'}`}></div>
+                                                                        </div>
                                                                     </div>
-                                                                    <span className={`text-[11px] font-black uppercase tracking-tighter leading-none ${isChecked ? 'text-blue-900' : 'text-slate-500'}`}>
-                                                                        {MODULE_LABELS[mod]?.replace('Sección: ', '') || mod}
-                                                                    </span>
-                                                                </div>
-                                                                <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isChecked ? 'bg-blue-600' : 'bg-slate-300'}`}>
-                                                                    <div className={`absolute top-0.5 bottom-0.5 w-4 bg-white rounded-full transition-all duration-300 shadow-sm ${isChecked ? 'right-0.5' : 'left-0.5'}`}></div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Footer Fijo */}
-                        <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
-                            <button
-                                onClick={handleCloseModal}
-                                className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleCreateRole}
-                                disabled={saving || !newRoleName.trim() || newRolePermisos.length === 0}
-                                className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#0f172a] text-white hover:bg-[#334155] transition-all shadow-lg shadow-[#0f172a]/20 border-0 disabled:opacity-50 flex items-center gap-2"
-                            >
-                                {saving ? 'Guardando...' : <><i className="bi bi-check-circle-fill"></i> Crear Rol</>}
-                            </button>
-                        </div>
+                            {/* Footer Fijo */}
+                            <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
+                                <button
+                                    onClick={handleCloseModal}
+                                    className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleCreateRole}
+                                    disabled={saving || !newRoleName.trim() || newRolePermisos.length === 0}
+                                    className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#004d29] text-white hover:bg-[#005d31] transition-all shadow-lg shadow-[#004d29]/20 border-0 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {saving ? 'Guardando...' : <><i className="bi bi-check-circle-fill"></i> Crear Rol</>}
+                                </button>
+                            </div>
                     </div>
                 </div>
             )}
 
             {/* Confirm Delete Modal */}
             {confirmDelete && (
-                <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
-                    <div className="modal-box small" onClick={e => e.stopPropagation()}>
-                        <div className="modal-body text-center">
-                            <div className="delete-icon">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </div>
-                            <h3>¿Eliminar rol &ldquo;{confirmDelete.nombre}&rdquo;?</h3>
-                            <p>Esta acción no se puede deshacer. Solo se puede eliminar si no hay usuarios asignados a este rol.</p>
+                <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#003019]/80 backdrop-blur-sm" onClick={() => setConfirmDelete(null)}></div>
+                    <div className="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 text-center">
+                        <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 text-3xl mx-auto mb-6">
+                            <i className="bi bi-exclamation-triangle-fill"></i>
                         </div>
-                        <div className="modal-footer">
-                            <button className="btn-cancel" onClick={() => setConfirmDelete(null)}>Cancelar</button>
-                            <button className="btn-danger" onClick={() => handleDeleteRole(confirmDelete)}>Eliminar</button>
+                        <h3 className="text-xl font-black text-[#004d29] mb-3">¿Eliminar rol?</h3>
+                        <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+                            Esta acción eliminará permanentemente el rol <strong className="text-[#004d29]">&ldquo;{confirmDelete?.nombre}&rdquo;</strong>. Esta acción no se puede deshacer.
+                        </p>
+                        <div className="flex gap-3">
+                            <button 
+                                className="flex-1 px-6 py-3 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                                onClick={() => setConfirmDelete(null)}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                className="flex-1 px-6 py-3 rounded-xl font-bold text-sm bg-rose-500 text-white hover:bg-rose-600 transition-all shadow-lg shadow-rose-200"
+                                onClick={() => confirmDelete && handleDeleteRole(confirmDelete)}
+                            >
+                                Eliminar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -826,12 +839,12 @@ export default function AccesosClient() {
 
                 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; gap: 16px; flex-wrap: wrap; }
                 .header-left { display: flex; align-items: center; gap: 18px; }
-                .header-icon-box { width: 56px; height: 56px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 8px 20px -4px rgba(99,102,241,0.4); }
-                .page-title { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
-                .page-subtitle { font-size: 0.9rem; color: #64748b; margin: 4px 0 0; font-weight: 500; }
+                .header-icon-box { width: 56px; height: 56px; background: #004d29; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 8px 20px -4px rgba(0,77,41,0.3); }
+                .page-title { font-size: 1.8rem; font-weight: 800; color: #004d29; margin: 0; letter-spacing: -0.02em; }
+                .page-subtitle { font-size: 0.9rem; color: #58623f; margin: 4px 0 0; font-weight: 500; }
 
-                .btn-create { display: flex; align-items: center; gap: 10px; padding: 10px 20px 10px 14px; background: linear-gradient(135deg, #0f172a, #334155); color: white; border: none; border-radius: 16px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 20px -6px rgba(15,23,42,0.4); }
-                .btn-create:hover { transform: translateY(-2px); box-shadow: 0 12px 25px -8px rgba(15,23,42,0.5); background: linear-gradient(135deg, #1e293b, #475569); }
+                .btn-create { display: flex; align-items: center; gap: 10px; padding: 10px 20px 10px 14px; background: linear-gradient(135deg, #005d31, #58623f); color: white; border: none; border-radius: 16px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 20px -6px rgba(0,93,49,0.4); }
+                .btn-create:hover { transform: translateY(-2px); box-shadow: 0 12px 25px -8px rgba(0,93,49,0.5); background: linear-gradient(135deg, #004d29, #3a412a); }
                 .btn-icon-bg { width: 28px; height: 28px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 
                 .alert { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
@@ -842,34 +855,42 @@ export default function AccesosClient() {
 
                 .content-grid { display: grid; grid-template-columns: 340px 1fr; gap: 32px; align-items: start; }
 
-                .roles-panel, .perms-panel { background: white; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05); }
-                .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 28px; border-bottom: 1px solid #f1f5f9; }
-                .panel-header h2 { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0; }
-                .badge-count { background: #f1f5f9; color: #64748b; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 50px; }
-                .hl { color: #6366f1; }
+                .roles-panel { background: white; border-radius: 24px; border: 1px solid #e2e8d8; overflow: hidden; box-shadow: 0 10px 30px -10px rgba(0,77,41,0.08); display: flex; flex-direction: column; max-height: 800px; }
+                .perms-panel { background: white; border-radius: 24px; border: 1px solid #e2e8d8; overflow: hidden; box-shadow: 0 10px 30px -10px rgba(0,77,41,0.08); }
+                .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #f1f3ed; background: #fff; flex-shrink: 0; }
+                .panel-header h2 { font-size: 1.05rem; font-weight: 800; color: #004d29; margin: 0; }
+                .badge-count { background: #f1f3ed; color: #58623f; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 50px; }
+                .hl { color: #005d31; }
 
-                .roles-list { padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 300px); overflow-y: auto; }
-                .role-card { display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 16px; cursor: pointer; transition: all 0.2s cubic-bezier(0.25,0.8,0.25,1); border: 1px solid transparent; background: white; position: relative; overflow: hidden; }
-                .role-card:hover { background: #f8fafc; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-                .role-card.selected { background: #eef2ff; border-color: #c7d2fe; box-shadow: 0 4px 12px rgba(99,102,241,0.1); }
-                .role-card.selected::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #6366f1; border-radius: 4px 0 0 4px; }
-                .role-card.system { background: linear-gradient(135deg, #fffbeb, #fff7ed); border: 1px solid #fef3c7; }
-                .role-card.system.selected { background: #fffcf0; border-color: #fbbf24; }
-                .role-card.system.selected::before { background: #fbbf24; }
+                .search-box-container { padding: 12px 20px; border-bottom: 1px solid #f1f3ed; background: #f8faf5; position: relative; display: flex; align-items: center; flex-shrink: 0; }
+                .search-icon { position: absolute; left: 34px; color: #58623f; font-size: 0.9rem; pointer-events: none; }
+                .search-input { width: 100%; height: 42px; background: white; border: 1.5px solid #e2e8d8; border-radius: 12px; padding: 0 40px 0 45px; font-size: 0.85rem; font-weight: 600; color: #004d29; outline: none; transition: all 0.2s; }
+                .search-input:focus { border-color: #005d31; box-shadow: 0 0 0 3px rgba(0,93,49,0.05); }
+                .clear-search { position: absolute; right: 30px; border: none; background: transparent; color: #c5cdba; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; }
+                .clear-search:hover { color: #58623f; }
 
-                .role-card-top { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+                .roles-list { padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+                .role-card { display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 16px; border-radius: 16px; cursor: pointer; transition: all 0.2s cubic-bezier(0.25,0.8,0.25,1); border: 1px solid transparent; background: white; position: relative; }
+                .role-card:hover { background: #f1f3ed; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,48,25,0.05); }
+                .role-card.selected { background: #eef2ea; border-color: #c5cdba; box-shadow: 0 4px 12px rgba(0,93,49,0.08); }
+                .role-card.selected::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #005d31; border-radius: 4px 0 0 4px; }
+                .role-card.system { background: linear-gradient(135deg, #f8faf5, #f1f3ed); border: 1px solid #e2e8d8; }
+                .role-card.system.selected { background: #f1f3ed; border-color: #969836; }
+                .role-card.system.selected::before { background: #969836; }
+                
+                .role-card-top { display: flex; align-items: flex-start; gap: 14px; flex: 1; min-width: 0; }
                 .role-avatar { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: white; flex-shrink: 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-                .avatar-system { background: linear-gradient(135deg, #f59e0b, #d97706); }
-                .avatar-admin { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
+                .avatar-system { background: #7b7c2b; }
+                .avatar-admin { background: #004d29; }
 
-                .role-info { min-width: 0; overflow: hidden; }
-                .role-name { font-weight: 800; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 8px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                .system-badge { background: #f59e0b; color: white; font-size: 0.55rem; font-weight: 900; padding: 2px 8px; border-radius: 50px; letter-spacing: 1px; flex-shrink: 0; }
-                .role-desc { font-size: 0.78rem; color: #64748b; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .role-info { min-width: 0; }
+                .role-name { font-weight: 800; font-size: 0.95rem; color: #004d29; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; line-height: 1.2; }
+                .system-badge { background: #969836; color: white; font-size: 0.55rem; font-weight: 900; padding: 2px 8px; border-radius: 50px; letter-spacing: 1px; flex-shrink: 0; }
+                .role-desc { font-size: 0.78rem; color: #64748b; margin-top: 2px; line-height: 1.4; word-break: break-word; }
                 .role-meta { margin-top: 6px; }
-                .meta-item { font-size: 0.72rem; color: #94a3b8; }
-                .meta-item strong { color: #6366f1; }
-                .role-card.selected .meta-item { color: #6366f1; }
+                .meta-item { font-size: 0.72rem; color: #7b7c2b; }
+                .meta-item strong { color: #005d31; }
+                .role-card.selected .meta-item { color: #004d29; }
 
                 .btn-delete-role { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: #cbd5e1; transition: all 0.2s; background: transparent; border: none; cursor: pointer; }
                 .btn-delete-role:hover { background: #fee2e2; color: #ef4444; }
@@ -910,12 +931,12 @@ export default function AccesosClient() {
                 .main-module-action { flex-shrink: 0; }
                 .lock-icon { color: #cbd5e1; }
 
-                .lock-badge { display: flex; align-items: center; gap: 6px; background: #fffbeb; color: #d97706; font-size: 0.7rem; font-weight: 800; padding: 6px 14px; border-radius: 50px; border: 1px solid #fef3c7; }
-                .system-notice { display: flex; align-items: flex-start; gap: 14px; padding: 20px 28px; background: #fffcf0; border-bottom: 1px solid #fef3c7; font-size: 0.85rem; color: #92400e; line-height: 1.6; }
+                .lock-badge { display: flex; align-items: center; gap: 6px; background: #f1f3ed; color: #58623f; font-size: 0.7rem; font-weight: 800; padding: 6px 14px; border-radius: 50px; border: 1px solid #e2e8d8; }
+                .system-notice { display: flex; align-items: flex-start; gap: 14px; padding: 20px 28px; background: #f8faf5; border-bottom: 1px solid #e2e8d8; font-size: 0.85rem; color: #58623f; line-height: 1.6; }
 
-                .save-bar { padding: 24px 28px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; background: #f8fafc; }
-                .btn-save { display: flex; align-items: center; gap: 10px; padding: 12px 28px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 14px; color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
-                .btn-save:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,0.4); }
+                .save-bar { position: sticky; bottom: 0; padding: 20px 24px; border-top: 1px solid #f1f3ed; display: flex; justify-content: flex-end; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); z-index: 50; margin-top: auto; border-radius: 0 0 24px 24px; }
+                .btn-save { display: flex; align-items: center; gap: 10px; padding: 12px 32px; background: #005d31; border: none; border-radius: 14px; color: white; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,93,49,0.2); width: auto; }
+                .btn-save:hover { background: #004d29; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,77,41,0.3); }
                 .btn-save:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
                 .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite; }
                 @keyframes spin { to { transform: rotate(360deg); } }
@@ -948,13 +969,13 @@ export default function AccesosClient() {
                 .field label { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 800; color: #475569; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
                 .field label svg { color: #94a3b8; }
                 .required { color: #ef4444; }
-                .field input[type="text"], .field input[type="number"] { width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 0.95rem; color: #0f172a; outline: none; transition: all 0.2s; box-sizing: border-box; background: #f8fafc; font-family: inherit; }
-                .field input:focus { border-color: #6366f1; background: white; box-shadow: 0 0 0 4px rgba(99,102,241,0.1); }
-                .field input::placeholder { color: #cbd5e1; }
+                .field input[type="text"], .field input[type="number"] { width: 100%; padding: 14px 18px; border: 2px solid #e2e8d8; border-radius: 16px; font-size: 0.95rem; color: #003019; outline: none; transition: all 0.2s; box-sizing: border-box; background: #f8faf5; font-family: inherit; }
+                .field input:focus { border-color: #005d31; background: white; box-shadow: 0 0 0 4px rgba(0,93,49,0.1); }
+                .field input::placeholder { color: #c5cdba; }
 
-                .desc-textarea { width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 0.9rem; color: #0f172a; outline: none; transition: all 0.2s; box-sizing: border-box; background: #f8fafc; font-family: inherit; resize: vertical; min-height: 60px; line-height: 1.5; }
-                .desc-textarea:focus { border-color: #6366f1; background: white; box-shadow: 0 0 0 4px rgba(99,102,241,0.1); }
-                .desc-textarea::placeholder { color: #cbd5e1; }
+                .desc-textarea { width: 100%; padding: 14px 18px; border: 2px solid #e2e8d8; border-radius: 16px; font-size: 0.9rem; color: #003019; outline: none; transition: all 0.2s; box-sizing: border-box; background: #f8faf5; font-family: inherit; resize: vertical; min-height: 60px; line-height: 1.5; }
+                .desc-textarea:focus { border-color: #005d31; background: white; box-shadow: 0 0 0 4px rgba(0,93,49,0.1); }
+                .desc-textarea::placeholder { color: #c5cdba; }
 
                 .desc-edit-section { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; }
                 .desc-edit-label { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 800; color: #475569; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -993,16 +1014,25 @@ export default function AccesosClient() {
                 .loader-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; font-weight: 900; color: #6366f1; letter-spacing: 2px; }
 
                 @media (max-width: 900px) {
-                    .content-grid { grid-template-columns: 1fr; }
-                    .roles-list { max-height: 300px; }
-                    .modules-grid-main { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-                }
-                @media (max-width: 640px) {
-                    .main-content { padding: 24px 16px; }
-                    .page-header { flex-direction: column; text-align: center; gap: 24px; }
-                    .header-left { flex-direction: column; }
-                    .btn-create { width: 100%; justify-content: center; }
-                    .main-module-card { padding: 14px; }
+                    .main-content { padding: 20px 16px 100px; }
+                    .content-grid { grid-template-columns: 1fr; gap: 24px; }
+                    .roles-panel { max-height: 400px; }
+                    .roles-list { max-height: 350px; }
+                    .modules-grid-main { grid-template-columns: 1fr; }
+                    .save-bar { 
+                        position: fixed; 
+                        bottom: 0; 
+                        left: 0; 
+                        right: 0; 
+                        border-radius: 0; 
+                        padding: 16px 20px; 
+                        background: white; 
+                        box-shadow: 0 -10px 25px rgba(0,0,0,0.1); 
+                        border-top: 1px solid #e2e8f0;
+                        z-index: 1000;
+                    }
+                    .btn-save { width: 100%; justify-content: center; height: 52px; font-size: 1rem; }
+                    .perms-panel { border-radius: 20px; margin-bottom: 20px; }
                 }
             `}</style>
         </div>

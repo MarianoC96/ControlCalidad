@@ -156,7 +156,8 @@ export default function SolicitudesClient() {
         const user = await response.json();
         setUserName(user.nombre_completo);
         setUserRole(user.roles);
-        if (user.roles !== 'administrador' && !user.hasSolicitudesPermission) {
+        const hasPermission = user.role_permisos?.includes('solicitudes');
+        if (!hasPermission) {
             router.push('/control-calidad/historial');
         }
 
