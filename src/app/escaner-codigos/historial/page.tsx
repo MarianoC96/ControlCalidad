@@ -326,7 +326,7 @@ export default function HistorialPage() {
                             type="date"
                             value={dateFilter}
                             onChange={(e) => setDateFilter(e.target.value)}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-2xl pl-12 pr-6 py-4 text-[#1e293b] outline-none focus:border-blue-500/50 transition-all font-medium text-sm"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-2xl pl-12 pr-6 py-4 text-[#1e293b] outline-none focus:border-blue-500/50 transition-all font-medium text-sm cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                         />
                     </div>
                 </div>
@@ -368,7 +368,11 @@ export default function HistorialPage() {
                                 </div>
                             ) : (
                                 filteredList.map((item) => (
-                                    <div key={item.id} className="flex flex-col md:grid md:grid-cols-[2fr_2fr_1.5fr_1fr] gap-4 p-5 sm:p-6 hover:bg-[#f8fafc] transition-colors items-center group">
+                                    <div 
+                                        key={item.id} 
+                                        onClick={() => { setViewingRecord(item); setDetailModalOpen(true); }}
+                                        className="flex flex-col md:grid md:grid-cols-[2fr_2fr_1.5fr_1fr] gap-4 p-5 sm:p-6 hover:bg-[#f8fafc] hover:shadow-sm transition-all items-center group cursor-pointer"
+                                    >
                                         {/* Lote */}
                                         <div className="flex items-center gap-4 w-full min-w-0">
                                             <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 border transition-all ${activeTab === 'productos'
@@ -417,16 +421,16 @@ export default function HistorialPage() {
                                         {/* Acción */}
                                         <div className="flex items-center justify-end w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-[#f1f5f9] gap-2">
                                             <button
-                                                onClick={() => { setViewingRecord(item); setDetailModalOpen(true); }}
-                                                className="flex-1 md:flex-none h-11 px-6 md:px-0 md:w-11 rounded-xl bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-100 flex items-center justify-center shadow-sm gap-2"
+                                                onClick={(e) => { e.stopPropagation(); setViewingRecord(item); setDetailModalOpen(true); }}
+                                                className="flex-1 md:flex-none h-11 px-6 md:px-0 md:w-11 rounded-xl bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-100 flex items-center justify-center shadow-sm gap-2 cursor-pointer"
                                                 title="Ver Detalles"
                                             >
                                                 <i className="bi bi-eye-fill text-lg"></i>
                                                 <span className="md:hidden font-bold text-sm uppercase">Ver Detalles</span>
                                             </button>
                                             <button
-                                                onClick={() => handleEditClick(item)}
-                                                className="flex-1 md:flex-none h-11 px-6 md:px-0 md:w-11 rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition-all border border-orange-100 flex items-center justify-center shadow-sm gap-2"
+                                                onClick={(e) => { e.stopPropagation(); handleEditClick(item); }}
+                                                className="flex-1 md:flex-none h-11 px-6 md:px-0 md:w-11 rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition-all border border-orange-100 flex items-center justify-center shadow-sm gap-2 cursor-pointer"
                                                 title="Editar Lote"
                                             >
                                                 <i className="bi bi-pencil-square text-lg"></i>
@@ -557,42 +561,42 @@ export default function HistorialPage() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 pt-2">
-                                    <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                    <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
                                         <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Código de Barras Maestro</span>
-                                        <div className="flex items-center gap-2 text-[#1e293b] font-mono font-bold text-xs tracking-widest">
-                                            <i className="bi bi-upc-scan text-slate-400"></i>
+                                        <div className="flex items-start gap-2 text-[#1e293b] font-mono font-bold text-xs tracking-widest break-all">
+                                            <i className="bi bi-upc-scan text-slate-400 shrink-0 mt-0.5"></i>
                                             {editingRecord.barcode}
                                         </div>
                                     </div>
                                     {activeTab === 'productos' ? (
                                         <>
-                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
                                                 <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Vida Útil</span>
-                                                <div className="flex items-center gap-2 text-[#1e293b] font-bold text-xs">
-                                                    <i className="bi bi-calendar-check text-green-500"></i>
-                                                    {editingRecord.masterData?.vida_util || 'N/A'}
+                                                <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-calendar-check text-green-500 shrink-0 mt-0.5"></i>
+                                                    <span className="break-words">{editingRecord.masterData?.vida_util || 'N/A'}</span>
                                                 </div>
                                             </div>
-                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
                                                 <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Reg. Sanitario</span>
-                                                <div className="flex items-center gap-2 text-[#1e293b] font-bold text-xs">
-                                                    <i className="bi bi-shield-check text-blue-500"></i>
-                                                    {editingRecord.masterData?.registro_sanitario || 'N/A'}
+                                                <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-shield-check text-blue-500 shrink-0 mt-0.5"></i>
+                                                    <span className="break-all">{editingRecord.masterData?.registro_sanitario || 'N/A'}</span>
                                                 </div>
                                             </div>
-                                            <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                            <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
                                                 <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Unidades por Caja</span>
-                                                <div className="flex items-center gap-2 text-[#1e293b] font-bold text-xs">
-                                                    <i className="bi bi-layers text-slate-400"></i>
+                                                <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-layers text-slate-400 shrink-0 mt-0.5"></i>
                                                     {editingRecord.masterData?.unidades_por_caja} Unidades
                                                 </div>
                                             </div>
                                         </>
                                     ) : (
-                                        <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200">
+                                        <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
                                             <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Capacidad Máxima</span>
-                                            <div className="flex items-center gap-2 text-[#1e293b] font-bold text-xs">
-                                                <i className="bi bi-plus-circle text-amber-500"></i>
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
+                                                <i className="bi bi-plus-circle text-amber-500 shrink-0 mt-0.5"></i>
                                                 {editingRecord.masterData?.capacidad_max} Unidades
                                             </div>
                                         </div>
@@ -743,8 +747,8 @@ export default function HistorialPage() {
             {detailModalOpen && viewingRecord && (
                 <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-[#0f172a]/90 backdrop-blur-md" onClick={() => setDetailModalOpen(false)}></div>
-                    <div className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-lg" style={{ zIndex: 10 }}>
-                        <div className="p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] rounded-t-3xl">
+                    <div className="relative bg-[#f8fafc] rounded-3xl shadow-2xl animate-in zoom-in-95 flex flex-col w-full max-w-lg max-h-[90vh]" style={{ zIndex: 10 }}>
+                        <div className="p-6 bg-white flex justify-between items-start border-b border-[#e2e8f0] rounded-t-3xl flex-shrink-0">
                             <div className="flex items-center gap-4">
                                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0 ${activeTab === 'productos' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
                                     <i className={`bi ${activeTab === 'productos' ? 'bi-box-seam' : 'bi-truck'}`}></i>
@@ -759,7 +763,7 @@ export default function HistorialPage() {
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 overflow-y-auto flex-grow custom-scrollbar">
                             {/* Imagen del producto/caja */}
                             {viewingRecord.imagen_url && (
                                 <div className="bg-white p-6 rounded-2xl border border-[#e2e8f0] shadow-sm flex items-center justify-center">
@@ -793,43 +797,43 @@ export default function HistorialPage() {
 
                             {/* Tech Specs Grid */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2">
+                                <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2 min-w-0">
                                     <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Código de Barras</span>
-                                    <div className="flex items-center gap-2 text-[#1e293b] font-mono font-bold tracking-widest">
-                                        <i className="bi bi-upc-scan text-slate-400"></i>
+                                    <div className="flex items-start gap-2 text-[#1e293b] font-mono font-bold tracking-widest break-all">
+                                        <i className="bi bi-upc-scan text-slate-400 shrink-0 mt-0.5"></i>
                                         {viewingRecord.barcode}
                                     </div>
                                 </div>
                                 {activeTab === 'productos' ? (
                                     <>
-                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm">
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm min-w-0">
                                             <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Vida Útil</span>
-                                            <div className="flex items-center gap-2 text-[#1e293b] font-black">
-                                                <i className="bi bi-calendar-check text-green-500"></i>
-                                                {viewingRecord.masterData?.vida_util || 'N/A'}
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-black">
+                                                <i className="bi bi-calendar-check text-green-500 shrink-0 mt-0.5"></i>
+                                                <span className="break-words">{viewingRecord.masterData?.vida_util || 'N/A'}</span>
                                             </div>
                                         </div>
-                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm">
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm min-w-0">
                                             <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Reg. Sanitario</span>
-                                            <div className="flex items-center gap-2 text-[#1e293b] font-black">
-                                                <i className="bi bi-shield-check text-blue-500"></i>
-                                                {viewingRecord.masterData?.registro_sanitario || 'N/A'}
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-black">
+                                                <i className="bi bi-shield-check text-blue-500 shrink-0 mt-0.5"></i>
+                                                <span className="break-all">{viewingRecord.masterData?.registro_sanitario || 'N/A'}</span>
                                             </div>
                                         </div>
-                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2">
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2 min-w-0">
                                             <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Configuración Empaque</span>
-                                            <div className="flex items-center gap-2 text-[#1e293b] font-black text-sm">
-                                                <i className="bi bi-layers text-slate-400"></i>
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-black text-sm">
+                                                <i className="bi bi-layers text-slate-400 shrink-0 mt-0.5"></i>
                                                 {viewingRecord.masterData?.unidades_por_caja} Unid. por caja
                                             </div>
                                         </div>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2">
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2 min-w-0">
                                             <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Capacidad Máxima</span>
-                                            <div className="flex items-center gap-2 text-[#1e293b] font-black">
-                                                <i className="bi bi-plus-circle text-amber-500"></i>
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-black">
+                                                <i className="bi bi-plus-circle text-amber-500 shrink-0 mt-0.5"></i>
                                                 {viewingRecord.masterData?.capacidad_max} Unidades
                                             </div>
                                         </div>
@@ -852,7 +856,7 @@ export default function HistorialPage() {
                             </div>
                         </div>
 
-                        <div className="p-5 bg-white border-t border-[#e2e8f0] flex justify-end rounded-b-3xl">
+                        <div className="p-5 bg-white border-t border-[#e2e8f0] flex justify-end rounded-b-3xl flex-shrink-0">
                             <button onClick={() => setDetailModalOpen(false)} className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm bg-[#1e293b] text-white hover:bg-slate-700 transition-all shadow-lg shadow-slate-200 border-0">
                                 Cerrar Vista
                             </button>
