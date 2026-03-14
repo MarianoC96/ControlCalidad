@@ -7,6 +7,7 @@ export interface BarcodeProduct {
     registro_sanitario?: string;
     presentacion: string;
     unidades_por_caja: number;
+    tipo_envase?: string;
     imagen_url?: string;
 }
 
@@ -14,6 +15,7 @@ export interface BarcodeBox {
     barcode: string;
     tipo_caja: string;
     capacidad_max: number;
+    unidades_por_paleta?: number;
     imagen_url?: string;
 }
 

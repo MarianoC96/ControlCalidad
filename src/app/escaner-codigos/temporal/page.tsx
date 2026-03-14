@@ -11,6 +11,8 @@ interface OfflineScan {
     usuario_id: number | null;
     mode: 'producto' | 'caja';
     presentacion?: string;
+    tipo_envase?: string;
+    unidades_por_paleta?: string;
     created_at: string;
 }
 
@@ -79,8 +81,14 @@ export default function TemporalScannerPage() {
                         presentacion: scan.mode === 'producto' ? masterData.presentacion : masterData.tipo_caja,
                         unidades: String(scan.mode === 'producto' ? masterData.unidades_por_caja : masterData.capacidad_max),
                         vida_util: masterData.vida_util,
-                        registro_sanitario: masterData.registro_sanitario
+                        registro_sanitario: masterData.registro_sanitario,
+                        tipo_envase: masterData.tipo_envase,
+                        unidades_por_paleta: masterData.unidades_por_paleta != null ? String(masterData.unidades_por_paleta) : undefined
                     };
+                } else {
+                    // Si no hay masterData, usamos lo que capturamos offline
+                    metadataToSave.tipo_envase = scan.tipo_envase;
+                    metadataToSave.unidades_por_paleta = scan.unidades_por_paleta;
                 }
 
                 const { error } = await BarcodeRepository.saveTransaction({
@@ -135,8 +143,13 @@ export default function TemporalScannerPage() {
                     presentacion: scan.mode === 'producto' ? masterData.presentacion : masterData.tipo_caja,
                     unidades: String(scan.mode === 'producto' ? masterData.unidades_por_caja : masterData.capacidad_max),
                     vida_util: masterData.vida_util,
-                    registro_sanitario: masterData.registro_sanitario
+                    registro_sanitario: masterData.registro_sanitario,
+                    tipo_envase: masterData.tipo_envase,
+                    unidades_por_paleta: masterData.unidades_por_paleta != null ? String(masterData.unidades_por_paleta) : undefined
                 };
+            } else {
+                metadataToSave.tipo_envase = scan.tipo_envase;
+                metadataToSave.unidades_por_paleta = scan.unidades_por_paleta;
             }
 
             const { error } = await BarcodeRepository.saveTransaction({

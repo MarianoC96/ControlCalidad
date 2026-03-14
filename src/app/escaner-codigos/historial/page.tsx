@@ -58,6 +58,8 @@ export default function HistorialPage() {
                         capacidad_max: snapshot.capacidad_max,
                         vida_util: snapshot.vida_util,
                         registro_sanitario: snapshot.registro_sanitario,
+                        tipo_envase: snapshot.tipo_envase,
+                        unidades_por_paleta: snapshot.unidades_por_paleta,
                         imagen_url: snapshot.imagen_url
                     } : master,
                     hasSnapshot: !!snapshot
@@ -584,22 +586,38 @@ export default function HistorialPage() {
                                                     <span className="break-all">{editingRecord.masterData?.registro_sanitario || 'N/A'}</span>
                                                 </div>
                                             </div>
-                                            <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
+                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
                                                 <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Unidades por Caja</span>
                                                 <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
                                                     <i className="bi bi-layers text-slate-400 shrink-0 mt-0.5"></i>
                                                     {editingRecord.masterData?.unidades_por_caja} Unidades
                                                 </div>
                                             </div>
+                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
+                                                <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Tipo de Envase</span>
+                                                <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-bag text-purple-500 shrink-0 mt-0.5"></i>
+                                                    {editingRecord.masterData?.tipo_envase || 'N/A'}
+                                                </div>
+                                            </div>
                                         </>
                                     ) : (
-                                        <div className="col-span-2 bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
-                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Capacidad Máxima</span>
-                                            <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
-                                                <i className="bi bi-plus-circle text-amber-500 shrink-0 mt-0.5"></i>
-                                                {editingRecord.masterData?.capacidad_max} Unidades
+                                        <>
+                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
+                                                <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Capacidad Máxima</span>
+                                                <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-plus-circle text-amber-500 shrink-0 mt-0.5"></i>
+                                                    {editingRecord.masterData?.capacidad_max} Unidades
+                                                </div>
                                             </div>
-                                        </div>
+                                            <div className="bg-slate-50/50 p-3 rounded-xl border border-dashed border-slate-200 min-w-0">
+                                                <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Unidades / Paleta</span>
+                                                <div className="flex items-start gap-2 text-[#1e293b] font-bold text-xs">
+                                                    <i className="bi bi-grid-3x3-gap text-purple-500 shrink-0 mt-0.5"></i>
+                                                    {editingRecord.masterData?.unidades_por_paleta || 'N/A'}
+                                                </div>
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -820,21 +838,35 @@ export default function HistorialPage() {
                                                 <span className="break-all">{viewingRecord.masterData?.registro_sanitario || 'N/A'}</span>
                                             </div>
                                         </div>
-                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2 min-w-0">
-                                            <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Configuración Empaque</span>
-                                            <div className="flex items-start gap-2 text-[#1e293b] font-black text-sm">
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm min-w-0">
+                                            <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Unidades por Caja</span>
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-black text-xs">
                                                 <i className="bi bi-layers text-slate-400 shrink-0 mt-0.5"></i>
-                                                {viewingRecord.masterData?.unidades_por_caja} Unid. por caja
+                                                {viewingRecord.masterData?.unidades_por_caja} Unidades
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm min-w-0">
+                                            <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Tipo de Envase</span>
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-black text-xs">
+                                                <i className="bi bi-bag text-purple-500 shrink-0 mt-0.5"></i>
+                                                {viewingRecord.masterData?.tipo_envase || 'N/A'}
                                             </div>
                                         </div>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm col-span-2 min-w-0">
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm min-w-0">
                                             <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Capacidad Máxima</span>
-                                            <div className="flex items-start gap-2 text-[#1e293b] font-black">
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-black text-xs">
                                                 <i className="bi bi-plus-circle text-amber-500 shrink-0 mt-0.5"></i>
                                                 {viewingRecord.masterData?.capacidad_max} Unidades
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-sm min-w-0">
+                                            <span className="block text-[10px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1">Unidades / Paleta</span>
+                                            <div className="flex items-start gap-2 text-[#1e293b] font-black text-xs">
+                                                <i className="bi bi-grid-3x3-gap text-purple-500 shrink-0 mt-0.5"></i>
+                                                {viewingRecord.masterData?.unidades_por_paleta || 'N/A'}
                                             </div>
                                         </div>
                                     </>

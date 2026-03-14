@@ -25,6 +25,7 @@ export default function CajasMasterPage() {
         barcode: '',
         tipo_caja: '',
         capacidad_max: '0',
+        unidades_por_paleta: '0',
         imagen_url: ''
     });
 
@@ -56,6 +57,7 @@ export default function CajasMasterPage() {
             barcode: '',
             tipo_caja: '',
             capacidad_max: '0',
+            unidades_por_paleta: '0',
             imagen_url: ''
         });
         setImagePreview(null);
@@ -69,6 +71,7 @@ export default function CajasMasterPage() {
             barcode: caja.barcode,
             tipo_caja: caja.tipo_caja,
             capacidad_max: String(caja.capacidad_max),
+            unidades_por_paleta: String(caja.unidades_por_paleta || 0),
             imagen_url: caja.imagen_url || ''
         });
         setImagePreview(caja.imagen_url || null);
@@ -97,6 +100,7 @@ export default function CajasMasterPage() {
             barcode: formatBarcode(formData.barcode, 'caja'),
             tipo_caja: formData.tipo_caja,
             capacidad_max: parseInt(formData.capacidad_max) || 0,
+            unidades_por_paleta: parseInt(formData.unidades_por_paleta) || 0,
             imagen_url: formData.imagen_url || undefined
         };
 
@@ -213,6 +217,12 @@ export default function CajasMasterPage() {
                                             <i className="bi bi-box-fill text-slate-400"></i>
                                             Capacidad: {caja.capacidad_max} Uds
                                         </div>
+                                        {(caja.unidades_por_paleta ?? 0) > 0 && (
+                                            <div className="bg-purple-50 text-purple-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter flex items-center gap-2 border border-purple-100">
+                                                <i className="bi bi-grid-3x3-gap-fill text-purple-300"></i>
+                                                {caja.unidades_por_paleta} / Paleta
+                                            </div>
+                                        )}
                                         <div className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter flex items-center gap-2 border border-blue-100 sm:flex hidden">
                                             <i className="bi bi-check-circle-fill text-blue-300"></i>
                                             Validado
@@ -346,6 +356,17 @@ export default function CajasMasterPage() {
                                         value={formData.capacidad_max}
                                         onChange={(e) => setFormData({ ...formData, capacidad_max: e.target.value })}
                                         className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-bold"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Unidades por Paleta</label>
+                                    <input
+                                        type="number"
+                                        value={formData.unidades_por_paleta}
+                                        onChange={(e) => setFormData({ ...formData, unidades_por_paleta: e.target.value })}
+                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all font-bold"
+                                        placeholder="Ej: 48"
                                     />
                                 </div>
 

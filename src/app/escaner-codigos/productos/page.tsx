@@ -27,6 +27,7 @@ export default function ProductosMasterPage() {
         registro_sanitario: '',
         presentacion: '',
         unidades_por_caja: '0',
+        tipo_envase: '',
         imagen_url: ''
     });
 
@@ -60,6 +61,7 @@ export default function ProductosMasterPage() {
             registro_sanitario: '',
             presentacion: '',
             unidades_por_caja: '0',
+            tipo_envase: '',
             imagen_url: ''
         });
         setImagePreview(null);
@@ -75,6 +77,7 @@ export default function ProductosMasterPage() {
             registro_sanitario: product.registro_sanitario || '',
             presentacion: product.presentacion,
             unidades_por_caja: String(product.unidades_por_caja),
+            tipo_envase: product.tipo_envase || '',
             imagen_url: product.imagen_url || ''
         });
         setImagePreview(product.imagen_url || null);
@@ -105,6 +108,7 @@ export default function ProductosMasterPage() {
             registro_sanitario: formData.registro_sanitario,
             presentacion: formData.presentacion,
             unidades_por_caja: parseInt(formData.unidades_por_caja) || 0,
+            tipo_envase: formData.tipo_envase || undefined,
             imagen_url: formData.imagen_url || undefined
         };
 
@@ -228,6 +232,12 @@ export default function ProductosMasterPage() {
                                             <i className="bi bi-box-fill text-blue-300"></i>
                                             {product.unidades_por_caja} Uds
                                         </div>
+                                        {product.tipo_envase && (
+                                            <div className="bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter flex items-center gap-2 border border-purple-100">
+                                                <i className="bi bi-bag-fill text-purple-300"></i>
+                                                {product.tipo_envase}
+                                            </div>
+                                        )}
                                         <div className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter flex items-center gap-2 border border-green-100 sm:flex hidden">
                                             <i className="bi bi-shield-check text-green-300"></i>
                                             RS OK
@@ -374,6 +384,16 @@ export default function ProductosMasterPage() {
                                             className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all"
                                         />
                                     </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1">Tipo de Envase</label>
+                                    <input
+                                        value={formData.tipo_envase}
+                                        onChange={(e) => setFormData({ ...formData, tipo_envase: e.target.value })}
+                                        className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl px-6 py-4 text-[#1e293b] focus:border-[#0f172a] focus:bg-white outline-none transition-all"
+                                        placeholder="Ej: Frasco, Bolsa, Lata, Sachet"
+                                    />
                                 </div>
 
                                 <div className="space-y-2">

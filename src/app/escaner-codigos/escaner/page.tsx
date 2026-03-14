@@ -13,6 +13,8 @@ interface ScanInfo {
     registro_sanitario?: string;
     presentacion: string;
     unidades_por_caja: string;
+    tipo_envase?: string;
+    unidades_por_paleta?: string;
     is_match: boolean;
     scanTime: string;
     imagen_url?: string;
@@ -121,6 +123,8 @@ export default function EscaneoPage() {
                 unidades_por_caja: unidadesText,
                 vida_util: data?.vida_util,
                 registro_sanitario: data?.registro_sanitario,
+                tipo_envase: data?.tipo_envase,
+                unidades_por_paleta: data?.unidades_por_paleta != null ? String(data.unidades_por_paleta) : undefined,
                 imagen_url: data?.imagen_url
             };
 
@@ -229,6 +233,8 @@ export default function EscaneoPage() {
                     unidades: lastScanned.unidades_por_caja,
                     vida_util: lastScanned.vida_util,
                     registro_sanitario: lastScanned.registro_sanitario,
+                    tipo_envase: lastScanned.tipo_envase,
+                    unidades_por_paleta: lastScanned.unidades_por_paleta,
                     imagen_url: lastScanned.imagen_url
                 }
             }, scanMode);
@@ -251,6 +257,8 @@ export default function EscaneoPage() {
                     usuario_id: user?.id || null,
                     mode: scanMode,
                     presentacion: lastScanned.presentacion,
+                    tipo_envase: lastScanned.tipo_envase,
+                    unidades_por_paleta: lastScanned.unidades_por_paleta,
                     imagen_url: lastScanned.imagen_url,
                     created_at: new Date().toISOString()
                 });
@@ -521,6 +529,24 @@ export default function EscaneoPage() {
                                             {lastScanned.scanTime}
                                         </div>
                                     </div>
+                                    {lastScanned.tipo_envase && (
+                                        <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200">
+                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Tipo de Envase</span>
+                                            <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
+                                                <i className="bi bi-bag-fill text-purple-500"></i>
+                                                {lastScanned.tipo_envase}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {lastScanned.unidades_por_paleta && lastScanned.unidades_por_paleta !== '0' && (
+                                        <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200">
+                                            <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Uds / Paleta</span>
+                                            <div className="flex items-center gap-2 text-[#475569] font-black text-xs">
+                                                <i className="bi bi-grid-3x3-gap-fill text-purple-500"></i>
+                                                {lastScanned.unidades_por_paleta}
+                                            </div>
+                                        </div>
+                                    )}
                                     {lastScanned.vida_util && (
                                         <div className="bg-[#f8fafc] p-4 rounded-2xl border border-dashed border-slate-200 col-span-2">
                                             <span className="block text-[9px] text-[#94a3b8] font-bold uppercase tracking-widest mb-1.5">Vida Útil</span>
