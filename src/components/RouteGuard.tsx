@@ -5,18 +5,28 @@ import { useRouter, usePathname } from 'next/navigation';
 
 // Map URL paths to module keys
 const PATH_TO_MODULE: Record<string, string> = {
+    // Control de Calidad
+    '/control-calidad': 'control-calidad',
     '/control-calidad/registro-productos': 'registro-productos',
     '/control-calidad/historial': 'historial',
+    '/control-calidad/registros-modificados': 'registros-modificados',
     '/control-calidad/historial-descargas': 'historial-descargas',
-    '/control-sistema/centro-solicitudes': 'solicitudes',
-    '/control-calidad/centro-solicitudes': 'solicitudes',
-    '/escaner-codigos/centro-solicitudes': 'solicitudes',
     '/control-calidad/productos': 'productos',
     '/control-calidad/parametros-maestros': 'parametros-maestros',
-    '/control-sistema/gestion-usuarios': 'usuarios',
-    '/control-sistema/config-reporte': 'admin/config-reportes', // Preferido ahora
-    '/control-sistema/auditoria-accesos': 'accesos',
+    '/control-calidad/centro-solicitudes': 'solicitudes',
     '/control-calidad/temporal': 'temporal',
+
+    // Control de Sistema
+    '/control-sistema': 'control-sistema',
+    '/control-sistema/gestion-usuarios': 'usuarios',
+    '/control-sistema/centro-solicitudes': 'solicitudes',
+    '/control-sistema/auditoria-accesos': 'accesos',
+    '/control-sistema/config-reporte': 'admin/config-reportes',
+
+    // Escaneo
+    '/escaner-codigos': 'escaneo',
+    '/escaner-codigos/escaner': 'escaneo',
+    '/escaner-codigos/centro-solicitudes': 'solicitudes',
 };
 
 interface RouteGuardProps {
@@ -47,18 +57,10 @@ export default function RouteGuard({ children, moduleKey }: RouteGuardProps) {
             return;
         }
 
-        // 1) Try sessionStorage cache FIRST (instant, no network)
-        try {
-            const cached = sessionStorage.getItem('nav_permisos');
-            if (cached) {
-                const modules: string[] = JSON.parse(cached);
-                if (modules.includes(key)) {
-                    setAuthorized(true);
-                    setChecking(false);
-                    return;
-                }
-            }
-        } catch { }
+        // WHY: Always verify against the API instead of trusting sessionStorage.
+        // The cache can contain stale permissions from a previous user session
+        // (e.g., sadmin → test user switch), causing unauthorized access.
+        // The API call is fast enough and the RouteGuard already shows a loading state.
 
         // 2) Fall back to API (only when cache miss or module not in cache)
         const checkPermission = async () => {

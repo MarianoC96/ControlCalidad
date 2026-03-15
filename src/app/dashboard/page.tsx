@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 
 export default function DashboardGateway() {
     const router = useRouter();
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [hasSolicitudesAccess, setHasSolicitudesAccess] = useState(false);
     const [hasQualityAccess, setHasQualityAccess] = useState(false);
     const [hasSystemAccess, setHasSystemAccess] = useState(false);
     const [hasEscaneo, setHasEscaneo] = useState(false);
@@ -21,9 +21,7 @@ export default function DashboardGateway() {
                 if (!meRes.ok) throw new Error("Auth failed");
                 const userData = await meRes.json();
 
-                if (userData.roles === 'administrador') {
-                    setIsAdmin(true);
-                }
+
 
                 // 2. Fetch specific allowed modules keys
                 const permsRes = await fetch('/api/auth/permisos');
@@ -32,30 +30,55 @@ export default function DashboardGateway() {
                 const modules = permsData.allowedModules || [];
 
                 // 3. Check for specific module categories (Parents)
-                const systemAcc = modules.includes('control-sistema') || userData.roles === 'administrador';
-                const qualityAcc = modules.includes('control-calidad') || userData.roles === 'administrador';
-                const scannerAcc = modules.includes('escaneo') || userData.permiso_escaneo;
+                // WHY: Access is determined solely by allowedModules from /api/auth/permisos.
+                // The legacy `userData.roles === 'administrador'` bypass was removed because
+                // it showed cards for modules the user doesn't actually have permission to access.
+                const systemAcc = modules.includes('control-sistema');
+                const qualityAcc = modules.includes('control-calidad');
+                const scannerAcc = modules.includes('escaneo');
 
                 setHasSystemAccess(systemAcc);
                 setHasQualityAccess(qualityAcc);
                 setHasEscaneo(scannerAcc);
+                setHasSolicitudesAccess(modules.includes('solicitudes'));
 
-                // 4. Smart Redirect Logic
-                const activeParents = [];
-                if (systemAcc) activeParents.push('/control-sistema');
-                if (qualityAcc) activeParents.push('/control-calidad/registro-productos');
-                if (scannerAcc) activeParents.push('/escaner-codigos/escaner');
-
-                // IF exactly ONE parent is accessible, redirect immediately
-                if (activeParents.length === 1) {
-                    router.push(activeParents[0]);
-                    return; // Stop rendering
+                // 4. Smart Redirect Logic: Find the first actual navigatable path.
+                const activePaths: string[] = [];
+                
+                // Priority 1: Control de Calidad submodules
+                const qSub = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas', 'historial-descargas-masivas'];
+                const firstQ = qSub.find(s => modules.includes(s));
+                if (firstQ) activePaths.push(`/control-calidad/${firstQ}`);
+                
+                // Priority 2: Control de Sistema submodules
+                const sSub = ['usuarios', 'solicitudes', 'accesos', 'admin/config-reportes'];
+                const firstS = sSub.find(s => modules.includes(s));
+                if (firstS) {
+                    if (firstS === 'usuarios') activePaths.push('/control-sistema/gestion-usuarios');
+                    else if (firstS === 'solicitudes') activePaths.push('/control-sistema/centro-solicitudes');
+                    else if (firstS === 'accesos') activePaths.push('/control-sistema/auditoria-accesos');
+                    else if (firstS === 'admin/config-reportes') activePaths.push('/control-sistema/config-reporte');
                 }
 
-                // IF only 'solicitudes' or 'temporal' are accessible but no main parents, redirect to solicitudes
-                if (activeParents.length === 0 && modules.includes('solicitudes')) {
-                    router.push('/control-sistema/centro-solicitudes');
+                // Priority 3: Escaneo
+                if (scannerAcc) activePaths.push('/escaner-codigos/escaner');
+
+                // IF exactly ONE path is accessible, redirect immediately to the specific submodule
+                if (activePaths.length === 1) {
+                    router.push(activePaths[0]);
                     return;
+                }
+
+                // Fallback for minimal access (solicitudes or temporal)
+                if (activePaths.length === 0) {
+                    if (modules.includes('solicitudes')) {
+                        router.push('/control-sistema/centro-solicitudes');
+                        return;
+                    }
+                    if (modules.includes('temporal')) {
+                        router.push('/control-calidad/temporal');
+                        return;
+                    }
                 }
 
                 setLoading(false);
@@ -95,7 +118,7 @@ export default function DashboardGateway() {
             {/* Header Section */}
             <div className="text-center mb-12 relative w-full max-w-5xl">
                 {/* Solicitudes Floating Badge for Dashboard */}
-                {isAdmin && pendingSolicitudes > 0 && (
+                {hasSolicitudesAccess && pendingSolicitudes > 0 && (
                     <Link href="/control-sistema/centro-solicitudes" className="absolute top-0 right-4 group">
                         <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-red-100 p-3 pr-5 flex items-center gap-3 hover:bg-red-50 hover:border-red-200 transition-all cursor-pointer transform hover:-translate-y-1">
                             <div className="relative">

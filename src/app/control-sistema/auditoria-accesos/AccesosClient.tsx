@@ -159,7 +159,7 @@ export default function AccesosClient() {
     };
 
     const handleSavePermissions = async () => {
-        if (!selectedRole) return;
+        if (!selectedRole || selectedRole.is_system) return;
         setSaving(true);
         setError('');
         setSuccess('');
@@ -216,6 +216,10 @@ export default function AccesosClient() {
 
     const handleCreateRole = async () => {
         if (!newRoleName.trim()) { setError('El nombre del rol es obligatorio'); return; }
+        if (newRoleName.trim().toLowerCase() === 'sadmin') {
+            setError('El nombre "sadmin" está reservado para el sistema');
+            return;
+        }
         setSaving(true);
         setError('');
         try {
@@ -449,11 +453,12 @@ export default function AccesosClient() {
                                                 Descripción del Rol
                                             </label>
                                             <textarea
-                                                className="desc-textarea"
+                                                className={`desc-textarea ${selectedRole.is_system ? 'opacity-60 pointer-events-none' : ''}`}
                                                 value={selectedRole.descripcion || ''}
                                                 onChange={e => setSelectedRole({ ...selectedRole, descripcion: e.target.value })}
-                                                placeholder="Describe brevemente el propósito de este rol..."
+                                                placeholder={selectedRole.is_system ? 'Descripción protegida por el sistema' : 'Describe brevemente el propósito de este rol...'}
                                                 rows={2}
+                                                readOnly={selectedRole.is_system}
                                             />
                                         </div>
                                     )}

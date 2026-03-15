@@ -11,14 +11,21 @@ export const GET = withAuth(async (_request, user) => {
     let hasSolicitudesPermission = false;
     let permisos_list: string[] = [];
 
-    if (user.usuario === 'sadmin' || user.roles === 'administrador') {
+    const ALL_MODULES = [
+        'registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'historial-descargas-masivas', 'solicitudes',
+        'productos', 'parametros-maestros', 'usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos',
+        'control-sistema', 'control-calidad',
+        'escaneo', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central',
+        'temporal'
+    ];
+
+    // WHY: sadmin is the only user with unconditional full access.
+    // All other users — including those with `roles === 'administrador'` —
+    // must have their permissions resolved from the role_permisos table
+    // to avoid a conflict between this endpoint and /api/auth/permisos.
+    if (user.usuario === 'sadmin') {
         hasSolicitudesPermission = true;
-        permisos_list = [
-            'registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'historial-descargas-masivas', 'solicitudes',
-            'productos', 'parametros-maestros', 'usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos',
-            'control-sistema', 'control-calidad',
-            'escaneo', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central'
-        ];
+        permisos_list = ALL_MODULES;
     } else if (user.role_id) {
         const { data: permisos } = await supabase
             .from('role_permisos')

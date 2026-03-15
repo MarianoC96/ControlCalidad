@@ -7,18 +7,30 @@ import { useState, useEffect } from 'react';
 interface NavbarProps {
   userName?: string;
   userRole?: string;
-  permissions?: {
-    can_access_calidad: boolean;
-    can_access_escaner: boolean;
-    can_access_admin: boolean;
-  };
 }
 
-export default function Navbar({ userName, userRole, permissions }: NavbarProps) {
+export default function Navbar({ userName, userRole }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
+
+  // Fetch user permissions from the single source of truth
+  useEffect(() => {
+    const fetchUserPermissions = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setPermissions(data.role_permisos || []);
+        }
+      } catch (e) {
+        // Silently fail — RouteGuard handles unauthorized redirects
+      }
+    };
+    fetchUserPermissions();
+  }, []);
 
   // Determinar si una ruta está activa
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
@@ -45,78 +57,43 @@ export default function Navbar({ userName, userRole, permissions }: NavbarProps)
   };
 
   const navLinks = [
-    {
-      href: '/control-calidad/registro-productos',
-      label: 'Registrar',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-      ),
-      permission: permissions?.can_access_calidad
+    { href: '/control-calidad/registro-productos', label: 'Registrar', permKey: 'registro-productos',
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>)
     },
-    {
-      href: '/control-calidad/historial',
-      label: 'Historial',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-      ),
-      permission: permissions?.can_access_calidad
+    { href: '/control-calidad/historial', label: 'Historial', permKey: 'historial',
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>)
     },
-    {
-      href: '/control-calidad/registros-modificados',
-      label: 'Registros Modificados',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-      ),
-      permission: permissions?.can_access_calidad
+    { href: '/control-calidad/registros-modificados', label: 'Registros Modificados', permKey: 'registros-modificados',
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>)
     },
-    {
-      href: '/control-calidad/historial-descargas',
-      label: 'Historial de descargas masivas',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
-      ),
-      permission: permissions?.can_access_calidad
+    { href: '/control-calidad/historial-descargas', label: 'Historial de descargas masivas', permKey: 'historial-descargas',
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>)
     },
-    {
-      href: '/control-calidad/centro-solicitudes',
-      label: 'Solicitudes',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-      ),
-      permission: permissions?.can_access_calidad
+    { href: '/control-calidad/centro-solicitudes', label: 'Solicitudes', permKey: 'solicitudes',
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>)
     },
-    {
-      href: '/control-calidad/productos',
-      label: 'Productos',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-      ),
-      permission: permissions?.can_access_calidad
+    { href: '/control-calidad/productos', label: 'Productos', permKey: 'productos',
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>)
     },
-    {
-      href: '/control-calidad/parametros-maestros',
-      label: 'Parámetros',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-      ),
-      permission: permissions?.can_access_calidad
+    { href: '/control-calidad/parametros-maestros', label: 'Parámetros', permKey: 'parametros-maestros',
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>)
     },
-    {
-      href: '/control-calidad/temporal',
-      label: 'Temporal',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-      ),
-      permission: permissions?.can_access_calidad
+    { href: '/control-calidad/temporal', label: 'Temporal', permKey: 'temporal',
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>)
     },
-    {
-      href: '/dashboard',
-      label: 'Volver a Dashboard',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-      )
+    { href: '/dashboard', label: 'Volver a Dashboard', permKey: null,
+      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>)
     }
   ];
+
+  // WHY: Filter links using the same role_permisos used by RouteGuard,
+  // SystemSidebar, and ScannerSidebar — no props needed, single source of truth.
+  const filteredNavLinks = navLinks.filter(link => {
+    if (!link.permKey) return true; // Dashboard link always visible
+    if (link.permKey === 'temporal') return true; // Temporal is universal contingency
+
+    return permissions.includes(link.permKey);
+  });
 
   return (
     <>
@@ -160,9 +137,7 @@ export default function Navbar({ userName, userRole, permissions }: NavbarProps)
         <div className="sidebar-content">
           <nav className="sidebar-nav">
             <ul className="nav-list">
-              {navLinks.map((link) => {
-                if (link.permission === false) return null;
-
+              {filteredNavLinks.map((link) => {
                 const active = isActive(link.href);
                 return (
                   <li key={link.href} className="nav-item">

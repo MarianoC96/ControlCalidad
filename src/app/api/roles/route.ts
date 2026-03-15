@@ -125,7 +125,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Can't use reserved names
-        if (nombre.toLowerCase() === 'sadmin') {
+        const normalizedName = nombre.trim().toLowerCase();
+        if (normalizedName === 'sadmin') {
             return NextResponse.json({ error: 'No puedes usar el nombre "sadmin"' }, { status: 400 });
         }
 
@@ -187,10 +188,11 @@ export async function PUT(request: NextRequest) {
 
         // Cannot edit sadmin role
         if (targetRole.is_system) {
-            return NextResponse.json({ error: 'El rol del sistema no puede ser modificado' }, { status: 403 });
+            return NextResponse.json({ error: 'El rol del sistema no puede ser modificado bajo ninguna circunstancia' }, { status: 403 });
         }
 
-        if (nombre?.toLowerCase() === 'sadmin') {
+        const normalizedName = nombre?.trim().toLowerCase();
+        if (normalizedName === 'sadmin') {
             return NextResponse.json({ error: 'No puedes usar el nombre "sadmin"' }, { status: 400 });
         }
 
@@ -293,19 +295,26 @@ export async function DELETE(request: NextRequest) {
         if (!targetRole) return NextResponse.json({ error: 'Rol no encontrado' }, { status: 404 });
 
         if (targetRole.is_system) {
-            return NextResponse.json({ error: 'No se puede eliminar un rol del sistema' }, { status: 403 });
+            return NextResponse.json({ error: 'El rol del sistema es vital y no puede ser eliminado bajo ninguna circunstancia' }, { status: 403 });
         }
 
         const userCount = usersResult.count || 0;
         if (userCount > 0) {
-            return NextResponse.json({ error: `No se puede eliminar: ${userCount} usuario(s) tienen este rol asignado` }, { status: 400 });
+            return NextResponse.json({ error: `No se puede eliminar: ${userCount} usuario(s) activo(s) tienen este rol asignado` }, { status: 400 });
         }
 
-        // Delete permissions and role in parallel
-        await Promise.all([
-            supabase.from('role_permisos').delete().eq('role_id', parseInt(id)),
-            supabase.from('roles').delete().eq('id', parseInt(id))
-        ]);
+        // WHY: Sequential deletion is required because of FK constraints.
+        // Soft-deleted users may still reference this role_id, which would
+        // cause a FK violation on DELETE FROM roles. We null-out the reference
+        // on deleted users first, then remove permissions, then the role itself.
+        await supabase
+            .from('usuarios')
+            .update({ role_id: null })
+            .eq('role_id', parseInt(id))
+            .eq('is_deleted', true);
+
+        await supabase.from('role_permisos').delete().eq('role_id', parseInt(id));
+        await supabase.from('roles').delete().eq('id', parseInt(id));
 
         return NextResponse.json({ success: true });
 

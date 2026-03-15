@@ -25,26 +25,15 @@ export const GET = withAuth(async (_request, user) => {
     }
 
     if (!user.role_id) {
-        // Fallback: use the roles field directly
-        if (user.roles === 'administrador') {
-            return NextResponse.json({
-                allowedModules: [
-                    'registro-productos', 'historial', 'registros-modificados', 'historial-descargas',
-                    'historial-descargas-masivas', 'solicitudes', 'productos', 'parametros-maestros',
-                    'usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos',
-                    'control-sistema', 'control-calidad', 'escaneo',
-                    'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central',
-                    'temporal',
-                ],
-                isSadmin: false,
-                roleName: 'administrador',
-            });
-        }
-
+        // WHY: Users without a role_id assigned get minimal access only.
+        // Previously, `roles === 'administrador'` got full access here,
+        // which contradicted the DB-based permissions.
+        // All users should have a role_id pointing to the roles table
+        // so their permissions are managed from the Accesos panel.
         return NextResponse.json({
             allowedModules: ['registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'temporal'],
             isSadmin: false,
-            roleName: 'trabajador',
+            roleName: user.roles || 'trabajador',
         });
     }
 
