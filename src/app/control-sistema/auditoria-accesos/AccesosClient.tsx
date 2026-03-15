@@ -618,7 +618,7 @@ export default function AccesosClient() {
                                     {!selectedRole.is_system && (
                                         <div className="save-bar">
                                             <button
-                                                className="btn-save"
+                                                className="btn-save cursor-pointer"
                                                 onClick={handleSavePermissions}
                                                 disabled={saving}
                                             >
@@ -792,14 +792,14 @@ export default function AccesosClient() {
                             <div className="p-4 sm:p-5 bg-white border-t border-[#e2e8f0] flex justify-end gap-3 flex-shrink-0 rounded-b-3xl">
                                 <button
                                     onClick={handleCloseModal}
-                                    className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0"
+                                    className="px-6 py-2.5 rounded-xl font-bold text-sm text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-colors border-0 cursor-pointer"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={handleCreateRole}
                                     disabled={saving || !newRoleName.trim() || newRolePermisos.length === 0}
-                                    className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#004d29] text-white hover:bg-[#005d31] transition-all shadow-lg shadow-[#004d29]/20 border-0 disabled:opacity-50 flex items-center gap-2"
+                                    className="px-6 py-2.5 rounded-xl font-bold text-sm bg-[#004d29] text-white hover:bg-[#005d31] transition-all shadow-lg shadow-[#004d29]/20 border-0 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                                 >
                                     {saving ? 'Guardando...' : <><i className="bi bi-check-circle-fill"></i> Crear Rol</>}
                                 </button>
