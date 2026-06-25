@@ -43,8 +43,13 @@ export async function GET(request: Request) {
         const supabase = createAdminClient();
 
         const { searchParams } = new URL(request.url);
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '25');
+        // Clamp defensivo: evita NaN y topes excesivos (DoS / count exact sobre
+        // toda la tabla). page >= 1; 1 <= limit <= 100.
+        const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1);
+        const limit = Math.min(
+            Math.max(parseInt(searchParams.get('limit') || '25', 10) || 25, 1),
+            100
+        );
         const year = searchParams.get('year');
         const month = searchParams.get('month');
         const search = searchParams.get('search');
