@@ -181,74 +181,45 @@ export async function POST(request: Request) {
             }
         }
 
-        // Build all parallel operations
-        const parallelOps: PromiseLike<any>[] = [];
-
-        // 1. Update registro fields if changed
-        if (Object.keys(updateFields).length > 0) {
-            parallelOps.push(
-                supabase.from('registros').update(updateFields).eq('id', registro_id).then()
-            );
-        }
-
-        // 2. Delete Photos marked for deletion
-        if (photosToDelete.length > 0) {
-            parallelOps.push(
-                supabase.from('fotos').delete().in('id', photosToDelete).eq('registro_id', registro_id).then()
-            );
-        }
-
-        // 3. Log History
+        // Acción para el log de historial.
         const actionParts: string[] = [];
         if (photos.length > 0) actionParts.push(`add_photo:${photos.length}`);
         if (photosToDelete.length > 0) actionParts.push(`delete_photo:${photosToDelete.length}`);
         if (Object.keys(fieldChanges).length > 0) actionParts.push(`field_edit:${Object.keys(fieldChanges).length}`);
 
-        parallelOps.push(
-            supabase.from('history_edits').insert({
-                registro_id,
-                edited_by: user.id,
-                role: user.roles,
-                action: actionParts.join(',') || 'edit',
-                photos_added: photos.length > 0 ? photos : null,
-                photos_deleted: deletedPhotosData.length > 0 ? deletedPhotosData : (photosToDelete.length > 0 ? photosToDelete : null),
-                field_changes: Object.keys(fieldChanges).length > 0 ? fieldChanges : null
-            }).then()
-        );
+        // Guardado ATÓMICO de toda la edición vía RPC transaccional: aplica
+        // cambios de campos, borra/inserta fotos, registra historial, libera el
+        // lock y marca la solicitud "usado" — todo o nada. La RPC revalida
+        // además el lock dentro de la transacción (cierra la carrera).
+        // ⚠️ REQUIERE migración 20260624000004_rpc_guardar_edicion_registro.sql
+        //    aplicada en la BD; sin ella, esta ruta responderá error.
+        const { error: rpcError } = await supabase.rpc('guardar_edicion_registro', {
+            p_registro_id: registro_id,
+            p_user_id: user.id,
+            p_role: user.roles,
+            p_update_fields: updateFields,
+            p_photos_to_delete: photosToDelete,
+            p_new_photos: photos,
+            p_action: actionParts.join(',') || 'edit',
+            p_photos_added: photos.length > 0 ? photos : null,
+            p_photos_deleted:
+                deletedPhotosData.length > 0
+                    ? deletedPhotosData
+                    : photosToDelete.length > 0
+                        ? photosToDelete
+                        : null,
+            p_field_changes: Object.keys(fieldChanges).length > 0 ? fieldChanges : null,
+            p_approved_request_id: approvedRequestId,
+        });
 
-        // 4. Insert New Photos (batch insert instead of one-by-one)
-        if (photos.length > 0) {
-            const photoRecords = photos.map((photo: any) => ({
-                registro_id,
-                datos_base64: photo.data,
-                descripcion: photo.description || 'Foto agregada en edición'
-            }));
-            parallelOps.push(
-                supabase.from('fotos').insert(photoRecords).then()
+        if (rpcError) {
+            // La RPC lanza P0001 si el lock ya no es válido/expiró (carrera).
+            const isLockError = (rpcError as any).message?.includes('bloqueo de edición');
+            return NextResponse.json(
+                { error: isLockError ? 'El bloqueo de edición no es válido o ha expirado.' : 'Error al guardar la edición.' },
+                { status: isLockError ? 409 : 500 }
             );
         }
-
-        // 5. Clear Lock
-        parallelOps.push(
-            supabase.from('registros').update({
-                edit_started_at: null,
-                edit_expires_at: null,
-                edit_started_by: null
-            }).eq('id', registro_id).then()
-        );
-
-        // 6. Mark approved request as used
-        if (approvedRequestId) {
-            parallelOps.push(
-                supabase.from('edit_requests').update({
-                    status: 'usado',
-                    resolved_at: new Date().toISOString()
-                }).eq('id', approvedRequestId).then()
-            );
-        }
-
-        // Execute all operations in parallel
-        await Promise.all(parallelOps);
 
         return NextResponse.json({ success: true });
 
