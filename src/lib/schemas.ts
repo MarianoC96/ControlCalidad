@@ -91,6 +91,64 @@ export const parametroMaestroSchema = z.object({
 
 export type ParametroMaestroFormData = z.infer<typeof parametroMaestroSchema>;
 
+// ─── Producto (admin CRUD, con parámetros anidados) ──────────
+
+/**
+ * Parámetro anidado de un producto (tabla `parametros`).
+ * Sirve para whitelistear campos en POST/PUT /api/productos y cerrar el
+ * mass-assignment: solo estos campos llegan al insert/update.
+ */
+export const productoParametroSchema = z.object({
+    parametro_maestro_id: z.number().int().positive().nullable().optional(),
+    nombre: nonEmptyString('Nombre del parámetro'),
+    tipo: z.enum(['rango', 'texto', 'numero']).default('texto'),
+    valor: z.string().nullable().optional(),
+    valor_texto: z.string().nullable().optional(),
+    es_rango: z.boolean().default(false),
+    rango_min: z.number().nullable().optional(),
+    rango_max: z.number().nullable().optional(),
+    unidad: z.string().nullable().optional(),
+});
+
+export type ProductoParametroData = z.infer<typeof productoParametroSchema>;
+
+export const productoCreateSchema = z.object({
+    nombre: nonEmptyString('Nombre del producto'),
+    parametros: z.array(productoParametroSchema).optional().default([]),
+});
+
+export type ProductoCreateData = z.infer<typeof productoCreateSchema>;
+
+export const productoUpdateSchema = productoCreateSchema.extend({
+    id: z.number().int().positive(),
+});
+
+export type ProductoUpdateData = z.infer<typeof productoUpdateSchema>;
+
+// ─── Parámetro Maestro (upsert: tabla `parametros_maestros`) ──
+
+/**
+ * La tabla `parametros_maestros` solo tiene `nombre` y `tipo` (lo confirma la
+ * ruta `estandarizar` y el cliente). Este schema acota el body exactamente a
+ * esos campos para cerrar el mass-assignment del antiguo `insert(body)`.
+ * (`parametroMaestroSchema`, más arriba, modela el parámetro de formulario, no
+ * esta tabla; por eso se usa un schema propio aquí.)
+ */
+export const parametroMaestroUpsertSchema = z.object({
+    nombre: nonEmptyString('Nombre del parámetro'),
+    tipo: z.enum(['rango', 'texto', 'numero'], {
+        message: 'Tipo debe ser rango, texto o numero',
+    }),
+});
+
+export type ParametroMaestroUpsertData = z.infer<typeof parametroMaestroUpsertSchema>;
+
+// ─── ID en body (para PUT/DELETE simples) ────────────────────
+
+export const idBodySchema = z.object({
+    id: z.number().int().positive({ message: 'ID inválido' }),
+});
+
 // ─── Usuario (admin CRUD) ────────────────────────────────────
 
 export const usuarioCreateSchema = z.object({
