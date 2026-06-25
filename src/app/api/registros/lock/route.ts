@@ -125,32 +125,47 @@ export async function POST(request: Request) {
             }
         }
 
-        // Apply/Refresh Lock
-        let newExpiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour
-        let newStartedAt = now.toISOString();
+        // Apply/Refresh Lock — UPDATE CONDICIONAL ATÓMICO (evita TOCTOU).
+        //
+        // El bloqueo solo se concede si, en el mismo statement, el registro está:
+        //   - libre (edit_started_by IS NULL), o
+        //   - expirado (edit_expires_at < now), o
+        //   - ya es MÍO (edit_started_by = me)  → permite renovar mi propio lock.
+        // Si ningún caso aplica (otro lo tiene activo), el UPDATE afecta 0 filas
+        // y respondemos 409 sin pisar el lock ajeno.
+        const nowIso = now.toISOString();
+        const newExpiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
+        const newStartedAtIso = now.toISOString();
 
-        if (isLockedByMe) {
-            newExpiresAt = expiresAt!;
-            newStartedAt = registro.edit_started_at;
-        }
-
-        const { error: updateError } = await supabase
+        const { data: lockedRows, error: updateError } = await supabase
             .from('registros')
             .update({
-                edit_started_at: newStartedAt,
+                edit_started_at: newStartedAtIso,
                 edit_expires_at: newExpiresAt.toISOString(),
-                edit_started_by: user.id
+                edit_started_by: user.id,
             })
-            .eq('id', registro_id);
+            .eq('id', registro_id)
+            .or(
+                `edit_started_by.is.null,edit_expires_at.lt.${nowIso},edit_started_by.eq.${user.id}`
+            )
+            .select('id');
 
         if (updateError) {
             return NextResponse.json({ error: 'Error al aplicar bloqueo' }, { status: 500 });
         }
 
+        // 0 filas afectadas → otro usuario tomó/tiene el lock entre la lectura y aquí.
+        if (!lockedRows || lockedRows.length === 0) {
+            return NextResponse.json(
+                { error: 'El registro acaba de ser bloqueado por otro usuario. Inténtalo de nuevo.' },
+                { status: 409 }
+            );
+        }
+
         return NextResponse.json({
             success: true,
             expiresAt: newExpiresAt.toISOString(),
-            startedAt: newStartedAt
+            startedAt: newStartedAtIso,
         });
 
     } catch (error) {
