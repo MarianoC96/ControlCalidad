@@ -45,12 +45,13 @@ async function requireModule() {
 }
 
 /**
- * Construye la fila de `parametros` a partir de un parámetro YA validado.
- * Solo se escriben campos del whitelist (cierra el mass-assignment).
+ * Convierte un parámetro YA validado al objeto JSON que consumen las RPC
+ * `crear_producto_con_parametros` / `reemplazar_producto_parametros`.
+ * Solo se incluyen campos del whitelist (cierra el mass-assignment) y se deriva
+ * `rango_completo` en el servidor.
  */
-function buildParametroRow(productoId: number, p: ProductoParametroData) {
+function paramToJson(p: ProductoParametroData) {
     return {
-        producto_id: productoId,
         parametro_maestro_id: p.parametro_maestro_id ?? null,
         nombre: p.nombre,
         tipo: p.tipo,
@@ -118,20 +119,14 @@ export async function POST(request: Request) {
 
         const supabase = createServiceClient();
 
-        // 1. Crear producto (solo el campo permitido)
-        const { data: producto, error: prodError } = await supabase
-            .from('productos')
-            .insert({ nombre })
-            .select()
-            .single();
-        if (prodError) throw prodError;
-
-        // 2. Crear parámetros (whitelist por buildParametroRow)
-        if (parametros.length > 0) {
-            const paramsToInsert = parametros.map((p) => buildParametroRow(producto.id, p));
-            const { error: paramsError } = await supabase.from('parametros').insert(paramsToInsert);
-            if (paramsError) throw paramsError;
-        }
+        // Alta atómica vía RPC transaccional.
+        // ⚠️ REQUIERE migración 20260624000002_rpc_productos_transaccional.sql
+        //    aplicada en la BD; sin ella, esta ruta responderá error.
+        const { data: producto, error } = await supabase.rpc('crear_producto_con_parametros', {
+            p_nombre: nombre,
+            p_parametros: parametros.map(paramToJson),
+        });
+        if (error) throw error;
 
         return NextResponse.json(producto);
     } catch (error: any) {
@@ -158,25 +153,16 @@ export async function PUT(request: Request) {
 
         const supabase = createServiceClient();
 
-        // 1. Actualizar nombre
-        const { data: producto, error: prodError } = await supabase
-            .from('productos')
-            .update({ nombre })
-            .eq('id', id)
-            .select()
-            .single();
-        if (prodError) throw prodError;
-
-        // 2. Reemplazar parámetros (delete + insert).
-        //    NOTA: la atomicidad de este delete+insert se aborda en la Oleada 4.
-        const { error: delError } = await supabase.from('parametros').delete().eq('producto_id', id);
-        if (delError) throw delError;
-
-        if (parametros.length > 0) {
-            const paramsToInsert = parametros.map((p) => buildParametroRow(id, p));
-            const { error: insError } = await supabase.from('parametros').insert(paramsToInsert);
-            if (insError) throw insError;
-        }
+        // Actualización + reemplazo de parámetros ATÓMICO vía RPC transaccional
+        // (update nombre + delete + insert en una sola transacción).
+        // ⚠️ REQUIERE migración 20260624000002_rpc_productos_transaccional.sql
+        //    aplicada en la BD; sin ella, esta ruta responderá error.
+        const { data: producto, error } = await supabase.rpc('reemplazar_producto_parametros', {
+            p_id: id,
+            p_nombre: nombre,
+            p_parametros: parametros.map(paramToJson),
+        });
+        if (error) throw error;
 
         return NextResponse.json(producto);
     } catch (error: any) {
