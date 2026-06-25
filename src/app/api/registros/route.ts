@@ -234,61 +234,52 @@ export async function POST(request: Request) {
             pdfConfig = { titulo: null, codigo: null, edicion: null, aprobado_por: null };
         }
 
-        // 1. Crear el Registro
-        const { data: registro, error: regError } = await supabase
-            .from('registros')
-            .insert({
-                lote_interno,
-                lote_producto,
-                guia,
-                marca,
-                cantidad,
-                producto_id,
-                producto_nombre,
-                observaciones_generales,
-                verificado_por,
-                usuario_nombre: verificado_por,
-                usuario_id: parseInt(userId),
-                pdf_titulo: pdfConfig.titulo,
-                pdf_codigo: pdfConfig.codigo,
-                pdf_edicion: pdfConfig.edicion,
-                pdf_aprobado_por: pdfConfig.aprobado_por,
-                es_offline: es_offline ? true : false,
-                fecha_registro: fecha_registro ? fecha_registro : new Date().toISOString(),
-                fecha_sincronizacion: es_offline ? new Date().toISOString() : null
-            })
-            .select()
-            .single();
+        // Alta atómica de registro + controles vía RPC transaccional (evita
+        // registros huérfanos si falla la inserción de controles).
+        // ⚠️ REQUIERE migración 20260624000003_rpc_registro_con_controles.sql
+        //    aplicada en la BD; sin ella, esta ruta responderá error.
+        const registroPayload = {
+            lote_interno,
+            lote_producto,
+            guia,
+            marca,
+            cantidad,
+            producto_id,
+            producto_nombre,
+            observaciones_generales,
+            verificado_por,
+            usuario_nombre: verificado_por,
+            usuario_id: parseInt(userId),
+            pdf_titulo: pdfConfig.titulo,
+            pdf_codigo: pdfConfig.codigo,
+            pdf_edicion: pdfConfig.edicion,
+            pdf_aprobado_por: pdfConfig.aprobado_por,
+            es_offline: es_offline ? true : false,
+            fecha_registro: fecha_registro ? fecha_registro : new Date().toISOString(),
+            fecha_sincronizacion: es_offline ? new Date().toISOString() : null,
+        };
 
-        if (regError) throw regError;
+        const controlesPayload = (controles || []).map((c: any) => ({
+            parametro_nombre: c.parametroNombre,
+            rango_completo: c.rangoCompleto,
+            valor_control: c.valorControl,
+            texto_control: c.textoControl,
+            parametro_tipo: c.parametroTipo,
+            observacion: c.observacion,
+            fuera_de_rango: c.fueraDeRango,
+        }));
 
-        // Invalidate dates cache when new record is created
+        const { data: nuevoRegistroId, error: rpcError } = await supabase.rpc(
+            'crear_registro_con_controles',
+            { p_registro: registroPayload, p_controles: controlesPayload }
+        );
+
+        if (rpcError) throw rpcError;
+
+        // Invalida la caché de fechas al crear un registro nuevo.
         cachedDates = null;
 
-        // 2. Crear los Controles asociados
-        if (controles && controles.length > 0) {
-            const controlesToInsert = controles.map((c: any) => ({
-                registro_id: registro.id,
-                parametro_nombre: c.parametroNombre,
-                rango_completo: c.rangoCompleto,
-                valor_control: c.valorControl,
-                texto_control: c.textoControl,
-                parametro_tipo: c.parametroTipo,
-                observacion: c.observacion,
-                fuera_de_rango: c.fueraDeRango,
-            }));
-
-            const { error: controlError } = await supabase
-                .from('controles')
-                .insert(controlesToInsert);
-
-            if (controlError) {
-                console.error('Error guardando controles:', controlError);
-                throw controlError;
-            }
-        }
-
-        return NextResponse.json({ success: true, registro_id: registro.id });
+        return NextResponse.json({ success: true, registro_id: nuevoRegistroId });
 
     } catch (error: any) {
         console.error('Error creating registro:', error);
