@@ -1,21 +1,52 @@
 import { NextResponse } from 'next/server';
-import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+import { getAuthUserId } from '@/lib/api/withAuth';
+import { createServiceClient } from '@/lib/supabase/admin-client';
+import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import {
+    parametroMaestroUpsertSchema,
+    idBodySchema,
+    formatZodErrors,
+} from '@/lib/schemas';
+
+const MODULE_KEY = 'parametros-maestros';
+
+/**
+ * Sesión + permiso del módulo `parametros-maestros` (para mutaciones).
+ */
+async function requireModule() {
+    const auth = await getAuthUserId();
+    if (!auth) {
+        return { error: NextResponse.json({ error: 'No autorizado' }, { status: 401 }) };
+    }
+
+    const user = await getAppUserById(parseInt(auth.userId, 10));
+    if (!user || !(await userHasModule(user, MODULE_KEY))) {
+        return {
+            error: NextResponse.json(
+                { error: 'No autorizado. Se requiere permiso del módulo de parámetros maestros.' },
+                { status: 403 }
+            ),
+        };
+    }
+    return { auth, user };
+}
+
+// ─── GET (lectura: solo sesión) ──────────────────────────────
 
 export async function GET(request: Request) {
     try {
         const auth = await getAuthUserId();
-        const { searchParams } = new URL(request.url);
-        const type = searchParams.get('type');
-
         if (!auth) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const type = searchParams.get('type');
         const supabase = createServiceClient();
 
         if (type === 'locales') {
-            // Get unique local parameters (parametro_maestro_id IS NULL)
-            // We group by name and type to show candidates for standardization
+            // Parámetros locales (parametro_maestro_id IS NULL), agrupados por
+            // nombre+tipo para sugerir candidatos a estandarización.
             const { data, error } = await supabase
                 .from('parametros')
                 .select('nombre, tipo, producto_id, productos(nombre)')
@@ -23,16 +54,10 @@ export async function GET(request: Request) {
 
             if (error) throw error;
 
-            // Group by name and type to count occurrences
             const grouped = data.reduce((acc: any, curr: any) => {
                 const key = `${curr.nombre.toLowerCase()}-${curr.tipo}`;
                 if (!acc[key]) {
-                    acc[key] = {
-                        nombre: curr.nombre,
-                        tipo: curr.tipo,
-                        frecuencia: 0,
-                        productos: []
-                    };
+                    acc[key] = { nombre: curr.nombre, tipo: curr.tipo, frecuencia: 0, productos: [] };
                 }
                 acc[key].frecuencia += 1;
                 if (curr.productos?.nombre) {
@@ -50,63 +75,101 @@ export async function GET(request: Request) {
             .order('id', { ascending: true });
 
         if (error) throw error;
-
         return NextResponse.json(data);
-
     } catch (error: any) {
         return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 });
     }
 }
 
+// ─── POST (crear: permiso de módulo + validación) ────────────
+
 export async function POST(request: Request) {
-    return handleRequest(request, async (supabase, body) => {
+    try {
+        const access = await requireModule();
+        if ('error' in access) return access.error;
+
+        const rawBody = await request.json().catch(() => null);
+        const parsed = parametroMaestroUpsertSchema.safeParse(rawBody);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Datos inválidos', detalles: formatZodErrors(parsed.error) },
+                { status: 400 }
+            );
+        }
+
+        const supabase = createServiceClient();
+        // Solo campos validados (nombre, tipo) → cierra el mass-assignment.
         const { data, error } = await supabase
             .from('parametros_maestros')
-            .insert(body)
+            .insert({ nombre: parsed.data.nombre, tipo: parsed.data.tipo })
             .select()
             .single();
         if (error) throw error;
-        return data;
-    });
+
+        return NextResponse.json(data);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 });
+    }
 }
+
+// ─── PUT (actualizar: permiso de módulo + validación) ────────
 
 export async function PUT(request: Request) {
-    return handleRequest(request, async (supabase, body) => {
-        const { id, ...updates } = body;
+    try {
+        const access = await requireModule();
+        if ('error' in access) return access.error;
+
+        const rawBody = await request.json().catch(() => null);
+        // id + (nombre, tipo) validados por separado.
+        const idParsed = idBodySchema.safeParse(rawBody);
+        const fieldsParsed = parametroMaestroUpsertSchema.safeParse(rawBody);
+        if (!idParsed.success || !fieldsParsed.success) {
+            const detalles = {
+                ...(idParsed.success ? {} : formatZodErrors(idParsed.error)),
+                ...(fieldsParsed.success ? {} : formatZodErrors(fieldsParsed.error)),
+            };
+            return NextResponse.json({ error: 'Datos inválidos', detalles }, { status: 400 });
+        }
+
+        const supabase = createServiceClient();
         const { data, error } = await supabase
             .from('parametros_maestros')
-            .update(updates)
-            .eq('id', id)
+            .update({ nombre: fieldsParsed.data.nombre, tipo: fieldsParsed.data.tipo })
+            .eq('id', idParsed.data.id)
             .select()
             .single();
         if (error) throw error;
-        return data;
-    });
+
+        return NextResponse.json(data);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 });
+    }
 }
 
+// ─── DELETE (borrar: permiso de módulo + validación) ─────────
+
 export async function DELETE(request: Request) {
-    return handleRequest(request, async (supabase, body) => {
-        const { id } = body; // Expect { id: X } in body or query param? Let's use body for consistency
+    try {
+        const access = await requireModule();
+        if ('error' in access) return access.error;
+
+        const rawBody = await request.json().catch(() => null);
+        const parsed = idBodySchema.safeParse(rawBody);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'ID inválido', detalles: formatZodErrors(parsed.error) },
+                { status: 400 }
+            );
+        }
+
+        const supabase = createServiceClient();
         const { error } = await supabase
             .from('parametros_maestros')
             .delete()
-            .eq('id', id);
+            .eq('id', parsed.data.id);
         if (error) throw error;
-        return { success: true };
-    });
-}
 
-async function handleRequest(request: Request, action: (supabase: any, body: any) => Promise<any>) {
-    try {
-        const auth = await getAuthUserId();
-        if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-
-        const body = await request.json().catch(() => ({}));
-
-        const supabase = createServiceClient();
-
-        const result = await action(supabase, body);
-        return NextResponse.json(result);
+        return NextResponse.json({ success: true });
     } catch (error: any) {
         return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 });
     }
