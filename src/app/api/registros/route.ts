@@ -80,12 +80,15 @@ export async function GET(request: Request) {
             const isNumeric = /^\d+$/.test(search);
             const matchFormatId = search.toUpperCase().match(/^[A-Z]{3}(\d+)$/);
 
+            // Condición por ID. El valor es SIEMPRE numérico (derivado de regex),
+            // por lo que no admite metacaracteres de PostgREST. Sin coma final:
+            // las condiciones se unen más abajo con un join controlado.
             let idSearchCondition = '';
             if (isNumeric) {
-                idSearchCondition = `id.eq.${search},`;
+                idSearchCondition = `id.eq.${parseInt(search, 10)}`;
             } else if (matchFormatId) {
                 const num = parseInt(matchFormatId[1], 10);
-                idSearchCondition = `id.eq.${num},`;
+                idSearchCondition = `id.eq.${num}`;
             }
 
             let dateSearchCondition = '';
@@ -118,13 +121,39 @@ export async function GET(request: Request) {
                 endDate = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}T23:59:59.999-05:00`);
             }
 
+            // Rango de fechas. Los valores son ISO strings derivados de Date, no
+            // input crudo. Sin coma final (se une con join más abajo).
             if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-                dateSearchCondition = `and(fecha_registro.gte.${startDate.toISOString()},fecha_registro.lte.${endDate.toISOString()}),`;
+                dateSearchCondition = `and(fecha_registro.gte.${startDate.toISOString()},fecha_registro.lte.${endDate.toISOString()})`;
             }
 
-            query = query.or(
-                `${idSearchCondition}${dateSearchCondition}lote_interno.ilike.%${search}%,producto_nombre.ilike.%${search}%,guia.ilike.%${search}%,verificado_por.ilike.%${search}%,usuario_nombre.ilike.%${search}%`
-            );
+            // SANEO ANTIINYECCIÓN: el término libre se interpola en filtros ilike,
+            // así que eliminamos los metacaracteres que podrían alterar la
+            // estructura del .or de PostgREST (coma, paréntesis) y los comodines
+            // LIKE (%, *, \). Se conservan letras, números, espacios y los
+            // separadores usados en lotes/guías (- / .).
+            const safeSearch = search.replace(/[,()%*\\]/g, ' ').trim();
+
+            const ilikeFields = [
+                'lote_interno',
+                'producto_nombre',
+                'guia',
+                'verificado_por',
+                'usuario_nombre',
+            ];
+            const ilikeCondition = safeSearch
+                ? ilikeFields.map((field) => `${field}.ilike.%${safeSearch}%`).join(',')
+                : '';
+
+            // Une solo las condiciones no vacías (evita comas colgantes que
+            // PostgREST interpretaría como filtros vacíos).
+            const orFilter = [idSearchCondition, dateSearchCondition, ilikeCondition]
+                .filter(Boolean)
+                .join(',');
+
+            if (orFilter) {
+                query = query.or(orFilter);
+            }
         }
 
         // Run both queries in parallel for speed
