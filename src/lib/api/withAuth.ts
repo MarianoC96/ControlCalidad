@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase/admin-client';
+
+/**
+ * Reexportado por compatibilidad: la implementación única de la factory
+ * service-role vive en `@/lib/supabase/admin-client`. Las rutas que ya importan
+ * `createServiceClient` desde aquí siguen funcionando sin cambios.
+ */
+export { createServiceClient };
 
 /**
  * Perfil de usuario autenticado enriquecido con UID de Supabase
@@ -71,18 +78,6 @@ export function withAuth(handler: RouteHandler) {
             );
         }
     };
-}
-
-/**
- * Crea un cliente de Supabase con Service Role (Admin).
- * Úsalo solo en rutas de API seguras (Server-side).
- */
-export function createServiceClient() {
-    return createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-    );
 }
 
 /**

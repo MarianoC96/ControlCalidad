@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase/admin-client';
 
 export async function POST(request: Request) {
     try {
@@ -10,16 +10,7 @@ export async function POST(request: Request) {
         }
 
         // Usamos la Service Role Key para saltar el RLS solo para esta búsqueda de correo
-        const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
-        );
+        const supabaseAdmin = createServiceClient();
 
         // Buscamos el correo vinculado al usuario o al mismo correo
         const { data: userData, error } = await supabaseAdmin

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase/admin-client';
 
 export interface PdfConfig {
     titulo: string;
@@ -14,14 +14,8 @@ export const DEFAULT_CONFIG: PdfConfig = {
     aprobado_por: "Aprob. J. Calidad"
 };
 
-// Initialize Supabase client
-const getSupabase = () => {
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { persistSession: false } }
-    );
-};
+// Cliente service-role unificado (ver @/lib/supabase/admin-client)
+const getSupabase = createServiceClient;
 
 export async function getPdfConfig(): Promise<PdfConfig> {
     try {
