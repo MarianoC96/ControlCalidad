@@ -10,13 +10,19 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Validar id numérico: evita un 500 sucio de Postgres por cast inválido
+        const downloadId = Number(params.id);
+        if (!Number.isInteger(downloadId) || downloadId <= 0) {
+            return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+        }
+
         const supabase = createServiceClient();
 
         // Check ownership
         const { data: record, error: fetchError } = await supabase
             .from('download_history')
             .select('*')
-            .eq('id', params.id)
+            .eq('id', downloadId)
             .single();
 
         if (fetchError || !record) {
