@@ -1,5 +1,31 @@
 import type { NextConfig } from "next";
 
+// Content-Security-Policy acorde a lo que la app realmente carga:
+// - Supabase (REST/Storage/Auth + realtime WebSocket) en connect-src/img-src.
+// - blob:/data: para las fotos capturadas con la cámara y el service worker.
+// - script-src requiere 'unsafe-inline' porque el App Router de Next inyecta
+//   scripts inline de hidratación/flight; quitarlo exige nonces por request
+//   vía middleware (rompe optimización estática). Sin 'unsafe-eval' en prod;
+//   en dev es necesario para el HMR de webpack.
+const isDev = process.env.NODE_ENV === 'development';
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  // bootstrap-icons (jsdelivr, layout.tsx) y Google Fonts (registro-productos.css)
+  "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https://*.supabase.co",
+  "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "media-src 'self' blob:",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
 const nextConfig: NextConfig = {
   // Enable gzip/brotli compression for smaller bundles
   compress: true,
@@ -20,6 +46,10 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: contentSecurityPolicy,
+          },
           {
             key: 'X-DNS-Prefetch-Control',
             value: 'on',
