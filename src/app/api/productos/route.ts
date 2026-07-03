@@ -12,6 +12,13 @@ import {
 
 const MODULE_KEY = 'productos';
 
+// Columnas explícitas + tope defensivo: el listado no pagina, pero sin límite
+// el select('*') traería la tabla completa a medida que crece el catálogo.
+const PRODUCTO_COLUMNS = 'id, nombre, created_at, updated_at';
+const PARAMETRO_COLUMNS =
+    'id, producto_id, parametro_maestro_id, nombre, tipo, valor, valor_texto, es_rango, rango_min, rango_max, unidad, rango_completo';
+const MAX_PRODUCTOS = 500;
+
 /**
  * Solo sesión (para lecturas). Devuelve el auth o una respuesta de error.
  */
@@ -82,7 +89,7 @@ export async function GET(request: Request) {
         if (id) {
             const { data: producto, error } = await supabase
                 .from('productos')
-                .select('*, parametros(*)')
+                .select(`${PRODUCTO_COLUMNS}, parametros(${PARAMETRO_COLUMNS})`)
                 .eq('id', id)
                 .single();
             if (error) throw error;
@@ -91,8 +98,9 @@ export async function GET(request: Request) {
 
         const { data, error } = await supabase
             .from('productos')
-            .select(includeParams ? '*, parametros(*)' : '*')
-            .order('nombre');
+            .select(includeParams ? `${PRODUCTO_COLUMNS}, parametros(${PARAMETRO_COLUMNS})` : PRODUCTO_COLUMNS)
+            .order('nombre')
+            .limit(MAX_PRODUCTOS);
         if (error) throw error;
         return NextResponse.json(data);
     } catch (error: any) {
