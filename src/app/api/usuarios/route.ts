@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
-import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import { getAuthProfile, createServiceClient } from '@/lib/api/withAuth';
+import { userHasModule, type PermissionUser } from '@/lib/api/permissions';
 import { usuarioCreateSchema, passwordSchema, formatZodErrors } from '@/lib/schemas';
 import bcrypt from 'bcryptjs';
 
@@ -9,22 +9,19 @@ import bcrypt from 'bcryptjs';
  */
 const createAdminClient = () => createServiceClient();
 
-async function canManageUsers(userId: string | undefined) {
-    if (!userId) return false;
-    // Criterio unificado de autorización (sadmin / role_permisos)
-    const user = await getAppUserById(parseInt(userId, 10));
+// Criterio unificado de autorización (sadmin / role_permisos)
+async function canManageUsers(user: PermissionUser | null) {
     if (!user) return false;
     return userHasModule(user, 'usuarios');
 }
 
 export async function GET() {
     try {
-        const auth = await getAuthUserId();
-        const userId = auth?.userId;
+        const user = await getAuthProfile();
         const supabase = createAdminClient();
 
-        if (!await canManageUsers(userId)) {
-            console.log('API Usuarios/GET: Acceso denegado.', { userId });
+        if (!await canManageUsers(user)) {
+            console.log('API Usuarios/GET: Acceso denegado.', { userId: user?.id });
             return NextResponse.json(
                 { error: 'No autorizado. Se requiere permiso de usuarios.' },
                 { status: 403 }
@@ -48,12 +45,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const auth = await getAuthUserId();
-        const userId = auth?.userId;
+        const user = await getAuthProfile();
         const supabase = createAdminClient();
 
         // 1. Validar Permisos
-        if (!await canManageUsers(userId)) {
+        if (!await canManageUsers(user)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
@@ -118,11 +114,10 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        const auth = await getAuthUserId();
-        const userId = auth?.userId;
+        const user = await getAuthProfile();
         const supabase = createAdminClient();
 
-        if (!await canManageUsers(userId)) {
+        if (!await canManageUsers(user)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 

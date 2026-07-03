@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+import { getAuthProfile, createServiceClient } from '@/lib/api/withAuth';
 import { userHasModule } from '@/lib/api/permissions';
 const createAdminClient = () => createServiceClient();
 
@@ -26,18 +26,9 @@ const ALL_MODULES = [
     'escaneo-central',
 ];
 
-async function getAuthUser(supabase: ReturnType<typeof createAdminClient>) {
-    const auth = await getAuthUserId();
-    const userId = auth?.userId;
-    if (!userId) return null;
-
-    const { data: user } = await supabase
-        .from('usuarios')
-        .select('id, usuario, roles, role_id')
-        .eq('id', parseInt(userId))
-        .single();
-
-    return user;
+// Perfil + permisos en una sola query a usuarios (getAuthProfile)
+async function getAuthUser() {
+    return getAuthProfile();
 }
 
 async function canManageRoles(user: any) {
@@ -53,7 +44,7 @@ async function canManageRoles(user: any) {
 export async function GET() {
     try {
         const supabase = createAdminClient();
-        const user = await getAuthUser(supabase);
+        const user = await getAuthUser();
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         // Only sadmin user or admin can view roles
@@ -95,7 +86,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const supabase = createAdminClient();
-        const user = await getAuthUser(supabase);
+        const user = await getAuthUser();
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const isSadmin = user.usuario === 'sadmin';
@@ -150,7 +141,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
     try {
         const supabase = createAdminClient();
-        const user = await getAuthUser(supabase);
+        const user = await getAuthUser();
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const isSadmin = user.usuario === 'sadmin';
@@ -222,7 +213,7 @@ export async function PUT(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
     try {
         const supabase = createAdminClient();
-        const user = await getAuthUser(supabase);
+        const user = await getAuthUser();
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const isSadmin = user.usuario === 'sadmin';
@@ -259,7 +250,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
     try {
         const supabase = createAdminClient();
-        const user = await getAuthUser(supabase);
+        const user = await getAuthUser();
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const isSadmin = user.usuario === 'sadmin';

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin-client';
+import { getAppUserByAuthUid, type PermissionUser } from '@/lib/api/permissions';
 
 /**
  * Reexportado por compatibilidad: la implementación única de la factory
@@ -78,6 +79,26 @@ export function withAuth(handler: RouteHandler) {
             );
         }
     };
+}
+
+/**
+ * Obtiene el perfil de permisos (id, usuario, roles, role_id) del usuario
+ * autenticado en UNA sola query a `usuarios` (por auth_uid, indexado).
+ *
+ * Preferir este helper sobre getAuthUserId() + getAppUserById(): ese par hace
+ * dos round-trips a la misma tabla por request.
+ */
+export async function getAuthProfile(): Promise<PermissionUser | null> {
+    try {
+        const supabase = await createClient();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+
+        if (!authUser) return null;
+
+        return await getAppUserByAuthUid(authUser.id);
+    } catch {
+        return null;
+    }
 }
 
 /**

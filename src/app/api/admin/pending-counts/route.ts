@@ -1,22 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
-import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import { getAuthProfile, createServiceClient } from '@/lib/api/withAuth';
+import { userHasModule } from '@/lib/api/permissions';
 const createAdminClient = () => createServiceClient();
 
 export async function GET() {
     try {
-        const auth = await getAuthUserId();
-        const userId = auth?.userId;
-
-        if (!userId) {
-            return NextResponse.json({ pendingSolicitudes: 0 });
-        }
-
         const supabase = createAdminClient();
 
-        // Run user fetch and pending count in parallel
+        // Perfil (una query a usuarios) y conteo en paralelo
         const [user, countResult] = await Promise.all([
-            getAppUserById(parseInt(userId, 10)),
+            getAuthProfile(),
             supabase
                 .from('edit_requests')
                 .select('id', { count: 'exact', head: true })

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId } from '@/lib/api/withAuth';
+import { getAuthUserId, getAuthProfile } from '@/lib/api/withAuth';
 import { createServiceClient } from '@/lib/supabase/admin-client';
-import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import { userHasModule } from '@/lib/api/permissions';
 
 /** Máximo de fotos por registro (coherente con /api/registros/edit). */
 const MAX_FOTOS_POR_REGISTRO = 2;
@@ -152,8 +152,9 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
-        const auth = await getAuthUserId();
-        if (!auth) {
+        // Perfil + permisos en una sola query a usuarios (getAuthProfile)
+        const user = await getAuthProfile();
+        if (!user) {
             return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
         }
 
@@ -166,8 +167,7 @@ export async function DELETE(request: NextRequest) {
         // Criterio unificado con el resto del sistema (sadmin / role_permisos /
         // fallback legacy), en lugar del antiguo `roles === 'administrador'`.
         // Las fotos forman parte del flujo de edición ⇒ módulo 'solicitudes'.
-        const user = await getAppUserById(parseInt(auth.userId, 10));
-        if (!user || !(await userHasModule(user, 'solicitudes'))) {
+        if (!(await userHasModule(user, 'solicitudes'))) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 

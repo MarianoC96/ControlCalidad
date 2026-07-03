@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getAuthUserId } from '@/lib/api/withAuth';
+import { getAuthProfile } from '@/lib/api/withAuth';
 import { createServiceClient } from '@/lib/supabase/admin-client';
-import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import { userHasModule } from '@/lib/api/permissions';
 import { parametroMaestroUpsertSchema, formatZodErrors } from '@/lib/schemas';
 
 export async function POST(request: Request) {
     try {
-        const auth = await getAuthUserId();
-        if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        // Perfil + permisos en una sola query a usuarios (getAuthProfile)
+        const user = await getAuthProfile();
+        if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         // Permiso de módulo (mutación sobre el catálogo de parámetros maestros)
-        const user = await getAppUserById(parseInt(auth.userId, 10));
-        if (!user || !(await userHasModule(user, 'parametros-maestros'))) {
+        if (!(await userHasModule(user, 'parametros-maestros'))) {
             return NextResponse.json(
                 { error: 'No autorizado. Se requiere permiso del módulo de parámetros maestros.' },
                 { status: 403 }
