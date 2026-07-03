@@ -5,12 +5,12 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 
 import AutocompleteSelect from '@/components/AutocompleteSelect';
 import { getCurrentDate, formatRange } from '@/lib/utils';
-import { cacheProducts, getCachedProducts } from '@/lib/temporal-db';
+import { cacheProducts, getCachedProducts, saveOfflineRecord } from '@/lib/temporal-db';
+import { useOnlineStatus } from '@/lib/useOnlineStatus';
 import type { Producto, Parametro } from '@/lib/supabase/types';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useCamera } from '@/hooks/useCamera';
-import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { useProductForm } from '@/hooks/useProductForm';
 import { useProductos } from '@/hooks/useData';
 import './registro-productos.css';
@@ -25,7 +25,7 @@ import './registro-productos.css';
 export default function RegistroProductosClient() {
     // ─── Infrastructure Hooks ──────────────────────────────────
     const { userName, userId, isLoading: authLoading } = useAuth();
-    const { isOnline, saveRecordOffline } = useOfflineSync();
+    const { isOnline } = useOnlineStatus();
     const camera = useCamera();
 
     // ─── Data Loading (SWR + IndexedDB offline fallback) ──────
@@ -97,7 +97,7 @@ export default function RegistroProductosClient() {
                     .filter((f): f is NonNullable<typeof f> => f !== null && !!f.preview)
                     .map((f) => f.preview);
 
-                await saveRecordOffline({
+                await saveOfflineRecord({
                     formData: { ...form.formData },
                     productoNombre: selectedProduct.nombre,
                     controles: form.controles.map((c) => ({ ...c })),

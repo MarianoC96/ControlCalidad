@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { getPeruDateString } from '@/lib/utils';
+
+/** 'YYYY-MM-DD' en huso de Perú, independiente del huso de la máquina. */
+const getPeruDateString = (date: Date): string =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(date);
 
 interface BulkDownloadModalProps {
     onClose: () => void;
