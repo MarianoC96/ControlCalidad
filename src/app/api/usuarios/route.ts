@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import { usuarioCreateSchema, passwordSchema, formatZodErrors } from '@/lib/schemas';
 import bcrypt from 'bcryptjs';
 
 /**
@@ -7,29 +9,12 @@ import bcrypt from 'bcryptjs';
  */
 const createAdminClient = () => createServiceClient();
 
-async function canManageUsers(userId: string | undefined, supabase: any) {
+async function canManageUsers(userId: string | undefined) {
     if (!userId) return false;
-    const { data: user } = await supabase
-        .from('usuarios')
-        .select('usuario, roles, role_id')
-        .eq('id', parseInt(userId))
-        .single();
-        
+    // Criterio unificado de autorización (sadmin / role_permisos)
+    const user = await getAppUserById(parseInt(userId, 10));
     if (!user) return false;
-    if (user.usuario === 'sadmin') return true;
-    
-    if (user.role_id) {
-        const { data: perm } = await supabase
-            .from('role_permisos')
-            .select('habilitado')
-            .eq('role_id', user.role_id)
-            .eq('modulo_key', 'usuarios')
-            .eq('habilitado', true)
-            .single();
-        if (perm?.habilitado) return true;
-    }
-    
-    return user.roles === 'administrador';
+    return userHasModule(user, 'usuarios');
 }
 
 export async function GET() {
@@ -38,7 +23,7 @@ export async function GET() {
         const userId = auth?.userId;
         const supabase = createAdminClient();
 
-        if (!await canManageUsers(userId, supabase)) {
+        if (!await canManageUsers(userId)) {
             console.log('API Usuarios/GET: Acceso denegado.', { userId });
             return NextResponse.json(
                 { error: 'No autorizado. Se requiere permiso de usuarios.' },
@@ -68,14 +53,20 @@ export async function POST(request: NextRequest) {
         const supabase = createAdminClient();
 
         // 1. Validar Permisos
-        if (!await canManageUsers(userId, supabase)) {
+        if (!await canManageUsers(userId)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
-        const body = await request.json();
-        const {
-            nombre_completo, usuario, password, roles, role_id
-        } = body;
+        // Validación + whitelist del body (mismo patrón que productos/parametros-maestros)
+        const rawBody = await request.json().catch(() => null);
+        const parsed = usuarioCreateSchema.safeParse(rawBody);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Datos inválidos', detalles: formatZodErrors(parsed.error) },
+                { status: 422 }
+            );
+        }
+        const { nombre_completo, usuario, password, roles, role_id } = parsed.data;
 
         // 2. Crear usuario en Supabase Auth
         // WHY: Supabase Auth requires an email. We auto-generate it from the
@@ -131,7 +122,7 @@ export async function PUT(request: NextRequest) {
         const userId = auth?.userId;
         const supabase = createAdminClient();
 
-        if (!await canManageUsers(userId, supabase)) {
+        if (!await canManageUsers(userId)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
@@ -141,6 +132,17 @@ export async function PUT(request: NextRequest) {
         } = body;
 
         if (id === 1) return NextResponse.json({ error: 'sadmin no modificable' }, { status: 403 });
+
+        // Misma política de contraseña que en el alta (si se está cambiando)
+        if (password !== undefined && password !== null && password !== '') {
+            const parsedPassword = passwordSchema.safeParse(password);
+            if (!parsedPassword.success) {
+                return NextResponse.json(
+                    { error: 'Datos inválidos', detalles: formatZodErrors(parsedPassword.error) },
+                    { status: 422 }
+                );
+            }
+        }
 
         // Auto-generate internal email from username
         const authEmail = usuario

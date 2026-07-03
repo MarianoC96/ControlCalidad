@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+import { getAppUserById, userHasModule } from '@/lib/api/permissions';
 // Helper Service Role Client
 const createAdminClient = () => createServiceClient();
 
@@ -14,33 +15,9 @@ export async function GET() {
 
         const supabase = createAdminClient();
 
-        const { data: user } = await supabase
-            .from('usuarios')
-            .select('id, usuario, roles, role_id')
-            .eq('id', parseInt(userId))
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 403 });
-        }
-
-        // Check Access (Shared with PUT)
-        let hasAccess = false;
-        if (user.usuario === 'sadmin') {
-            hasAccess = true;
-        } else if (user.roles === 'administrador') {
-            hasAccess = true;
-        } else if (user.role_id) {
-            const { data: permisos } = await supabase
-                .from('role_permisos')
-                .select('modulo_key')
-                .eq('role_id', user.role_id)
-                .eq('habilitado', true)
-                .eq('modulo_key', 'solicitudes');
-            hasAccess = !!(permisos && permisos.length > 0);
-        }
-
-        if (!hasAccess) {
+        // Criterio unificado de autorización (sadmin / role_permisos), igual que fotos/route.ts
+        const user = await getAppUserById(parseInt(userId, 10));
+        if (!user || !(await userHasModule(user, 'solicitudes'))) {
             return NextResponse.json({ error: 'No tienes permisos de administrador para este módulo' }, { status: 403 });
         }
 
@@ -139,31 +116,11 @@ export async function PUT(request: Request) {
 
         const supabase = createAdminClient();
 
-        // Check if user has access to solicitudes module (Role Check)
-        const { data: user } = await supabase
-            .from('usuarios')
-            .select('id, usuario, roles, role_id')
-            .eq('id', parseInt(userId))
-            .single();
-
-        if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 403 });
-
-        let hasAccess = false;
-        if (user.usuario === 'sadmin') {
-            hasAccess = true;
-        } else if (!user.role_id) {
-            hasAccess = user.roles === 'administrador';
-        } else {
-            const { data: permisos } = await supabase
-                .from('role_permisos')
-                .select('modulo_key')
-                .eq('role_id', user.role_id)
-                .eq('habilitado', true)
-                .eq('modulo_key', 'solicitudes');
-            hasAccess = !!(permisos && permisos.length > 0);
+        // Criterio unificado de autorización (sadmin / role_permisos), igual que fotos/route.ts
+        const user = await getAppUserById(parseInt(userId, 10));
+        if (!user || !(await userHasModule(user, 'solicitudes'))) {
+            return NextResponse.json({ error: 'No tienes permisos para gestionar solicitudes' }, { status: 403 });
         }
-
-        if (!hasAccess) return NextResponse.json({ error: 'No tienes permisos para gestionar solicitudes' }, { status: 403 });
 
         if (origen === 'escaneo') {
             // Update Escaneo Table

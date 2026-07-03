@@ -1,5 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/api/withAuth';
+
+// Rate limiting: máximo de intentos fallidos por IP+usuario en la ventana.
+// WHY tabla en DB y no memoria: en serverless las variables de módulo no se
+// comparten entre instancias (ver migración 20260702000001_login_rate_limit.sql).
+const MAX_FAILED_ATTEMPTS = 5;
+// Tope global por identificador (sin IP): x-forwarded-for es spoofeable, así
+// que un atacante que rote IPs no debe tener intentos ilimitados contra una
+// misma cuenta. Más alto que el tope por IP para no penalizar oficinas NAT.
+const MAX_FAILED_ATTEMPTS_PER_IDENTIFIER = 20;
+const WINDOW_MINUTES = 15;
+// Probabilidad de ejecutar la poda de intentos viejos en un login fallido:
+// evita que una ráfaga de fuerza bruta dispare un DELETE por request.
+const PRUNE_PROBABILITY = 0.1;
+
+function getClientIp(request: NextRequest): string {
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) return forwarded.split(',')[0].trim();
+    return request.headers.get('x-real-ip') ?? 'unknown';
+}
 
 /**
  * POST /api/auth/login
@@ -27,6 +47,43 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // ── Rate limiting por IP + identificador (ventana deslizante) ──
+        const ip = getClientIp(request);
+        const identifier = String(usuario).trim().toLowerCase();
+        const adminClient = createServiceClient();
+        const windowStart = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000).toISOString();
+
+        const [byIpResult, byIdentifierResult] = await Promise.all([
+            adminClient
+                .from('login_attempts')
+                .select('id', { count: 'exact', head: true })
+                .eq('ip', ip)
+                .eq('identifier', identifier)
+                .gte('created_at', windowStart),
+            adminClient
+                .from('login_attempts')
+                .select('id', { count: 'exact', head: true })
+                .eq('identifier', identifier)
+                .gte('created_at', windowStart),
+        ]);
+
+        const rlError = byIpResult.error ?? byIdentifierResult.error;
+        const isBlocked =
+            (byIpResult.count ?? 0) >= MAX_FAILED_ATTEMPTS ||
+            (byIdentifierResult.count ?? 0) >= MAX_FAILED_ATTEMPTS_PER_IDENTIFIER;
+
+        // Si el chequeo falla (p. ej. migración no aplicada) no bloqueamos el
+        // login, pero lo dejamos registrado en el log del servidor.
+        if (rlError) {
+            console.error('Login rate-limit check failed:', rlError);
+        } else if (isBlocked) {
+            // Mensaje genérico: no filtra si el usuario existe ni el motivo exacto.
+            return NextResponse.json(
+                { error: 'Demasiados intentos. Intentá de nuevo más tarde.' },
+                { status: 429 }
+            );
+        }
+
         const supabase = await createClient();
 
         // All users authenticate via the internal email convention:
@@ -41,6 +98,14 @@ export async function POST(request: NextRequest) {
         });
 
         if (error || !data.user) {
+            // Registrar intento fallido + limpieza oportunista (muestreada) de
+            // intentos viejos.
+            const shouldPrune = Math.random() < PRUNE_PROBABILITY;
+            await Promise.all([
+                adminClient.from('login_attempts').insert({ ip, identifier }),
+                shouldPrune ? adminClient.rpc('prune_login_attempts') : Promise.resolve(null),
+            ]).catch((e) => console.error('Login rate-limit record failed:', e));
+
             return NextResponse.json(
                 { error: 'Usuario o contraseña incorrectos' },
                 { status: 401 }
@@ -48,8 +113,6 @@ export async function POST(request: NextRequest) {
         }
 
         // Fetch app-level user profile
-        const { createServiceClient } = await import('@/lib/api/withAuth');
-        const adminClient = createServiceClient();
         const { data: appUser } = await adminClient
             .from('usuarios')
             .select('id, nombre_completo, usuario, roles')
@@ -66,6 +129,13 @@ export async function POST(request: NextRequest) {
                 { status: 401 }
             );
         }
+
+        // Login exitoso: resetear el contador de la clave.
+        await adminClient
+            .from('login_attempts')
+            .delete()
+            .eq('ip', ip)
+            .eq('identifier', identifier);
 
         return NextResponse.json({
             success: true,
