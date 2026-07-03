@@ -90,7 +90,6 @@ export default function SolicitudesClient() {
                     table: 'edit_requests'
                 },
                 (payload) => {
-                    console.log('Realtime change detected:', payload);
 
                     // Reload data to ensure everything is fresh
                     loadRequests();

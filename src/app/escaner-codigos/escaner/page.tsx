@@ -194,7 +194,6 @@ export default function EscaneoPage() {
                         aspectRatio: 1
                     },
                     (decodedText) => {
-                        console.log("Scanned:", decodedText);
                         lookupBarcode(decodedText);
                     },
                     (errorMessage) => {
