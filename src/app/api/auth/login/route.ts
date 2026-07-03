@@ -6,7 +6,14 @@ import { createServiceClient } from '@/lib/api/withAuth';
 // WHY tabla en DB y no memoria: en serverless las variables de módulo no se
 // comparten entre instancias (ver migración 20260702000001_login_rate_limit.sql).
 const MAX_FAILED_ATTEMPTS = 5;
+// Tope global por identificador (sin IP): x-forwarded-for es spoofeable, así
+// que un atacante que rote IPs no debe tener intentos ilimitados contra una
+// misma cuenta. Más alto que el tope por IP para no penalizar oficinas NAT.
+const MAX_FAILED_ATTEMPTS_PER_IDENTIFIER = 20;
 const WINDOW_MINUTES = 15;
+// Probabilidad de ejecutar la poda de intentos viejos en un login fallido:
+// evita que una ráfaga de fuerza bruta dispare un DELETE por request.
+const PRUNE_PROBABILITY = 0.1;
 
 function getClientIp(request: NextRequest): string {
     const forwarded = request.headers.get('x-forwarded-for');
@@ -46,18 +53,30 @@ export async function POST(request: NextRequest) {
         const adminClient = createServiceClient();
         const windowStart = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000).toISOString();
 
-        const { count: failedCount, error: rlError } = await adminClient
-            .from('login_attempts')
-            .select('id', { count: 'exact', head: true })
-            .eq('ip', ip)
-            .eq('identifier', identifier)
-            .gte('created_at', windowStart);
+        const [byIpResult, byIdentifierResult] = await Promise.all([
+            adminClient
+                .from('login_attempts')
+                .select('id', { count: 'exact', head: true })
+                .eq('ip', ip)
+                .eq('identifier', identifier)
+                .gte('created_at', windowStart),
+            adminClient
+                .from('login_attempts')
+                .select('id', { count: 'exact', head: true })
+                .eq('identifier', identifier)
+                .gte('created_at', windowStart),
+        ]);
+
+        const rlError = byIpResult.error ?? byIdentifierResult.error;
+        const isBlocked =
+            (byIpResult.count ?? 0) >= MAX_FAILED_ATTEMPTS ||
+            (byIdentifierResult.count ?? 0) >= MAX_FAILED_ATTEMPTS_PER_IDENTIFIER;
 
         // Si el chequeo falla (p. ej. migración no aplicada) no bloqueamos el
         // login, pero lo dejamos registrado en el log del servidor.
         if (rlError) {
             console.error('Login rate-limit check failed:', rlError);
-        } else if ((failedCount ?? 0) >= MAX_FAILED_ATTEMPTS) {
+        } else if (isBlocked) {
             // Mensaje genérico: no filtra si el usuario existe ni el motivo exacto.
             return NextResponse.json(
                 { error: 'Demasiados intentos. Intentá de nuevo más tarde.' },
@@ -79,10 +98,12 @@ export async function POST(request: NextRequest) {
         });
 
         if (error || !data.user) {
-            // Registrar intento fallido + limpieza oportunista de intentos viejos.
+            // Registrar intento fallido + limpieza oportunista (muestreada) de
+            // intentos viejos.
+            const shouldPrune = Math.random() < PRUNE_PROBABILITY;
             await Promise.all([
                 adminClient.from('login_attempts').insert({ ip, identifier }),
-                adminClient.rpc('prune_login_attempts'),
+                shouldPrune ? adminClient.rpc('prune_login_attempts') : Promise.resolve(null),
             ]).catch((e) => console.error('Login rate-limit record failed:', e));
 
             return NextResponse.json(

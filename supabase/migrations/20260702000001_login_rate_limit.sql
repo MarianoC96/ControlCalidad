@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 CREATE INDEX IF NOT EXISTS idx_login_attempts_key_time
     ON login_attempts (ip, identifier, created_at DESC);
 
+-- Índice para el tope global por identificador (independiente de la IP,
+-- que es spoofeable vía x-forwarded-for).
+CREATE INDEX IF NOT EXISTS idx_login_attempts_identifier_time
+    ON login_attempts (identifier, created_at DESC);
+
 -- Solo el service role opera sobre esta tabla (RLS sin políticas bloquea
 -- anon/authenticated; el service role la bypasea).
 ALTER TABLE login_attempts ENABLE ROW LEVEL SECURITY;
