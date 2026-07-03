@@ -21,7 +21,6 @@ export async function GET() {
         const supabase = createAdminClient();
 
         if (!await canManageUsers(user)) {
-            console.log('API Usuarios/GET: Acceso denegado.', { userId: user?.id });
             return NextResponse.json(
                 { error: 'No autorizado. Se requiere permiso de usuarios.' },
                 { status: 403 }
