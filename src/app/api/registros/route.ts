@@ -5,30 +5,21 @@ import { getPdfConfig } from '@/lib/config-helper';
 // Helper Service Role Client
 const createAdminClient = () => createServiceClient();
 
-// Cache for available dates (refreshed every 60 seconds)
-let cachedDates: { years: number[]; monthsByYear: Record<string, number[]> } | null = null;
-let cachedDatesTimestamp = 0;
-const CACHE_TTL = 60_000; // 60 seconds
-
+// Sin caché en variables de módulo: en serverless cada instancia tiene su
+// propia copia y la invalidación del POST no cruza instancias (fechas viejas
+// hasta expirar el TTL). El RPC es barato; se llama siempre.
 async function getAvailableDates(supabase: ReturnType<typeof createAdminClient>) {
-    const now = Date.now();
-    if (cachedDates && (now - cachedDatesTimestamp) < CACHE_TTL) {
-        return cachedDates;
-    }
-
     const { data, error } = await supabase.rpc('get_available_dates');
 
     if (error || !data) {
         console.error('Error fetching available dates via RPC:', error);
-        return cachedDates || { years: [], monthsByYear: {} };
+        return { years: [], monthsByYear: {} as Record<string, number[]> };
     }
 
-    cachedDates = {
-        years: data.years || [],
-        monthsByYear: data.months_by_year || {}
+    return {
+        years: (data.years || []) as number[],
+        monthsByYear: (data.months_by_year || {}) as Record<string, number[]>,
     };
-    cachedDatesTimestamp = now;
-    return cachedDates;
 }
 
 export async function GET(request: Request) {
@@ -275,9 +266,6 @@ export async function POST(request: Request) {
         );
 
         if (rpcError) throw rpcError;
-
-        // Invalida la caché de fechas al crear un registro nuevo.
-        cachedDates = null;
 
         return NextResponse.json({ success: true, registro_id: nuevoRegistroId });
 
