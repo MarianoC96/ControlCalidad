@@ -4,6 +4,10 @@ import { getAppUserById, userHasModule } from '@/lib/api/permissions';
 // Helper Service Role Client
 const createAdminClient = () => createServiceClient();
 
+// Tope defensivo por fuente: la vista de solicitudes no pagina, pero sin
+// límite el select trae la tabla entera a medida que crece el histórico.
+const MAX_REQUESTS_PER_SOURCE = 200;
+
 export async function GET() {
     try {
         const auth = await getAuthUserId();
@@ -39,7 +43,9 @@ export async function GET() {
                         nombre_completo,
                         usuario
                     )
-                `),
+                `)
+                .order('created_at', { ascending: false })
+                .limit(MAX_REQUESTS_PER_SOURCE),
             supabase
                 .from('edit_requests_escaneo')
                 .select(`
@@ -47,6 +53,8 @@ export async function GET() {
                     usuarios!edit_requests_escaneo_usuario_id_fkey(nombre_completo, usuario),
                     admin:usuarios!edit_requests_escaneo_admin_id_fkey(nombre_completo, usuario)
                 `)
+                .order('created_at', { ascending: false })
+                .limit(MAX_REQUESTS_PER_SOURCE)
         ]);
 
         if (evalsCalidad.error) throw evalsCalidad.error;
@@ -59,14 +67,34 @@ export async function GET() {
         }));
 
         const rawEscaneo = evalsEscaneo.data || [];
-        const mappedEscaneoResponse = await Promise.all(rawEscaneo.map(async (req: any) => {
-            const table = req.scan_mode === 'productos' ? 'historial_escaneos_productos' : 'historial_escaneos_cajas';
-            const { data: hist } = await supabase
-                .from(table)
-                .select('barcode, lote, created_at')
-                .eq('id', req.historial_id)
-                .single();
-            
+
+        // Resolver los historiales en 2 queries (una por tabla) en vez de una
+        // por solicitud (N+1): agrupar ids por scan_mode y armar un mapa.
+        const idsProductos = rawEscaneo
+            .filter((r: any) => r.scan_mode === 'productos')
+            .map((r: any) => r.historial_id);
+        const idsCajas = rawEscaneo
+            .filter((r: any) => r.scan_mode !== 'productos')
+            .map((r: any) => r.historial_id);
+
+        const [histProductos, histCajas] = await Promise.all([
+            idsProductos.length
+                ? supabase.from('historial_escaneos_productos').select('id, barcode, lote, created_at').in('id', idsProductos)
+                : Promise.resolve({ data: [] as any[] }),
+            idsCajas.length
+                ? supabase.from('historial_escaneos_cajas').select('id, barcode, lote, created_at').in('id', idsCajas)
+                : Promise.resolve({ data: [] as any[] }),
+        ]);
+
+        const histByKey = new Map<string, any>();
+        for (const h of histProductos.data || []) histByKey.set(`productos:${h.id}`, h);
+        for (const h of histCajas.data || []) histByKey.set(`cajas:${h.id}`, h);
+
+        const mappedEscaneoResponse = rawEscaneo.map((req: any) => {
+            const hist = histByKey.get(
+                `${req.scan_mode === 'productos' ? 'productos' : 'cajas'}:${req.historial_id}`
+            );
+
             // Replicamos la estructura del JSON para que SolicitudesClient.tsx lo procese nativamente sin crashear
             return {
                 id: req.id, // Ojo usamos el ID original, el PUT se fijará en 'origen'
@@ -85,7 +113,7 @@ export async function GET() {
                 usuarios: req.usuarios,
                 resuelto_por: req.admin
             };
-        }));
+        });
 
         const unifiedList = [...mappedCalidad, ...mappedEscaneoResponse]
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
