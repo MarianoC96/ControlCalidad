@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId } from '@/lib/api/withAuth';
-import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import { getAuthProfile } from '@/lib/api/withAuth';
+import { userHasModule } from '@/lib/api/permissions';
 import { getPdfConfig, updatePdfConfig, PdfConfig } from '@/lib/config-helper';
 
 export async function GET() {
@@ -14,16 +14,12 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const auth = await getAuthUserId();
-        const userId = auth?.userId;
-
-        if (!userId) {
+        // Perfil + permisos en una sola query a usuarios (getAuthProfile)
+        const user = await getAuthProfile();
+        if (!user) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
         }
-
-        // Criterio unificado de autorización (sadmin / role_permisos)
-        const user = await getAppUserById(parseInt(userId, 10));
-        if (!user || !(await userHasModule(user, 'admin/config-reportes'))) {
+        if (!(await userHasModule(user, 'admin/config-reportes'))) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 

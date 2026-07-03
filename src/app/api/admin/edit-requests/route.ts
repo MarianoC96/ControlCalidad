@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
-import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import { getAuthProfile, createServiceClient } from '@/lib/api/withAuth';
+import { userHasModule } from '@/lib/api/permissions';
 // Helper Service Role Client
 const createAdminClient = () => createServiceClient();
 
@@ -10,20 +10,16 @@ const MAX_REQUESTS_PER_SOURCE = 200;
 
 export async function GET() {
     try {
-        const auth = await getAuthUserId();
-        const userId = auth?.userId;
-
-        if (!userId) {
+        // Perfil + permisos en una sola query a usuarios (getAuthProfile)
+        const user = await getAuthProfile();
+        if (!user) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
+        if (!(await userHasModule(user, 'solicitudes'))) {
+            return NextResponse.json({ error: 'No tienes permisos de administrador para este módulo' }, { status: 403 });
         }
 
         const supabase = createAdminClient();
-
-        // Criterio unificado de autorización (sadmin / role_permisos), igual que fotos/route.ts
-        const user = await getAppUserById(parseInt(userId, 10));
-        if (!user || !(await userHasModule(user, 'solicitudes'))) {
-            return NextResponse.json({ error: 'No tienes permisos de administrador para este módulo' }, { status: 403 });
-        }
 
         const [evalsCalidad, evalsEscaneo] = await Promise.all([
             supabase
@@ -128,11 +124,13 @@ export async function GET() {
 
 export async function PUT(request: Request) {
     try {
-        const auth = await getAuthUserId();
-        const userId = auth?.userId;
-
-        if (!userId) {
+        // Perfil + permisos en una sola query a usuarios (getAuthProfile)
+        const user = await getAuthProfile();
+        if (!user) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
+        if (!(await userHasModule(user, 'solicitudes'))) {
+            return NextResponse.json({ error: 'No tienes permisos para gestionar solicitudes' }, { status: 403 });
         }
 
         const body = await request.json();
@@ -144,19 +142,13 @@ export async function PUT(request: Request) {
 
         const supabase = createAdminClient();
 
-        // Criterio unificado de autorización (sadmin / role_permisos), igual que fotos/route.ts
-        const user = await getAppUserById(parseInt(userId, 10));
-        if (!user || !(await userHasModule(user, 'solicitudes'))) {
-            return NextResponse.json({ error: 'No tienes permisos para gestionar solicitudes' }, { status: 403 });
-        }
-
         if (origen === 'escaneo') {
             // Update Escaneo Table
             const { error } = await supabase
                 .from('edit_requests_escaneo')
                 .update({
                     status,
-                    admin_id: parseInt(userId),
+                    admin_id: user.id,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', id);
@@ -170,7 +162,7 @@ export async function PUT(request: Request) {
                 .update({
                     status,
                     resolved_at: new Date().toISOString(),
-                    resolved_by: parseInt(userId)
+                    resolved_by: user.id
                 })
                 .eq('id', id);
             if (error) throw error;
