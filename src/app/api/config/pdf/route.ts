@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+import { getAuthUserId } from '@/lib/api/withAuth';
+import { getAppUserById, userHasModule } from '@/lib/api/permissions';
 import { getPdfConfig, updatePdfConfig, PdfConfig } from '@/lib/config-helper';
 
 export async function GET() {
@@ -20,31 +21,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
         }
 
-        const supabase = createServiceClient();
-
-        // Check Permissions
-        const { data: user } = await supabase
-            .from('usuarios')
-            .select('usuario, roles, role_id')
-            .eq('id', userId)
-            .single();
-
-        let hasAccess = false;
-        if (user?.usuario === 'sadmin') hasAccess = true;
-        else if (user?.role_id) {
-            const { data: perm } = await supabase
-                .from('role_permisos')
-                .select('habilitado')
-                .eq('role_id', user.role_id)
-                .eq('modulo_key', 'admin/config-reportes')
-                .eq('habilitado', true)
-                .single();
-            if (perm?.habilitado) hasAccess = true;
-        } else if (user?.roles === 'administrador') {
-            hasAccess = true;
-        }
-
-        if (!hasAccess) {
+        // Criterio unificado de autorización (sadmin / role_permisos)
+        const user = await getAppUserById(parseInt(userId, 10));
+        if (!user || !(await userHasModule(user, 'admin/config-reportes'))) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 

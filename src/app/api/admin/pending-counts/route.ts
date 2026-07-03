@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+import { getAppUserById, userHasModule } from '@/lib/api/permissions';
 const createAdminClient = () => createServiceClient();
 
 export async function GET() {
@@ -14,42 +15,16 @@ export async function GET() {
         const supabase = createAdminClient();
 
         // Run user fetch and pending count in parallel
-        const [userResult, countResult] = await Promise.all([
-            supabase
-                .from('usuarios')
-                .select('id, usuario, roles, role_id')
-                .eq('id', parseInt(userId))
-                .single(),
+        const [user, countResult] = await Promise.all([
+            getAppUserById(parseInt(userId, 10)),
             supabase
                 .from('edit_requests')
                 .select('id', { count: 'exact', head: true })
                 .eq('status', 'pendiente')
         ]);
 
-        const user = userResult.data;
-        if (!user) {
-            return NextResponse.json({ pendingSolicitudes: 0 });
-        }
-
-        // Determine if user has access to the "solicitudes" module
-        let hasAccessToSolicitudes = false;
-
-        if (user.usuario === 'sadmin') {
-            hasAccessToSolicitudes = true;
-        } else if (!user.role_id) {
-            hasAccessToSolicitudes = user.roles === 'administrador';
-        } else {
-            const { data: permisos } = await supabase
-                .from('role_permisos')
-                .select('modulo_key')
-                .eq('role_id', user.role_id)
-                .eq('habilitado', true)
-                .eq('modulo_key', 'solicitudes');
-
-            hasAccessToSolicitudes = !!(permisos && permisos.length > 0);
-        }
-
-        if (!hasAccessToSolicitudes) {
+        // Criterio unificado de autorización (sadmin / role_permisos)
+        if (!user || !(await userHasModule(user, 'solicitudes'))) {
             return NextResponse.json({ pendingSolicitudes: 0 });
         }
 

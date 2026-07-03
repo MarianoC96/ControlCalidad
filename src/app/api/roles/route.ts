@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
+import { userHasModule } from '@/lib/api/permissions';
 const createAdminClient = () => createServiceClient();
 
 // All system modules
@@ -39,25 +40,10 @@ async function getAuthUser(supabase: ReturnType<typeof createAdminClient>) {
     return user;
 }
 
-async function canManageRoles(user: any, supabase: any) {
+async function canManageRoles(user: any) {
     if (!user) return false;
-    if (user.usuario === 'sadmin') return true;
-    
-    if (user.role_id) {
-        const { data: perm } = await supabase
-            .from('role_permisos')
-            .select('habilitado')
-            .eq('role_id', user.role_id)
-            .eq('modulo_key', 'accesos')
-            .eq('habilitado', true)
-            .single();
-        if (perm?.habilitado) return true;
-    }
-    
-    // Legacy support (optional)
-    if (user.roles === 'administrador') return true;
-    
-    return false;
+    // Criterio unificado de autorización (sadmin / role_permisos)
+    return userHasModule(user, 'accesos');
 }
 
 
@@ -72,7 +58,7 @@ export async function GET() {
 
         // Only sadmin user or admin can view roles
         const isSadmin = user.usuario === 'sadmin';
-        if (!await canManageRoles(user, supabase)) {
+        if (!await canManageRoles(user)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
@@ -113,7 +99,7 @@ export async function POST(request: NextRequest) {
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const isSadmin = user.usuario === 'sadmin';
-        if (!await canManageRoles(user, supabase)) {
+        if (!await canManageRoles(user)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
@@ -168,7 +154,7 @@ export async function PUT(request: NextRequest) {
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const isSadmin = user.usuario === 'sadmin';
-        if (!await canManageRoles(user, supabase)) {
+        if (!await canManageRoles(user)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
@@ -240,7 +226,7 @@ export async function PATCH(request: NextRequest) {
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const isSadmin = user.usuario === 'sadmin';
-        if (!await canManageRoles(user, supabase)) {
+        if (!await canManageRoles(user)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
@@ -277,7 +263,7 @@ export async function DELETE(request: NextRequest) {
         if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
         const isSadmin = user.usuario === 'sadmin';
-        if (!await canManageRoles(user, supabase)) {
+        if (!await canManageRoles(user)) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
