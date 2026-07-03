@@ -112,8 +112,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, message: 'No records found' });
         }
 
-        // Fetch all registros with controles and fotos - paginate if over 1000
-        let allRegistros: any[] = [];
+        // 3. Procesamiento por lotes: cada página se trae SIN fotos (las fotos
+        // base64 son lo pesado), se le adjuntan sus fotos con una query aparte,
+        // se generan sus PDFs al ZIP y el lote se descarta. Así el pico de
+        // memoria es un lote + el ZIP, no todos los registros con sus fotos.
+        const zip = new JSZip();
+        let successCount = 0;
         const PAGE_SIZE = 500;
 
         for (let offset = 0; offset < totalCount; offset += PAGE_SIZE) {
@@ -124,8 +128,7 @@ export async function POST(req: NextRequest) {
                     producto_id, producto_nombre, usuario_id, usuario_nombre,
                     observaciones_generales, verificado_por, fecha_registro,
                     pdf_titulo, pdf_codigo, pdf_edicion, pdf_aprobado_por,
-                    controles (id, parametro_nombre, rango_completo, valor_control, texto_control, parametro_tipo, observacion, fuera_de_rango),
-                    fotos (id, datos_base64, descripcion)
+                    controles (id, parametro_nombre, rango_completo, valor_control, texto_control, parametro_tipo, observacion, fuera_de_rango)
                 `)
                 .gte('fecha_registro', startDate.toISOString())
                 .lte('fecha_registro', endDate.toISOString())
@@ -133,12 +136,30 @@ export async function POST(req: NextRequest) {
                 .range(offset, offset + PAGE_SIZE - 1);
 
             if (batchError) throw new Error(batchError.message);
-            if (batch) allRegistros = allRegistros.concat(batch);
-        }
+            if (!batch || batch.length === 0) continue;
 
-        // 3. Generate PDFs in parallel batches
-        const zip = new JSZip();
-        const successCount = await processBatch(allRegistros, zip);
+            const registroIds = batch.map((r: any) => r.id);
+            const { data: fotosBatch, error: fotosError } = await supabase
+                .from('fotos')
+                .select('id, registro_id, datos_base64, descripcion')
+                .in('registro_id', registroIds);
+
+            if (fotosError) throw new Error(fotosError.message);
+
+            const fotosByRegistro = new Map<number, any[]>();
+            for (const foto of fotosBatch || []) {
+                const list = fotosByRegistro.get(foto.registro_id) || [];
+                list.push(foto);
+                fotosByRegistro.set(foto.registro_id, list);
+            }
+
+            const registrosConFotos = batch.map((r: any) => ({
+                ...r,
+                fotos: fotosByRegistro.get(r.id) || [],
+            }));
+
+            successCount += await processBatch(registrosConFotos, zip);
+        }
 
         // 4. Generate ZIP with compression
         const zipContent = await zip.generateAsync({
