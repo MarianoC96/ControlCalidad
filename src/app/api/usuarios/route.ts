@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
 import { getAppUserById, userHasModule } from '@/lib/api/permissions';
+import { usuarioCreateSchema, passwordSchema, formatZodErrors } from '@/lib/schemas';
 import bcrypt from 'bcryptjs';
 
 /**
@@ -56,10 +57,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
         }
 
-        const body = await request.json();
-        const {
-            nombre_completo, usuario, password, roles, role_id
-        } = body;
+        // Validación + whitelist del body (mismo patrón que productos/parametros-maestros)
+        const rawBody = await request.json().catch(() => null);
+        const parsed = usuarioCreateSchema.safeParse(rawBody);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Datos inválidos', detalles: formatZodErrors(parsed.error) },
+                { status: 422 }
+            );
+        }
+        const { nombre_completo, usuario, password, roles, role_id } = parsed.data;
 
         // 2. Crear usuario en Supabase Auth
         // WHY: Supabase Auth requires an email. We auto-generate it from the
@@ -125,6 +132,17 @@ export async function PUT(request: NextRequest) {
         } = body;
 
         if (id === 1) return NextResponse.json({ error: 'sadmin no modificable' }, { status: 403 });
+
+        // Misma política de contraseña que en el alta (si se está cambiando)
+        if (password !== undefined && password !== null && password !== '') {
+            const parsedPassword = passwordSchema.safeParse(password);
+            if (!parsedPassword.success) {
+                return NextResponse.json(
+                    { error: 'Datos inválidos', detalles: formatZodErrors(parsedPassword.error) },
+                    { status: 422 }
+                );
+            }
+        }
 
         // Auto-generate internal email from username
         const authEmail = usuario

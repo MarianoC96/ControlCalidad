@@ -151,15 +151,33 @@ export const idBodySchema = z.object({
 
 // ─── Usuario (admin CRUD) ────────────────────────────────────
 
+/**
+ * Whitelist del body de POST /api/usuarios (cierra el mass-assignment):
+ * el email NO se acepta del cliente porque el servidor lo autogenera
+ * (`usuario@controlcalidad.local`).
+ */
+export const passwordSchema = z
+    .string()
+    .min(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+    .refine((val) => /[A-Z]/.test(val), {
+        message: 'La contraseña debe incluir al menos una mayúscula',
+    })
+    .refine((val) => /[0-9]/.test(val), {
+        message: 'La contraseña debe incluir al menos un número',
+    })
+    .refine((val) => !val.includes(' '), {
+        message: 'La contraseña no puede contener espacios',
+    });
+
 export const usuarioCreateSchema = z.object({
     nombre_completo: nonEmptyString('Nombre completo'),
     usuario: nonEmptyString('Usuario')
         .refine((val) => !val.includes(' '), {
             message: 'El usuario no puede contener espacios',
         }),
-    email: z.string().email({ message: 'Email inválido' }).optional().or(z.literal('')),
-    password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }),
+    password: passwordSchema,
     roles: z.enum(['administrador', 'trabajador']).default('trabajador'),
+    role_id: z.number().int().positive().nullable().optional(),
 });
 
 export type UsuarioCreateData = z.infer<typeof usuarioCreateSchema>;
