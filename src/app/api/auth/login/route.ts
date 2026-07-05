@@ -77,10 +77,32 @@ export async function POST(request: NextRequest) {
         if (rlError) {
             console.error('Login rate-limit check failed:', rlError);
         } else if (isBlocked) {
+            // El bloqueo expira cuando el intento más viejo necesario para
+            // superar el límite sale de la ventana deslizante (los requests
+            // bloqueados no insertan intentos nuevos, así que el set es fijo).
+            const blockedByIp = (byIpResult.count ?? 0) >= MAX_FAILED_ATTEMPTS;
+            let attemptsQuery = adminClient
+                .from('login_attempts')
+                .select('created_at')
+                .eq('identifier', identifier)
+                .gte('created_at', windowStart)
+                .order('created_at', { ascending: true });
+            if (blockedByIp) attemptsQuery = attemptsQuery.eq('ip', ip);
+
+            const { data: attempts } = await attemptsQuery;
+            const limit = blockedByIp ? MAX_FAILED_ATTEMPTS : MAX_FAILED_ATTEMPTS_PER_IDENTIFIER;
+            // Índice del intento cuya expiración baja el contador debajo del límite.
+            const gateIndex = Math.max(0, (attempts?.length ?? limit) - limit);
+            const gateCreatedAt = attempts?.[gateIndex]?.created_at;
+            const expiresAt = gateCreatedAt
+                ? new Date(gateCreatedAt).getTime() + WINDOW_MINUTES * 60 * 1000
+                : Date.now() + WINDOW_MINUTES * 60 * 1000;
+            const retryAfterSeconds = Math.max(1, Math.ceil((expiresAt - Date.now()) / 1000));
+
             // Mensaje genérico: no filtra si el usuario existe ni el motivo exacto.
             return NextResponse.json(
-                { error: 'Demasiados intentos. Intentá de nuevo más tarde.' },
-                { status: 429 }
+                { error: 'Demasiados intentos. Intentá de nuevo más tarde.', retryAfterSeconds },
+                { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } }
             );
         }
 
