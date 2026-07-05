@@ -13,6 +13,14 @@ const MAX_FOTO_BYTES = 2 * 1024 * 1024;
 const IMAGE_DATA_URL_RE = /^data:image\/(png|jpe?g|webp);base64,/i;
 
 /**
+ * Ventana de alta: tras crear un registro (online: fecha_registro = now;
+ * sync offline: fecha_sincronizacion = now) el creador puede adjuntar las
+ * fotos iniciales sin lock de edición. Pasada la ventana, agregar fotos es
+ * una edición y exige el lock anti-TOCTOU como siempre.
+ */
+const VENTANA_ALTA_MS = 15 * 60 * 1000;
+
+/**
  * Estima los bytes decodificados de un data URL base64 sin materializar el
  * buffer (rápido y suficiente para validar el límite de tamaño).
  */
@@ -66,7 +74,7 @@ export async function POST(request: NextRequest) {
         // Cargar registro + fotos actuales para validar pertenencia/lock/cupo
         const { data: registro, error: regError } = await supabase
             .from('registros')
-            .select('id, edit_started_by, edit_expires_at, fotos(id)')
+            .select('id, usuario_id, fecha_registro, fecha_sincronizacion, edit_started_by, edit_expires_at, fotos(id)')
             .eq('id', registroId)
             .single();
 
@@ -74,13 +82,25 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Registro no encontrado' }, { status: 404 });
         }
 
-        // Requiere lock de edición activo y propiedad del lock por este usuario.
         const now = new Date();
         const expiresAt = registro.edit_expires_at ? new Date(registro.edit_expires_at) : null;
         const lockActivo = !!expiresAt && expiresAt > now;
         const lockEsMio = registro.edit_started_by === userId;
 
-        if (!lockActivo || !lockEsMio) {
+        // Alta: el creador puede adjuntar las fotos iniciales dentro de la
+        // ventana posterior a la creación, siempre que nadie MÁS tenga un lock
+        // activo. Fuera de esa ventana (o para terceros) rige el lock de
+        // edición anti-TOCTOU de siempre.
+        const creadoMs = Math.max(
+            registro.fecha_registro ? new Date(registro.fecha_registro).getTime() : 0,
+            registro.fecha_sincronizacion ? new Date(registro.fecha_sincronizacion).getTime() : 0
+        );
+        const enVentanaDeAlta =
+            registro.usuario_id === userId &&
+            now.getTime() - creadoMs < VENTANA_ALTA_MS &&
+            (!lockActivo || lockEsMio);
+
+        if (!enVentanaDeAlta && (!lockActivo || !lockEsMio)) {
             return NextResponse.json(
                 { error: 'Debes tener un bloqueo de edición activo sobre este registro para agregar fotos.' },
                 { status: 409 }
