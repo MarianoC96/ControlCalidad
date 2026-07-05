@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUserId, createServiceClient } from '@/lib/api/withAuth';
-import bcrypt from 'bcryptjs';
+import { verifyUserPassword } from '@/lib/api/reauth';
 
 export async function POST(request: Request) {
     try {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         const [userResult, regResult] = await Promise.all([
             supabase
                 .from('usuarios')
-                .select('id, usuario, roles, password, role_id')
+                .select('id, usuario, roles, role_id')
                 .eq('id', parseInt(userId))
                 .single(),
             supabase
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
                 );
             }
 
-            const match = await bcrypt.compare(password, user.password);
+            const match = await verifyUserPassword(user.usuario, password);
             if (!match) {
                 return NextResponse.json(
                     { error: 'Contraseña incorrecta' },

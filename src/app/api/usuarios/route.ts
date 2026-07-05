@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthProfile, createServiceClient } from '@/lib/api/withAuth';
 import { userHasModule, type PermissionUser } from '@/lib/api/permissions';
 import { usuarioCreateSchema, passwordSchema, formatZodErrors } from '@/lib/schemas';
-import bcrypt from 'bcryptjs';
 
 /**
  * Cliente Admin (Service Role) para operaciones de sistema
@@ -79,8 +78,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: `Error en Autenticación: ${authError.message}` }, { status: 400 });
         }
 
-        // 3. Crear perfil en tabla local
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // 3. Crear perfil en tabla local (la contraseña vive SOLO en Supabase
+        // Auth; el hash duplicado en usuarios.password fue eliminado — ver
+        // migración 20260705000001_drop_usuarios_password.sql)
         const { data, error } = await supabase
             .from('usuarios')
             .insert({
@@ -88,7 +88,6 @@ export async function POST(request: NextRequest) {
                 nombre_completo,
                 usuario: usuario.trim().toLowerCase(),
                 email: authEmail,
-                password: hashedPassword,
                 roles: roles || 'trabajador',
                 role_id: role_id || null,
                 activo: true,
@@ -177,8 +176,6 @@ export async function PUT(request: NextRequest) {
             updateData.usuario = usuario.trim().toLowerCase();
             updateData.email = authEmail;
         }
-        if (password) updateData.password = await bcrypt.hash(password, 10);
-
         const { data, error } = await supabase.from('usuarios').update(updateData).eq('id', id).select().single();
         if (error) throw error;
 
