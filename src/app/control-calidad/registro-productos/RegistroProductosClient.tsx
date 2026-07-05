@@ -268,11 +268,15 @@ export default function RegistroProductosClient() {
 
                         <div className="form-group">
                             <label htmlFor="cantidad" className="form-label">Cantidad (Unidades)</label>
-                            <input type="number" id="cantidad" min="1"
-                                onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
+                            {/* type="text" + inputMode + saneo: Firefox deja tipear letras en
+                                type="number" y reporta value="" (imposible de sanear). */}
+                            <input type="text" id="cantidad" inputMode="numeric" pattern="[0-9]*"
                                 className={`form-control ${form.fieldErrors.cantidad ? 'is-invalid' : ''}`}
                                 value={form.formData.cantidad}
-                                onChange={(e) => form.setFormData((prev: any) => ({ ...prev, cantidad: e.target.value }))}
+                                onChange={(e) => {
+                                    const soloDigitos = e.target.value.replace(/\D/g, '');
+                                    form.setFormData((prev: any) => ({ ...prev, cantidad: soloDigitos }));
+                                }}
                                 placeholder="0"
                                 required />
                             {form.fieldErrors.cantidad && <div className="invalid-feedback">{form.fieldErrors.cantidad}</div>}
