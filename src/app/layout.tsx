@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+// Self-hosted (antes CDN jsdelivr, que dejaba la UI sin íconos ante un 503).
+// Next empaqueta el CSS y sirve las fuentes woff/woff2 desde el propio bundle.
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import AppShell from "@/components/AppShell";
@@ -28,8 +31,6 @@ export default function RootLayout({
         {/* Preconnect to Supabase for faster API calls */}
         <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL || ''} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL || ''} />
-        {/* Bootstrap Icons */}
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
       </head>
       <body>
         <AppShell>{children}</AppShell>
