@@ -137,21 +137,38 @@ export async function POST(request: Request) {
         const newExpiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
         const newStartedAtIso = now.toISOString();
 
-        const { data: lockedRows, error: updateError } = await supabase
-            .from('registros')
-            .update({
-                edit_started_at: newStartedAtIso,
-                edit_expires_at: newExpiresAt.toISOString(),
-                edit_started_by: user.id,
-            })
-            .eq('id', registro_id)
-            .or(
-                `edit_started_by.is.null,edit_expires_at.lt.${nowIso},edit_started_by.eq.${user.id}`
-            )
-            .select('id');
+        // NB: PostgREST rechaza `.or()` en UPDATE en esta instancia (42703
+        // para cualquier columna), así que las tres condiciones se prueban
+        // como UPDATEs condicionales separados. Cada uno sigue siendo atómico
+        // (filtro y escritura en el mismo statement), que es lo que importa
+        // para el anti-TOCTOU: nunca se pisa un lock ajeno vigente.
+        const lockPayload = {
+            edit_started_at: newStartedAtIso,
+            edit_expires_at: newExpiresAt.toISOString(),
+            edit_started_by: user.id,
+        };
 
-        if (updateError) {
-            return NextResponse.json({ error: 'Error al aplicar bloqueo' }, { status: 500 });
+        let lockedRows: { id: number }[] | null = null;
+        for (const applyCondition of [
+            // ya es mío → renovar
+            (q: any) => q.eq('edit_started_by', user.id),
+            // libre
+            (q: any) => q.is('edit_started_by', null),
+            // expirado
+            (q: any) => q.lt('edit_expires_at', nowIso),
+        ]) {
+            const { data, error: updateError } = await applyCondition(
+                supabase.from('registros').update(lockPayload).eq('id', registro_id)
+            ).select('id');
+
+            if (updateError) {
+                console.error('Lock update error:', updateError);
+                return NextResponse.json({ error: 'Error al aplicar bloqueo' }, { status: 500 });
+            }
+            if (data && data.length > 0) {
+                lockedRows = data;
+                break;
+            }
         }
 
         // 0 filas afectadas → otro usuario tomó/tiene el lock entre la lectura y aquí.

@@ -26,7 +26,9 @@ export async function verifyUserPassword(usuario: string, password: string): Pro
 
     if (error || !data.user) return false;
 
-    // Best-effort: revocar el token recién emitido; no afecta el resultado.
-    await supabase.auth.signOut().catch(() => undefined);
+    // Best-effort: descartar el token recién emitido. OJO: scope 'local'
+    // obligatorio — el default 'global' revoca TODAS las sesiones del usuario,
+    // incluida la sesión real con la que está navegando.
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
     return true;
 }
