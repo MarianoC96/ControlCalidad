@@ -78,6 +78,10 @@ export default function RegistroProductosClient() {
         }
 
         setShowPreviewModal(true);
+        // En formularios largos el usuario queda scrolleado abajo y no ve el
+        // modal (en algunos navegadores móviles el overlay fixed queda fuera
+        // de vista). Subimos al tope, igual que en el camino de error.
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const confirmAndSave = async () => {
