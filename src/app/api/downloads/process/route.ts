@@ -91,10 +91,11 @@ export async function POST(req: NextRequest) {
         await supabase.from('download_history').update({ status: 'processing', error_message: null }).eq('id', downloadId);
 
         // 2. Fetch Data - only select needed columns
-        const startDate = new Date(downloadRecord.start_date);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(downloadRecord.end_date);
-        endDate.setHours(23, 59, 59, 999);
+        // Límites del rango en huso de Perú: setHours() usa el huso del
+        // servidor (UTC en Vercel), lo que dejaba fuera los registros de
+        // 19:00–23:59 hora Lima del último día del rango.
+        const startDate = new Date(`${downloadRecord.start_date}T00:00:00-05:00`);
+        const endDate = new Date(`${downloadRecord.end_date}T23:59:59.999-05:00`);
 
         // First get registros count to handle pagination for large datasets
         const { count: totalCount } = await supabase
