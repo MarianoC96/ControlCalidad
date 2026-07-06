@@ -105,8 +105,11 @@ export async function POST(req: NextRequest) {
             .lte('fecha_registro', endDate.toISOString());
 
         if (!totalCount || totalCount === 0) {
+            // status 'error' (no 'ready'): con 'ready' la UI mostraba "Listo"
+            // sin nada para bajar y el usuario esperaba una descarga que nunca
+            // llegaba. DownloadHistory ya renderiza el badge Error + mensaje.
             await supabase.from('download_history').update({
-                status: 'ready',
+                status: 'error',
                 total_files: 0,
                 error_message: 'No hay registros en el rango seleccionado'
             }).eq('id', downloadId);
