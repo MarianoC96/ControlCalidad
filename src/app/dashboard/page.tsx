@@ -46,7 +46,7 @@ export default function DashboardGateway() {
                 const activePaths: string[] = [];
                 
                 // Priority 1: Control de Calidad submodules
-                const qSub = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas', 'historial-descargas-masivas'];
+                const qSub = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas'];
                 const firstQ = qSub.find(s => modules.includes(s));
                 if (firstQ) activePaths.push(`/control-calidad/${firstQ}`);
                 

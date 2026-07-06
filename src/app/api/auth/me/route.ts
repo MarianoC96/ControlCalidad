@@ -12,7 +12,7 @@ export const GET = withAuth(async (_request, user) => {
     let permisos_list: string[] = [];
 
     const ALL_MODULES = [
-        'registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'historial-descargas-masivas', 'solicitudes',
+        'registro-productos', 'historial', 'registros-modificados', 'historial-descargas', 'solicitudes',
         'productos', 'parametros-maestros', 'usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos',
         'control-sistema', 'control-calidad',
         'escaneo', 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central',

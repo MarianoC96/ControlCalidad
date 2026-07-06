@@ -9,7 +9,6 @@ const ALL_MODULES = [
     'historial',
     'registros-modificados',
     'historial-descargas',
-    'historial-descargas-masivas',
     'solicitudes',
     'productos',
     'parametros-maestros',
