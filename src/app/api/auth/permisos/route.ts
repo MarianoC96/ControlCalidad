@@ -13,7 +13,7 @@ export const GET = withAuth(async (_request, user) => {
         return NextResponse.json({
             allowedModules: [
                 'registro-productos', 'historial', 'registros-modificados', 'historial-descargas',
-                'historial-descargas-masivas', 'solicitudes', 'productos', 'parametros-maestros',
+                'solicitudes', 'productos', 'parametros-maestros',
                 'usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos',
                 'control-sistema', 'control-calidad', 'escaneo',
                 'escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central',

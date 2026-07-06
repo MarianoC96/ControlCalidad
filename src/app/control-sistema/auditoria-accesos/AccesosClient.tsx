@@ -22,8 +22,7 @@ interface Role {
 const MODULE_LABELS: Record<string, string> = {
     'registro-productos': 'Registrar',
     'historial': 'Historial',
-    'historial-descargas': 'Historial de Descargas',
-    'historial-descargas-masivas': 'Historial de Descargas Masivas',
+    'historial-descargas': 'Historial de Descargas Masivas',
     'registros-modificados': 'Registros Modificados',
     'solicitudes': 'Solicitudes',
     'productos': 'Productos',
@@ -115,7 +114,7 @@ export default function AccesosClient() {
 
         // Parent/Child Cascade Logic
         const systemChildren = ['usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos'];
-        const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas-masivas'];
+        const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas'];
         const scannerChildren = ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central'];
 
         // If disabling a parent, disable all children
@@ -197,7 +196,7 @@ export default function AccesosClient() {
             let nextPerms = nextState ? [...prev, mod] : prev.filter(p => p !== mod);
 
             const systemChildren = ['usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos'];
-            const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas-masivas'];
+            const qualityChildren = ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas'];
             const scannerChildren = ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central'];
 
             // Parent Disable => Child Disable
@@ -478,7 +477,7 @@ export default function AccesosClient() {
                                                 label: 'Control de Calidad',
                                                 icon: 'bi-check-all',
                                                 color: 'emerald',
-                                                children: ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas-masivas']
+                                                children: ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas']
                                             },
                                             {
                                                 id: 'escaneo',
@@ -730,7 +729,7 @@ export default function AccesosClient() {
                                             {/* AGRUPACIÓN DINÁMICA: PADRES E HIJOS */}
                                             {[
                                                 { key: 'control-sistema', label: 'Control del Sistema', icon: 'bi-cpu-fill', children: ['usuarios', 'admin/config-pdf', 'admin/config-reportes', 'accesos'], color: { bg: 'bg-[#004d29]', border: 'border-[#004d29]', text: 'text-[#004d29]', bgMuted: 'bg-[#eef2ea]' } },
-                                                { key: 'control-calidad', label: 'Control de Calidad', icon: 'bi-shield-check', children: ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas-masivas'], color: { bg: 'bg-[#58623f]', border: 'border-[#58623f]', text: 'text-[#58623f]', bgMuted: 'bg-[#f4f5f0]' } },
+                                                { key: 'control-calidad', label: 'Control de Calidad', icon: 'bi-shield-check', children: ['registro-productos', 'historial', 'productos', 'parametros-maestros', 'registros-modificados', 'historial-descargas'], color: { bg: 'bg-[#58623f]', border: 'border-[#58623f]', text: 'text-[#58623f]', bgMuted: 'bg-[#f4f5f0]' } },
                                                 { key: 'escaneo', label: 'Escaneo de Códigos', icon: 'bi-upc-scan', children: ['escaneo-productos', 'escaneo-cajas', 'escaneo-historial', 'escaneo-central'], color: { bg: 'bg-[#7b7c2b]', border: 'border-[#7b7c2b]', text: 'text-[#7b7c2b]', bgMuted: 'bg-[#f8faf5]' } }
                                             ].map((group) => {
                                                 const parentEnabled = newRolePermisos.includes(group.key);
