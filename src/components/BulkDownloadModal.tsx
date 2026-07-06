@@ -15,6 +15,7 @@ type QuickOption = 'custom' | 'today' | 'last7' | 'month';
 export default function BulkDownloadModal({ onClose, onSuccess }: BulkDownloadModalProps) {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -78,7 +79,7 @@ export default function BulkDownloadModal({ onClose, onSuccess }: BulkDownloadMo
             const res = await fetch('/api/downloads/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ startDate, endDate })
+                body: JSON.stringify({ startDate, endDate, password })
             });
             const data = await res.json();
 
@@ -216,6 +217,22 @@ export default function BulkDownloadModal({ onClose, onSuccess }: BulkDownloadMo
                         </div>
                     </div>
 
+                    {/* Re-auth: la descarga masiva exporta el histórico completo del rango */}
+                    <div className="bg-white p-6 rounded-[2rem] border border-[#e2e8f0] shadow-sm space-y-2">
+                        <label className="text-[10px] text-[#94a3b8] uppercase font-bold tracking-widest ml-1 flex items-center gap-2">
+                            <i className="bi bi-shield-lock-fill text-blue-500"></i> Confirmá tu contraseña
+                        </label>
+                        <input
+                            type="password"
+                            className="w-full bg-[#f8fafc] border border-[#cbd5e1] rounded-2xl p-4 text-[#1e293b] font-bold outline-none focus:border-blue-500 transition-all"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="Contraseña de tu cuenta"
+                            autoComplete="current-password"
+                            required
+                        />
+                    </div>
+
                     <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex gap-4">
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm shrink-0">
                             <i className="bi bi-info-circle-fill"></i>
@@ -237,7 +254,7 @@ export default function BulkDownloadModal({ onClose, onSuccess }: BulkDownloadMo
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={loading || !startDate || !endDate}
+                        disabled={loading || !startDate || !endDate || !password}
                         className="px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.15em] bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 border-0 active:scale-95"
                     >
                         {loading ? (
