@@ -66,8 +66,10 @@ export default function Navbar({ userName, userRole }: NavbarProps) {
     { href: '/control-calidad/registros-modificados', label: 'Registros Modificados', permKey: 'registros-modificados',
       icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>)
     },
-    { href: '/control-calidad/historial-descargas', label: 'Historial de descargas masivas', permKey: 'historial-descargas',
-      icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>)
+    // Label corto: el anterior ("Historial de descargas masivas") desbordaba el
+    // sidebar con whitespace-nowrap y desalineaba el ítem respecto al resto.
+    { href: '/control-calidad/historial-descargas', label: 'Historial de Descargas', permKey: 'historial-descargas',
+      icon: (<i className="bi bi-file-earmark-zip text-[1.35rem] leading-none" aria-hidden="true"></i>)
     },
     { href: '/control-calidad/centro-solicitudes', label: 'Solicitudes', permKey: 'solicitudes',
       icon: (<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>)
