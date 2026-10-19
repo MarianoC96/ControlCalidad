@@ -35,8 +35,12 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
 
-  // Reduce unused JS shipped to client
+  // Reduce unused JS shipped to client and enable client router cache
   experimental: {
+    staleTimes: {
+      dynamic: 60, // 60 segundos de retención en memoria para rutas dinámicas ya visitadas
+      static: 180, // 3 minutos para páginas estáticas
+    },
     optimizePackageImports: ['jspdf', 'jspdf-autotable', 'jszip', '@supabase/supabase-js'],
   },
 

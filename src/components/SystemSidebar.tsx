@@ -4,19 +4,24 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth, invalidateAuth } from '@/hooks/useAuth';
+import { clearPermissionsCache } from '@/components/RouteGuard';
 
 interface SystemSidebarProps {
     userName?: string;
     userRole?: string;
 }
 
-export default function SystemSidebar({ userName, userRole }: SystemSidebarProps) {
+export default function SystemSidebar({ userName: propUserName, userRole: propUserRole }: SystemSidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [pendingSolicitudes, setPendingSolicitudes] = useState(0);
-    const [permissions, setPermissions] = useState<string[]>([]);
+
+    const { permissions, userName: authUserName, userRole: authUserRole } = useAuth({ redirectOnFail: false });
+    const userName = propUserName || authUserName;
+    const userRole = propUserRole || authUserRole;
 
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -28,24 +33,13 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
                 const data = await res.json();
                 setPendingSolicitudes(data.pendingSolicitudes || 0);
             }
-        } catch (e) {
+        } catch {
             // Silently fail
         }
     }, []);
 
     // On mount
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const res = await fetch('/api/auth/me');
-                if (res.ok) {
-                    const data = await res.json();
-                    setPermissions(data.role_permisos || []);
-                }
-            } catch (e) { }
-        };
-
-        fetchUserData();
         fetchPendingCounts();
         const interval = setInterval(fetchPendingCounts, 10000); // 10s polling as fallback
         return () => clearInterval(interval);
@@ -154,6 +148,8 @@ export default function SystemSidebar({ userName, userRole }: SystemSidebarProps
     const handleLogout = async () => {
         try {
             await fetch('/api/auth/logout', { method: 'POST' });
+            invalidateAuth();
+            clearPermissionsCache();
             router.push('/');
             router.refresh();
         } catch (error) {

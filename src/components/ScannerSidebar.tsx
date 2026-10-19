@@ -3,31 +3,23 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useAuth, invalidateAuth } from '@/hooks/useAuth';
+import { clearPermissionsCache } from '@/components/RouteGuard';
 
 interface ScannerSidebarProps {
     userName?: string;
     userRole?: string;
 }
 
-export default function ScannerSidebar({ userName, userRole }: ScannerSidebarProps) {
+export default function ScannerSidebar({ userName: propUserName, userRole: propUserRole }: ScannerSidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [permissions, setPermissions] = useState<string[]>([]);
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const res = await fetch('/api/auth/me');
-                if (res.ok) {
-                    const data = await res.json();
-                    setPermissions(data.role_permisos || []);
-                }
-            } catch (e) { }
-        };
-        fetchUserData();
-    }, []);
+    const { permissions, userName: authUserName, userRole: authUserRole } = useAuth({ redirectOnFail: false });
+    const userName = propUserName || authUserName;
+    const userRole = propUserRole || authUserRole;
 
     // Determinar si una ruta está activa
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
@@ -46,6 +38,8 @@ export default function ScannerSidebar({ userName, userRole }: ScannerSidebarPro
     const handleLogout = async () => {
         try {
             await fetch('/api/auth/logout', { method: 'POST' });
+            invalidateAuth();
+            clearPermissionsCache();
             router.push('/');
             router.refresh();
         } catch (error) {

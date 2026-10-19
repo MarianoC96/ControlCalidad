@@ -29,6 +29,60 @@ const PATH_TO_MODULE: Record<string, string> = {
     '/escaner-codigos/centro-solicitudes': 'solicitudes',
 };
 
+// Client-side in-memory cache of allowed modules
+let cachedAllowedModules: string[] | null = null;
+let ongoingPermisosPromise: Promise<string[]> | null = null;
+
+export function clearPermissionsCache() {
+    cachedAllowedModules = null;
+    ongoingPermisosPromise = null;
+    if (typeof window !== 'undefined') {
+        try { sessionStorage.removeItem('nav_permisos'); } catch { }
+    }
+}
+
+function getInitialAllowedModules(): string[] | null {
+    if (cachedAllowedModules) return cachedAllowedModules;
+    if (typeof window === 'undefined') return null;
+    try {
+        const saved = sessionStorage.getItem('nav_permisos');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                cachedAllowedModules = parsed;
+                return parsed;
+            }
+        }
+    } catch { }
+    return null;
+}
+
+async function fetchAllowedModules(): Promise<string[]> {
+    if (ongoingPermisosPromise) return ongoingPermisosPromise;
+
+    ongoingPermisosPromise = (async () => {
+        try {
+            const res = await fetch('/api/auth/permisos');
+            if (!res.ok) {
+                return [];
+            }
+            const data = await res.json();
+            const allowed: string[] = data.allowedModules || [];
+            cachedAllowedModules = allowed;
+            if (typeof window !== 'undefined') {
+                try { sessionStorage.setItem('nav_permisos', JSON.stringify(allowed)); } catch { }
+            }
+            return allowed;
+        } catch {
+            return [];
+        } finally {
+            ongoingPermisosPromise = null;
+        }
+    })();
+
+    return ongoingPermisosPromise;
+}
+
 interface RouteGuardProps {
     children: React.ReactNode;
     moduleKey?: string; // optional override
@@ -37,67 +91,61 @@ interface RouteGuardProps {
 export default function RouteGuard({ children, moduleKey }: RouteGuardProps) {
     const router = useRouter();
     const pathname = usePathname();
-    const [authorized, setAuthorized] = useState(false);
-    const [checking, setChecking] = useState(true);
+
+    const key = moduleKey || PATH_TO_MODULE[pathname];
+    const isPublicOrTemporal = !key || key === 'temporal';
+
+    // Synchronous permission check against memory/session cache
+    const initialAllowed = getInitialAllowedModules();
+    const isInitiallyAuthorized = isPublicOrTemporal || (initialAllowed !== null && initialAllowed.includes(key));
+    const isInitiallyChecking = !isPublicOrTemporal && initialAllowed === null;
+
+    const [authorized, setAuthorized] = useState(isInitiallyAuthorized);
+    const [checking, setChecking] = useState(isInitiallyChecking);
 
     useEffect(() => {
-        const key = moduleKey || PATH_TO_MODULE[pathname];
-
-        // No module restriction for this path
-        if (!key) {
+        if (isPublicOrTemporal) {
             setAuthorized(true);
             setChecking(false);
             return;
         }
 
-        // Temporal module is always accessible (critical contingency)
-        if (key === 'temporal') {
-            setAuthorized(true);
-            setChecking(false);
-            return;
-        }
-
-        // WHY: Always verify against the API instead of trusting sessionStorage.
-        // The cache can contain stale permissions from a previous user session
-        // (e.g., sadmin → test user switch), causing unauthorized access.
-        // The API call is fast enough and the RouteGuard already shows a loading state.
-
-        // 2) Fall back to API (only when cache miss or module not in cache)
-        const checkPermission = async () => {
-            try {
-                const res = await fetch('/api/auth/permisos');
-                if (!res.ok) {
-                    router.replace('/');
-                    return;
-                }
-
-                const data = await res.json();
-                const allowed: string[] = data.allowedModules || [];
-
-                // Update cache for future navigations
-                try { sessionStorage.setItem('nav_permisos', JSON.stringify(allowed)); } catch { }
-
-                if (allowed.includes(key)) {
-                    setAuthorized(true);
-                } else {
-                    // Redirect to first allowed module or home
-                    const firstAllowed = allowed[0];
-                    if (firstAllowed) {
-                        const entry = Object.entries(PATH_TO_MODULE).find(([, v]) => v === firstAllowed);
-                        router.replace(entry ? entry[0] : '/');
-                    } else {
-                        router.replace('/');
-                    }
-                }
-            } catch {
-                router.replace('/');
-            } finally {
+        const handleAuthorization = (allowed: string[]) => {
+            if (allowed.includes(key)) {
+                setAuthorized(true);
                 setChecking(false);
+            } else {
+                setAuthorized(false);
+                setChecking(false);
+                router.replace('/dashboard');
             }
         };
 
-        checkPermission();
-    }, [pathname, moduleKey, router]);
+        const currentAllowed = getInitialAllowedModules();
+        if (currentAllowed !== null) {
+            // Validated synchronously: do NOT block UI
+            handleAuthorization(currentAllowed);
+
+            // Revalidate in background without blocking UI
+            fetchAllowedModules().then(freshAllowed => {
+                if (freshAllowed.length > 0 && !freshAllowed.includes(key)) {
+                    setAuthorized(false);
+                    router.replace('/dashboard');
+                }
+            });
+            return;
+        }
+
+        // Cold start (empty cache): fetch and block only once
+        setChecking(true);
+        fetchAllowedModules().then(allowed => {
+            if (allowed.length === 0) {
+                router.replace('/dashboard');
+                return;
+            }
+            handleAuthorization(allowed);
+        });
+    }, [pathname, moduleKey, key, isPublicOrTemporal, router]);
 
     if (checking) {
         return (
