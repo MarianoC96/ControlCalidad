@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { BarcodeRepository } from '@/lib/repositories/barcode.repository';
 import { useAuth } from '@/hooks/useAuth';
 import { formatBarcode } from '@/lib/utils';
@@ -64,7 +63,7 @@ export default function EscaneoPage() {
     const [isInitializing, setIsInitializing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const scannerRef = useRef<Html5Qrcode | null>(null);
+    const scannerRef = useRef<import('html5-qrcode').Html5Qrcode | null>(null);
 
     // --- LÓGICA DE ESCANEO ---
     const stopScanner = useCallback(async () => {
@@ -176,6 +175,7 @@ export default function EscaneoPage() {
 
         setTimeout(async () => {
             try {
+                const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
                 const scanner = new Html5Qrcode("scanner-container", {
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
