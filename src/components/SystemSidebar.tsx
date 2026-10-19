@@ -33,7 +33,7 @@ export default function SystemSidebar({ userName: propUserName, userRole: propUs
                 const data = await res.json();
                 setPendingSolicitudes(data.pendingSolicitudes || 0);
             }
-        } catch (e) {
+        } catch {
             // Silently fail
         }
     }, []);

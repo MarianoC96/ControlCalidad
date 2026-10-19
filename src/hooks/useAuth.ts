@@ -18,7 +18,7 @@ interface AuthUser {
     permiso_escaneo_productos?: boolean;
     permiso_escaneo_cajas?: boolean;
     permiso_escaneo_historial?: boolean;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 interface AuthState {
@@ -30,7 +30,7 @@ interface AuthState {
     readonly user?: AuthUser | null;
     readonly permissions: string[];
     readonly hasSolicitudesPermission: boolean;
-    readonly mutate: () => Promise<any>;
+    readonly mutate: () => Promise<AuthUser | undefined>;
 }
 
 interface UseAuthOptions {
