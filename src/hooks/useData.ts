@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR, { type SWRConfiguration, type KeyedMutator } from 'swr';
-import type { Producto, Parametro } from '@/lib/supabase/types';
+import type { Producto, Parametro, ParametroMaestro } from '@/lib/supabase/types';
 
 /**
  * Standard fetcher for SWR hooks.
@@ -50,6 +50,32 @@ export function useProductos(
     const key = `/api/productos${queryParam}`;
 
     const { data, error, isLoading, isValidating, mutate } = useSWR<ProductoWithParams[]>(
+        key,
+        fetcher,
+        {
+            revalidateOnFocus: false,
+            dedupingInterval: 30_000,
+            ...swrConfig,
+        }
+    );
+
+    return { data, error, isLoading, isValidating, mutate };
+}
+
+// ─── useParametrosMaestros ────────────────────────────────────
+
+/**
+ * Fetches master parameters list.
+ *
+ * Cached in memory via SWR to avoid redundant fetches across
+ * Productos admin and Parametros Maestros catalog views.
+ */
+export function useParametrosMaestros(
+    swrConfig?: SWRConfiguration
+): SWRDataHook<ParametroMaestro[]> {
+    const key = '/api/parametros-maestros';
+
+    const { data, error, isLoading, isValidating, mutate } = useSWR<ParametroMaestro[]>(
         key,
         fetcher,
         {

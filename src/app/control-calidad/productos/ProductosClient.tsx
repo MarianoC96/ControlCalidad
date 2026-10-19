@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { normalizeString } from '@/lib/utils';
 import type { Producto, ParametroMaestro, Parametro } from '@/lib/supabase/types';
+import { useProductos, useParametrosMaestros } from '@/hooks/useData';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ParametroForm {
     parametro_maestro_id: number | null;
@@ -24,11 +26,13 @@ export default function ProductosClient() {
     const router = useRouter();
     const supabase = createClient();
 
-    const [productos, setProductos] = useState<Producto[]>([]);
-    const [parametrosMaestros, setParametrosMaestros] = useState<ParametroMaestro[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [userName, setUserName] = useState('');
-    const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
+    const { userName, userRole } = useAuth({ requireAdmin: true });
+    const { data: productosData, isLoading: productosLoading, mutate: mutateProductos } = useProductos();
+    const { data: maestrosData, isLoading: maestrosLoading, mutate: mutateMaestros } = useParametrosMaestros();
+
+    const productos = useMemo(() => productosData || [], [productosData]);
+    const parametrosMaestros = useMemo(() => maestrosData || [], [maestrosData]);
+    const loading = (productosLoading && !productosData) || (maestrosLoading && !maestrosData);
     const [searchTerm, setSearchTerm] = useState('');
 
     // Modal states
@@ -43,48 +47,6 @@ export default function ProductosClient() {
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
-
-    useEffect(() => {
-        checkAuth();
-        loadData();
-    }, []);
-
-    const checkAuth = async () => {
-        const response = await fetch('/api/auth/me');
-        if (!response.ok) {
-            router.push('/');
-            return;
-        }
-        const user = await response.json();
-        setUserName(user.nombre_completo);
-        setUserRole(user.roles);
-
-        if (user.roles !== 'administrador') {
-            router.push('/control-calidad/registro-productos');
-        }
-    };
-
-    const loadData = async () => {
-        try {
-            const [productosRes, maestrosRes] = await Promise.all([
-                fetch('/api/productos'),
-                fetch('/api/parametros-maestros'),
-            ]);
-
-            if (!productosRes.ok) throw new Error('Error loading productos');
-            if (!maestrosRes.ok) throw new Error('Error loading maestros');
-
-            const productos = await productosRes.json();
-            const maestros = await maestrosRes.json();
-
-            setProductos(productos || []);
-            setParametrosMaestros(maestros || []);
-        } catch (err) {
-            console.error('Error loading data:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const openNewModal = () => {
         setEditingProduct(null);
@@ -233,7 +195,7 @@ export default function ProductosClient() {
             }
 
             setShowModal(false);
-            loadData();
+            mutateProductos();
 
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al guardar');
@@ -257,7 +219,7 @@ export default function ProductosClient() {
                 throw new Error(errData.error || 'Error al eliminar');
             }
 
-            loadData();
+            mutateProductos();
         } catch (err) {
             console.error('Error deleting product:', err);
             alert('No se puede eliminar (es posible que tenga registros asociados)');

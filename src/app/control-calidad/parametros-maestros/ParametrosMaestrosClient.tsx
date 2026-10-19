@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { useRouter } from 'next/navigation';
 
-import { createClient } from '@/lib/supabase/client';
 import type { ParametroMaestro } from '@/lib/supabase/types';
+import { useParametrosMaestros } from '@/hooks/useData';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * ParametrosMaestrosClient
@@ -16,13 +17,12 @@ import type { ParametroMaestro } from '@/lib/supabase/types';
  */
 export default function ParametrosMaestrosClient() {
     const router = useRouter();
-    const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-    const [mounted, setMounted] = useState(false);
 
-    const [parametros, setParametros] = useState<ParametroMaestro[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [userName, setUserName] = useState('');
-    const [userRole, setUserRole] = useState<'administrador' | 'trabajador'>('trabajador');
+    const { userName, userRole } = useAuth({ requireAdmin: true });
+    const { data: parametrosData, isLoading: parametrosLoading, mutate: mutateParametros } = useParametrosMaestros();
+
+    const parametros = useMemo(() => parametrosData || [], [parametrosData]);
+    const loading = parametrosLoading && !parametrosData;
 
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -35,52 +35,6 @@ export default function ParametrosMaestrosClient() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
-
-    // Initialize on mount only
-    useEffect(() => {
-        setMounted(true);
-        supabaseRef.current = createClient();
-    }, []);
-
-    useEffect(() => {
-        if (mounted && supabaseRef.current) {
-            checkAuth();
-            loadParametros();
-        }
-    }, [mounted]);
-
-    const checkAuth = async () => {
-        try {
-            const response = await fetch('/api/auth/me');
-            if (!response.ok) {
-                router.push('/');
-                return;
-            }
-            const user = await response.json();
-            setUserName(user.nombre_completo);
-            setUserRole(user.roles);
-
-            if (user.roles !== 'administrador') {
-                router.push('/control-calidad/registro-productos');
-            }
-        } catch {
-            router.push('/');
-        }
-    };
-
-    const loadParametros = async () => {
-        try {
-            setLoading(true);
-            const response = await fetch('/api/parametros-maestros');
-            if (!response.ok) throw new Error('Error al cargar parámetros');
-            const data = await response.json();
-            setParametros(data || []);
-        } catch (err) {
-            console.error('Error loading parametros:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const openNewModal = () => {
         setEditingParam(null);
@@ -123,7 +77,7 @@ export default function ParametrosMaestrosClient() {
             }
 
             setShowModal(false);
-            loadParametros();
+            mutateParametros();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al guardar');
         } finally {
@@ -146,7 +100,7 @@ export default function ParametrosMaestrosClient() {
                 throw new Error(errData.error || 'Error al eliminar');
             }
 
-            loadParametros();
+            mutateParametros();
         } catch (err) {
             console.error('Error deleting:', err);
             alert('No se puede eliminar (posiblemente esté en uso)');
