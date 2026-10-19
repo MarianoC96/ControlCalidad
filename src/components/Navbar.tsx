@@ -3,34 +3,23 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useAuth, invalidateAuth } from '@/hooks/useAuth';
+import { clearPermissionsCache } from '@/components/RouteGuard';
 
 interface NavbarProps {
   userName?: string;
   userRole?: string;
 }
 
-export default function Navbar({ userName, userRole }: NavbarProps) {
+export default function Navbar({ userName: propUserName, userRole: propUserRole }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [permissions, setPermissions] = useState<string[]>([]);
 
-  // Fetch user permissions from the single source of truth
-  useEffect(() => {
-    const fetchUserPermissions = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setPermissions(data.role_permisos || []);
-        }
-      } catch (e) {
-        // Silently fail — RouteGuard handles unauthorized redirects
-      }
-    };
-    fetchUserPermissions();
-  }, []);
+  const { permissions, userName: authUserName, userRole: authUserRole } = useAuth({ redirectOnFail: false });
+  const userName = propUserName || authUserName;
+  const userRole = propUserRole || authUserRole;
 
   // Determinar si una ruta está activa
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
@@ -49,6 +38,8 @@ export default function Navbar({ userName, userRole }: NavbarProps) {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
+      invalidateAuth();
+      clearPermissionsCache();
       router.push('/');
       router.refresh();
     } catch (error) {
